@@ -20,3 +20,5 @@
 ## Additional Information (optional)
 
 [Include any relevant information, links, or resources here.]
+
+/label ~"Type::User Story"
