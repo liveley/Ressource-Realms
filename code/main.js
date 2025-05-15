@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { scene } from './scene.js';
-import { camera } from './camera.js';
+import { scene } from './modules/scene.js';
+import { camera } from './modules/camera.js';
 import { loadhexagon } from './loader.js'; // stellt Loader-Funktion zur Verfügung die das GLB lädt
-import { setupLights } from './lights.js';
-import { createHexGrid } from './hexGrid.js'; 
-import { createDirectionArrows } from './directionArrows.js'; 
+import { setupLights } from './modules/lights.js';
+import { createHexGrid } from './modules/hexGrid.js'; 
+import { createDirectionArrows } from './modules/directionArrows.js'; 
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
