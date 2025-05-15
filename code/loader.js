@@ -8,10 +8,15 @@ export function loadhexagon(scene) {
  loader.load('./models/center.glb', (gltf) => {
     const hex = gltf.scene;
 
-    // Optional: Rotieren, wenn nötig (damit es waagrecht liegt)
+    // Rotate to lie flat
     hex.rotation.x = -Math.PI / 2;
 
-    // Optional: Zentrieren, falls es nicht schon im Modellzentrum liegt
+    // Rotate to point a tip downward
+    hex.rotation.y = Math.PI / 6;
+
+    // Scale it up
+    hex.scale.set(3, 3, 3); 
+
     hex.position.set(0, 0, 0);
 
     hex.traverse((child) => {

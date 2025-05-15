@@ -4,7 +4,7 @@
 // hexGrid.js
 import * as THREE from 'three';
 
-export function createHexGrid(radius = 2.5, rows = 20, cols = 20, color = 0xC0C0C0) {
+export function createHexGrid(radius = 3, rows = 20, cols = 20, color = 0xC0C0C0) {
     const hexGrid = new THREE.Group();
     const hexPoints = [
         new THREE.Vector3(Math.cos(0) * radius, Math.sin(0) * radius, 0),
