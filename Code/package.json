@@ -1,0 +1,29 @@
+{
+  "name": "void",
+  "version": "1.0.0",
+  "description": "Renders simple void scene",
+  "main": "index.js",
+  "dependencies": {
+    "esbuild": "^0.25.4",
+    "fdir": "^6.4.4",
+    "nanoid": "^3.3.11",
+    "picocolors": "^1.1.1",
+    "picomatch": "^4.0.2",
+    "postcss": "^8.5.3",
+    "rollup": "^4.40.2",
+    "source-map-js": "^1.2.1",
+    "three": "^0.176.0",
+    "tinyglobby": "^0.2.13",
+    "vite": "^6.3.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "void": "index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.lrz.de:ab-2025sose/pp/groupprojects/projektrepo-gruppe4.git"
+  },
+  "author": "Sebastian",
+  "license": "ISC"
+}
