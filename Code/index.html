@@ -32,7 +32,7 @@
     scene.add(light);
 
     // Load GLB model
-    const loader = new THREE.GLTFLoader();
+    const loader = new GLTFLoader();
     loader.load('center.glb', function (gltf) {
       const model = gltf.scene;
       model.scale.set(1, 1, 1); // adjust if needed
