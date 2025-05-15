@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { scene } from './scene.js';
-import { camera } from './camera.js';
+import { scene } from './modules/scene.js';
+import { camera } from './modules/camera.js';
 import { loadhexagon } from './loader.js'; // stellt Loader-Funktion zur Verfügung die das GLB lädt
-import { setupLights } from './lights.js';
+import { setupLights } from './modules/lights.js';
+import { createHexGrid } from './modules/hexGrid.js'; 
+import { createDirectionArrows } from './modules/directionArrows.js'; 
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -17,13 +19,8 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.minPolarAngle = Math.PI / 4;
 controls.maxPolarAngle = Math.PI / 2;
 
-// Achsenhelfer
-scene.add(new THREE.AxesHelper(20));
-
-const arrowPos = new THREE.Vector3(0, 0, 0);
-scene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), arrowPos, 30, 0x7f2020)); // X
-scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), arrowPos, 30, 0x207f20)); // Y
-scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), arrowPos, 30, 0x20207f)); // Z
+scene.add(createHexGrid());
+createDirectionArrows(scene);
 
 setupLights(scene);
 loadhexagon(scene)
