@@ -12,7 +12,7 @@ export function loadTile(filename, callback) {
 
     tile.rotation.x = Math.PI / 2;
     tile.rotation.y = Math.PI / 6;
-    tile.scale.set(3, 3, 3);
+    tile.scale.set(2.6, 2.6, 2.6);
 
     tile.traverse((child) => {
       if (child.isMesh) {
