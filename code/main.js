@@ -2,10 +2,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { scene } from './modules/scene.js';
 import { camera } from './modules/camera.js';
-import { loadhexagon } from './loader.js'; // stellt Loader-Funktion zur Verfügung die das GLB lädt
 import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
 import { createDirectionArrows } from './modules/directionArrows.js'; 
+import { createGameBoard } from './modules/game_board.js'; 
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -23,8 +23,9 @@ scene.add(createHexGrid());
 createDirectionArrows(scene);
 
 setupLights(scene);
-loadhexagon(scene)
 
+// Erstelle das Spielfeld direkt in game_board.js
+createGameBoard(scene); // loadTile() wird nun dort für jedes einzelne Tile genutzt!
 
 // Animation
 function animate() {
