@@ -6,25 +6,26 @@ import * as THREE from 'three';
 import { loadTile } from '../loader.js'; // Importiere die Funktion zum Laden eines einzelnen Tiles
 
 const HEX_RADIUS = 3;
-const HEX_WIDTH = Math.sqrt(3) * HEX_RADIUS;
-const HEX_HEIGHT = HEX_RADIUS * 1.5;
 const hexGroup = new THREE.Group();
 
 // Positionen der Tiles
 const tilePositions = {
-  'clay': [1, 0],
-  'ore': [1, -1],
-  'sheep': [0, -1],
-  'wheat': [-1, 0],
-  'wood': [-1, 1],
-  'water': [0, 2] // Neuer Eintrag für "water.glb"
+  'clay': [[1, 0]], 
+  'ore': [[1, -1]], 
+  'sheep': [[0, -1]], 
+  'wheat': [[-1, 0]], 
+  'wood': [[-1, 1]], 
+  'water': [[3, -1], [3, -2], [3, -3], [2, -3], [1, -3], [0, -3], [-1, -2], [-2, -1], [-3, 1], [-3, 2], [-3, 0], [-3, 3], [-2, 3], [-1, 3], [0, 3], [1, 2], [2, 1], [3, 0],// 1 Ring Hafen
+            [4, -1], [4, -2], [4, -3], [3, -4], [2, -4], [1, -4], [0, -4], [-1, -3], [-2, -2], [-3, -1], [-4, 0], [-4, 1], [-4, 2], [-4, 3], [-3, 4], [-2, 4], [-1, 4], [0, 4], [1, 3], [2, 2], [3, 1], [4, 0], [4, -4], [-4 , 4], //erster Wasserring
+            [5, -1], [5, -2], [5, -3], [5, -4], [4, -5], [3, -5], [2, -5], [1, -5], [0, -5], [-1, -4], [-2, -3], [-3, -2], [-4, -1], [-5, 0], [-5, 1], [-5, 2], [-5, 3], [-5, 4], [-4, 5], [-3, 5], [-2, 5], [-1, 5], [0, 5], [1, 4], [2, 3], [3, 2], [4, 1], [5, 0], [-5, 5], [5, -5] //zweiter Wasserring
+]
 };
 
 // Funktion zur Umwandlung von axialen Koordinaten zu Weltkoordinaten
 export function axialToWorld(q, r) {
   const x = HEX_RADIUS * 3/2 * q;
   const y = HEX_RADIUS * Math.sqrt(3) * (r + q/2);
-  const z = 0; // Höhe immer 0
+  const z = 0; // Höhe bleibt konstant
   return [x, y, z];
 }
 
@@ -39,12 +40,14 @@ export function createGameBoard(scene) {
   });
 
   // Lade und platziere die umgebenden Tiles
-  Object.entries(tilePositions).forEach(([tileName, [q, r]]) => {
-    loadTile(`${tileName}.glb`, (tile) => {
-      const pos = axialToWorld(q, r);
-      tile.position.set(...pos);
-      hexGroup.add(tile);
-      scene.add(hexGroup);
+  Object.entries(tilePositions).forEach(([tileName, positions]) => {
+    positions.forEach(([q, r]) => {
+      loadTile(`${tileName}.glb`, (tile) => {
+        const pos = axialToWorld(q, r);
+        tile.position.set(...pos);
+        hexGroup.add(tile);
+        scene.add(hexGroup);
+      });
     });
   });
 }
