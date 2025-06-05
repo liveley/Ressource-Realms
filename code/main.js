@@ -9,6 +9,7 @@ import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera
 import { rollDice, showDice } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
+import { createGamePieces } from './modules/gamePieces.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -37,6 +38,9 @@ addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 
 // Platzhalter-Spielkarten erstellen
 createPlaceholderCards(scene);
+
+// Platzhalter-Spielsteine erstellen
+createGamePieces(scene);
 
 // UI-Elemente für Würfeln
 const diceUI = document.createElement('div');
