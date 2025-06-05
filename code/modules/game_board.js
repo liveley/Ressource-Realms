@@ -85,7 +85,7 @@ function drawRoadMeshes(scene) {
           const roadWidth = HEX_RADIUS * 0.20; // Dicke der Straße
           const roadHeight = HEX_RADIUS * 0.40; // Höhe der Straße
           const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
-          const material = new THREE.MeshStandardMaterial({ color: 0xdddddd }); // Hellgrau
+          const material = new THREE.MeshStandardMaterial({ color: 0x333333 }); // Dunkelgrau
           const mesh = new THREE.Mesh(geometry, material);
           // Position: Mittelpunkt der Kante
           mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
@@ -101,6 +101,25 @@ function drawRoadMeshes(scene) {
   });
 }
 
+// Hilfsfunktion: Simuliere Tile-Nummern für Demo-Zwecke (echte Zuordnung nach Catan-Regeln möglich)
+const tileNumbers = {};
+(function assignTileNumbers() {
+  // Verteile Zahlen 2-12 (ohne 7) zufällig auf Land-Tiles (Demo)
+  const numbers = [2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12];
+  const landTiles = getLandTileAxials();
+  let i = 0;
+  landTiles.forEach(([q, r]) => {
+    if (i < numbers.length) {
+      tileNumbers[`${q},${r}`] = numbers[i++];
+    } else {
+      tileNumbers[`${q},${r}`] = null;
+    }
+  });
+})();
+
+// Speichere Referenzen auf die Tile-Meshes
+const tileMeshes = {}
+
 // Spielfeld erstellen
 export function createGameBoard(scene) {
   // Lade und platziere die Mitte
@@ -109,6 +128,7 @@ export function createGameBoard(scene) {
     centerTile.position.set(...centerPos);
     hexGroup.add(centerTile);
     scene.add(hexGroup);
+    tileMeshes[`0,0`] = centerTile;
   });
 
   // Lade und platziere die umgebenden Tiles
@@ -119,6 +139,7 @@ export function createGameBoard(scene) {
         tile.position.set(...pos);
         hexGroup.add(tile);
         scene.add(hexGroup);
+        tileMeshes[`${q},${r}`] = tile;
       });
     });
   });
@@ -126,3 +147,24 @@ export function createGameBoard(scene) {
   // Nach dem Platzieren der Tiles: Straßen als Meshes zeichnen
   drawRoadMeshes(scene);
 }
+
+// Highlight-Logik für Tiles
+window.addEventListener('diceRolled', (e) => {
+  const number = e.detail;
+  Object.entries(tileMeshes).forEach(([key, mesh]) => {
+    // Entferne altes Highlight
+    mesh.traverse(child => {
+      if (child.material && child.material.emissive) {
+        child.material.emissive.setHex(0x000000);
+      }
+    });
+    // Highlight, wenn Zahl passt
+    if (tileNumbers[key] === number) {
+      mesh.traverse(child => {
+        if (child.material && child.material.emissive) {
+          child.material.emissive.setHex(0xffff00);
+        }
+      });
+    }
+  });
+});
