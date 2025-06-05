@@ -5,7 +5,7 @@ import { camera } from './modules/camera.js';
 import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
 import { createDirectionArrows } from './modules/directionArrows.js'; 
-import { createGameBoard } from './modules/game_board.js'; 
+import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, highlightNumberTokens } from './modules/game_board.js'; 
 import { rollDice, showDice } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
@@ -30,7 +30,10 @@ createDirectionArrows(scene);
 setupLights(scene);
 
 // Erstelle das Spielfeld direkt in game_board.js
-createGameBoard(scene); // loadTile() wird nun dort für jedes einzelne Tile genutzt!
+// createGameBoard(scene); // loadTile() wird nun dort für jedes einzelne Tile genutzt!
+const { tileMeshes, tileNumbers } = createGameBoard(scene);
+// Nach dem Erstellen des Spielfelds: Number Tokens hinzufügen
+addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 
 // Platzhalter-Spielkarten erstellen
 createPlaceholderCards(scene);
@@ -110,8 +113,14 @@ function hideInfoOverlay() {
 
 // Animation
 function animate() {
+    updateNumberTokensFacingCamera(scene, camera);
     renderer.render(scene, camera);
 }
+
+// Highlight-Logik bei Würfelergebnis
+window.addEventListener('diceRolled', (e) => {
+    highlightNumberTokens(scene, tileMeshes, tileNumbers, e.detail);
+});
 
 // Resize
 window.addEventListener('resize', () => {
