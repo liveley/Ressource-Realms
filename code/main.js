@@ -9,6 +9,7 @@ import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera
 import { rollDice, showDice } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
+import { createGamePieces } from './modules/gamePieces.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -19,9 +20,9 @@ document.body.appendChild(renderer.domElement);
 
 // OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.minPolarAngle = Math.PI / 4;
-controls.maxPolarAngle = Math.PI / 2;
-controls.minDistance = 10;  // Minimaler Zoom (z. B. 10 Einheiten vom Zentrum)
+controls.minPolarAngle = Math.PI / 4; // 45° von oben
+controls.maxPolarAngle = Math.PI * 0.44; // ca. 79°, verhindert "unter das Feld schauen"
+controls.minDistance = 10;  // Näher ranzoomen von oben möglich
 controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
 
 scene.add(createHexGrid());
@@ -37,6 +38,9 @@ addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 
 // Platzhalter-Spielkarten erstellen
 createPlaceholderCards(scene);
+
+// Platzhalter-Spielsteine erstellen
+createGamePieces(scene);
 
 // UI-Elemente für Würfeln
 const diceUI = document.createElement('div');
