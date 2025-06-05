@@ -3,9 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <title>Hexagon 3D</title>
-  <style>body { margin: 0; overflow: hidden; }</style>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #main-menu h1 { font-family: 'Montserrat', Arial, sans-serif; }
+    #main-menu button { font-family: 'Montserrat', Arial, sans-serif; }
+  </style>
 </head>
 <body>
+  <div id="main-menu" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: #222c; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+    <h1 id="main-title" style="color: #fff; font-size: 4.5em; margin-bottom: 2em; letter-spacing: 0.05em; text-shadow: 0 4px 16px #000, 0 2px 0 #ffe066, 0 6px 20px #222; filter: drop-shadow(0 0 12px #ffe066);">Catan 3D</h1>
+    <button id="start-game" style="font-size: 2em; padding: 0.5em 2em; margin-bottom: 1em; cursor: pointer;">Spiel starten</button>
+    <button id="quit-game" style="font-size: 2em; padding: 0.5em 2em; cursor: pointer;">Spiel beenden</button>
+  </div>
   <script type="module" src="./main.js"></script>
+  <script>
+    const menu = document.getElementById('main-menu');
+    const startBtn = document.getElementById('start-game');
+    const quitBtn = document.getElementById('quit-game');
+    startBtn.onclick = () => {
+      menu.style.display = 'none';
+    };
+    quitBtn.onclick = () => {
+      window.close();
+    };
+    // 3D-Look für Überschrift animieren (leichtes Schimmern)
+    const title = document.getElementById('main-title');
+    let t = 0;
+    function animateTitle() {
+      t += 0.03;
+      const glow = 0.7 + 0.3 * Math.sin(t);
+      title.style.filter = `drop-shadow(0 0 ${16 + 8 * glow}px #ffe066)`;
+      requestAnimationFrame(animateTitle);
+    }
+    animateTitle();
+  </script>
 </body>
 </html>
