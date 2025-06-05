@@ -7,6 +7,7 @@ import { createHexGrid } from './modules/hexGrid.js';
 import { createDirectionArrows } from './modules/directionArrows.js'; 
 import { createGameBoard } from './modules/game_board.js'; 
 import { rollDice, showDice } from './modules/dice.js';
+import { tileInfo } from './modules/tileInfo.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -58,6 +59,50 @@ diceBtn.onclick = () => {
   diceResult.style.color = '#fff';
   window.dispatchEvent(new CustomEvent('diceRolled', { detail: roll }));
 };
+
+// Raycaster und Maus-Tracking für Tile-Infos
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+window.addEventListener('mousemove', onMouseMove, false);
+
+function onMouseMove(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    // Tiles aus game_board.js holen
+    const hexGroup = scene.getObjectByName('HexGroup'); // HexGroup muss benannt werden
+    if (!hexGroup) return;
+    const intersects = raycaster.intersectObjects(hexGroup.children, true);
+
+    if (intersects.length > 0) {
+        const hovered = intersects[0].object;
+        // Versuche den Tile-Typ aus dem Dateinamen zu extrahieren
+        let tileType = null;
+        if (hovered.parent && hovered.parent.name) {
+            tileType = hovered.parent.name.replace('.glb', '');
+        }
+        if (tileInfo[tileType]) {
+            showInfoOverlay(tileInfo[tileType], event.clientX, event.clientY);
+        }
+    } else {
+        hideInfoOverlay();
+    }
+}
+
+function showInfoOverlay(info, x, y) {
+    const overlay = document.getElementById('infoOverlay');
+    document.getElementById('infoTitle').textContent = info.name;
+    document.getElementById('infoDesc').textContent = info.description;
+    overlay.style.display = 'block';
+    overlay.style.left = `${x + 20}px`;
+    overlay.style.top = `${y - 10}px`;
+}
+
+function hideInfoOverlay() {
+    document.getElementById('infoOverlay').style.display = 'none';
+}
 
 // Animation
 function animate() {

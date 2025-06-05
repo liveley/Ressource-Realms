@@ -126,6 +126,7 @@ export function createGameBoard(scene) {
   loadTile('center.glb', (centerTile) => {
     const centerPos = axialToWorld(0, 0);
     centerTile.position.set(...centerPos);
+    centerTile.name = 'center.glb'; // Name für Raycaster
     hexGroup.add(centerTile);
     scene.add(hexGroup);
     tileMeshes[`0,0`] = centerTile;
@@ -137,6 +138,7 @@ export function createGameBoard(scene) {
       loadTile(`${tileName}.glb`, (tile) => {
         const pos = axialToWorld(q, r);
         tile.position.set(...pos);
+        tile.name = `${tileName}.glb`; // Name für Raycaster
         hexGroup.add(tile);
         scene.add(hexGroup);
         tileMeshes[`${q},${r}`] = tile;
@@ -146,6 +148,7 @@ export function createGameBoard(scene) {
 
   // Nach dem Platzieren der Tiles: Straßen als Meshes zeichnen
   drawRoadMeshes(scene);
+  hexGroup.name = 'HexGroup'; // HexGroup benennen für Raycaster
 }
 
 // Highlight-Logik für Tiles
