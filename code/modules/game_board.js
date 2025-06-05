@@ -215,6 +215,14 @@ export function createGameBoard(scene) {
         const pos = axialToWorld(q, r);
         tile.position.set(...pos);
         tile.name = `${tileName}.glb`; // Name für Raycaster
+        // === Wasser-Tiles blau einfärben ===
+        if (tileName === 'water') {
+          tile.traverse(child => {
+            if (child.isMesh) {
+              child.material = new THREE.MeshStandardMaterial({ color: 0x2da7c1, transparent: true, opacity: 0.98 });
+            }
+          });
+        }
         hexGroup.add(tile);
         scene.add(hexGroup);
         tileMeshes[`${q},${r}`] = tile;
