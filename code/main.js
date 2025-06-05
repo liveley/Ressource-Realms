@@ -6,6 +6,7 @@ import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
 import { createDirectionArrows } from './modules/directionArrows.js'; 
 import { createGameBoard } from './modules/game_board.js'; 
+import { rollDice, showDice } from './modules/dice.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -28,6 +29,35 @@ setupLights(scene);
 
 // Erstelle das Spielfeld direkt in game_board.js
 createGameBoard(scene); // loadTile() wird nun dort für jedes einzelne Tile genutzt!
+
+// UI-Elemente für Würfeln
+const diceUI = document.createElement('div');
+diceUI.id = 'dice-ui';
+diceUI.style.position = 'absolute';
+diceUI.style.top = '2em';
+diceUI.style.left = '2em';
+diceUI.style.zIndex = '5';
+diceUI.style.display = 'flex';
+diceUI.style.flexDirection = 'column';
+diceUI.style.alignItems = 'flex-start';
+document.body.appendChild(diceUI);
+
+diceUI.innerHTML = `
+  <button id="roll-dice" style="font-size: 1.5em; padding: 0.5em 2em; margin-bottom: 0.5em; cursor: pointer;">Würfeln</button>
+  <div id="dice-result" style="color: #fff; font-size: 2em; min-width: 2em; min-height: 1.5em; text-shadow: 0 2px 8px #000; font-family: 'Montserrat', Arial, sans-serif; display: inline-block; margin-left: 1em; vertical-align: middle;"></div>
+`;
+
+const diceBtn = document.getElementById('roll-dice');
+const diceResult = document.getElementById('dice-result');
+
+diceBtn.onclick = () => {
+  const roll = rollDice();
+  showDice(scene, roll); // Keine Position übergeben, damit Standard (Mitte) genutzt wird
+  // Zeige das Ergebnis oben links neben dem Button an
+  diceResult.textContent = roll;
+  diceResult.style.color = '#fff';
+  window.dispatchEvent(new CustomEvent('diceRolled', { detail: roll }));
+};
 
 // Animation
 function animate() {
