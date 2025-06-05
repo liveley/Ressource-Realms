@@ -8,6 +8,7 @@ import { createDirectionArrows } from './modules/directionArrows.js';
 import { createGameBoard } from './modules/game_board.js'; 
 import { rollDice, showDice } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
+import { createPlaceholderCards } from './modules/placeholderCards.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -30,6 +31,9 @@ setupLights(scene);
 
 // Erstelle das Spielfeld direkt in game_board.js
 createGameBoard(scene); // loadTile() wird nun dort für jedes einzelne Tile genutzt!
+
+// Platzhalter-Spielkarten erstellen
+createPlaceholderCards(scene);
 
 // UI-Elemente für Würfeln
 const diceUI = document.createElement('div');
