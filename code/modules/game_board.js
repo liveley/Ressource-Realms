@@ -143,7 +143,7 @@ function createNumberTokenSprite(number) {
     ctx.fillText(number, size/2, size/2);
     // Texture & Sprite
     const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture });
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.3 });
     const sprite = new THREE.Sprite(material);
     sprite.scale.set(0.8, 0.8, 1); // Noch kleinere Größe
     // Positioniere das Token mittig, aber sehr knapp über dem Tile (Y-Achse = Höhe)
