@@ -3,7 +3,10 @@ import * as THREE from 'three';
 
 export function rollDice() {
   // Simuliere zwei Würfel (2-12)
-  return Math.floor(Math.random() * 6 + 1) + Math.floor(Math.random() * 6 + 1);
+  const left = Math.floor(Math.random() * 6 + 1);
+  const right = Math.floor(Math.random() * 6 + 1);
+  window.lastDice = { left, right, sum: left + right };
+  return left + right;
 }
 
 // 3D-Würfelanzeige (ohne Physik, einfache Animation)
@@ -12,13 +15,19 @@ export function showDice(scene, value, pos = { x: 0, y: 0, z: 2 }) {
   const old = scene.getObjectByName('diceGroup');
   if (old) scene.remove(old);
 
-  // Zwei Würfelwerte berechnen
-  let left = Math.floor(Math.random() * 6 + 1);
-  let right = value - left;
-  if (right < 1 || right > 6) {
-    right = Math.floor(Math.random() * 6 + 1);
-    left = value - right;
-    if (left < 1 || left > 6) left = right = Math.floor(Math.random() * 6 + 1);
+  // Zwei Würfelwerte aus window.lastDice verwenden, falls vorhanden
+  let left = 1, right = 1;
+  if (window.lastDice && window.lastDice.sum === value) {
+    left = window.lastDice.left;
+    right = window.lastDice.right;
+  } else {
+    left = Math.floor(Math.random() * 6 + 1);
+    right = value - left;
+    if (right < 1 || right > 6) {
+      right = Math.floor(Math.random() * 6 + 1);
+      left = value - right;
+      if (left < 1 || left > 6) left = right = Math.floor(Math.random() * 6 + 1);
+    }
   }
 
   const diceGroup = new THREE.Group();

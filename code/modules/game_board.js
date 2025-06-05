@@ -105,7 +105,7 @@ function drawRoadMeshes(scene) {
 const tileNumbers = {};
 (function assignTileNumbers() {
   // Verteile Zahlen 2-12 (ohne 7) zufällig auf Land-Tiles (Demo)
-  const numbers = [2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12];
+  const numbers = [2,3,3,4,4,5,5,5,6,6,8,8,9,9,10,10,11,11,12]; // Jetzt 19 Zahlen
   const landTiles = getLandTileAxials();
   let i = 0;
   landTiles.forEach(([q, r]) => {
@@ -120,7 +120,76 @@ const tileNumbers = {};
 // Speichere Referenzen auf die Tile-Meshes
 const tileMeshes = {}
 
-// Spielfeld erstellen
+// Hilfsfunktion: Erstelle ein Sprite mit Zahl und Hintergrund
+function createNumberTokenSprite(number) {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    // Hintergrund (Kreis)
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size/2 - 8, 0, 2 * Math.PI);
+    ctx.fillStyle = '#fff8dc';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // Zahl
+    ctx.font = 'bold 64px Arial';
+    ctx.fillStyle = '#222';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(number, size/2, size/2);
+    // Texture & Sprite
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.3 });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(0.8, 0.8, 1); // Noch kleinere Größe
+    // Positioniere das Token mittig, aber sehr knapp über dem Tile (Y-Achse = Höhe)
+    sprite.position.set(0, HEX_RADIUS * 0.35, 0);
+    sprite.userData.number = number;
+    return sprite;
+}
+
+// Füge Number Tokens zu allen Land-Tiles hinzu
+export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
+    Object.entries(tileMeshes).forEach(([key, mesh]) => {
+        const number = tileNumbers[key];
+        if (number) {
+            const sprite = createNumberTokenSprite(number);
+            sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Sehr knapp über der Oberfläche (Y-Achse)
+            mesh.add(sprite);
+        }
+    });
+}
+
+// Animation: Tokens immer zur Kamera drehen
+export function updateNumberTokensFacingCamera(scene, camera) {
+    scene.traverse(obj => {
+        if (obj.type === 'Sprite' && obj.userData.number) {
+            obj.quaternion.copy(camera.quaternion);
+        }
+    });
+}
+
+// Highlight-Logik für Number Tokens
+export function highlightNumberTokens(scene, tileMeshes, tileNumbers, rolledNumber) {
+    Object.entries(tileMeshes).forEach(([key, mesh]) => {
+        const number = tileNumbers[key];
+        mesh.traverse(child => {
+            if (child.type === 'Sprite' && child.userData.number) {
+                if (number === rolledNumber) {
+                    child.material.color.set('#ffe066'); // gelb hervorheben
+                } else {
+                    child.material.color.set('#ffffff'); // normal
+                }
+            }
+        });
+    });
+}
+
+// Füge Number Tokens direkt beim Laden eines Tiles hinzu
 export function createGameBoard(scene) {
   // Lade und platziere die Mitte
   loadTile('center.glb', (centerTile) => {
@@ -130,6 +199,13 @@ export function createGameBoard(scene) {
     hexGroup.add(centerTile);
     scene.add(hexGroup);
     tileMeshes[`0,0`] = centerTile;
+    // Number Token für die Mitte (falls vorhanden)
+    const number = tileNumbers[`0,0`];
+    if (number) {
+      const sprite = createNumberTokenSprite(number);
+      sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Hier Höhe auf Y-Achse
+      centerTile.add(sprite);
+    }
   });
 
   // Lade und platziere die umgebenden Tiles
@@ -142,6 +218,13 @@ export function createGameBoard(scene) {
         hexGroup.add(tile);
         scene.add(hexGroup);
         tileMeshes[`${q},${r}`] = tile;
+        // Number Token für dieses Tile (falls vorhanden)
+        const number = tileNumbers[`${q},${r}`];
+        if (number) {
+          const sprite = createNumberTokenSprite(number);
+          sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Hier Höhe auf Y-Achse
+          tile.add(sprite);
+        }
       });
     });
   });
@@ -149,6 +232,8 @@ export function createGameBoard(scene) {
   // Nach dem Platzieren der Tiles: Straßen als Meshes zeichnen
   drawRoadMeshes(scene);
   hexGroup.name = 'HexGroup'; // HexGroup benennen für Raycaster
+  // Rückgabe für main.js
+  return { tileMeshes, tileNumbers };
 }
 
 // Highlight-Logik für Tiles
