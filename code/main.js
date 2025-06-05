@@ -20,9 +20,9 @@ document.body.appendChild(renderer.domElement);
 
 // OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.minPolarAngle = Math.PI / 4;
-controls.maxPolarAngle = Math.PI / 2;
-controls.minDistance = 10;  // Minimaler Zoom (z. B. 10 Einheiten vom Zentrum)
+controls.minPolarAngle = Math.PI / 4; // 45° von oben
+controls.maxPolarAngle = Math.PI * 0.44; // ca. 79°, verhindert "unter das Feld schauen"
+controls.minDistance = 10;  // Näher ranzoomen von oben möglich
 controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
 
 scene.add(createHexGrid());
