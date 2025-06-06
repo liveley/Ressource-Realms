@@ -34,10 +34,10 @@
     };
     // 3D-Look für Überschrift animieren (leichtes Schimmern)
     const title = document.getElementById('main-title');
-    let t = 0;
+    let titleAnimT = 0;
     function animateTitle() {
-      t += 0.03;
-      const glow = 0.7 + 0.3 * Math.sin(t);
+      titleAnimT += 0.03;
+      const glow = 0.7 + 0.3 * Math.sin(titleAnimT);
       title.style.filter = `drop-shadow(0 0 ${16 + 8 * glow}px #ffe066)`;
       requestAnimationFrame(animateTitle);
     }
