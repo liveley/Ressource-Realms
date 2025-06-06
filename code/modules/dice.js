@@ -168,6 +168,7 @@ export function updateDicePhysics() {
   for (let i = 0; i < diceBodies.length; i++) {
     const b = diceBodies[i], m = diceMeshes[i];
     m.position.copy(b.position);
+    m.position.z += 0.7; // Noch etwas tiefer für perfekten Kontakt
     m.quaternion.copy(b.quaternion);
   }
 }
