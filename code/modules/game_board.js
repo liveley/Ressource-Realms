@@ -85,7 +85,7 @@ function drawRoadMeshes(scene) {
           const roadWidth = HEX_RADIUS * 0.20; // Dicke der Straße
           const roadHeight = HEX_RADIUS * 0.40; // Höhe der Straße
           const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
-          const material = new THREE.MeshStandardMaterial({ color: 0x333333 }); // Dunkelgrau
+          const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 }); // Dunkelgrau
           const mesh = new THREE.Mesh(geometry, material);
           // Position: Mittelpunkt der Kante
           mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
