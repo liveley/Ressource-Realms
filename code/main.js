@@ -6,7 +6,7 @@ import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
 import { createDirectionArrows } from './modules/directionArrows.js'; 
 import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, highlightNumberTokens } from './modules/game_board.js'; 
-import { rollDice, showDice } from './modules/dice.js';
+import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createGamePieces } from './modules/gamePieces.js';
@@ -64,8 +64,7 @@ const diceResult = document.getElementById('dice-result');
 
 diceBtn.onclick = () => {
   const roll = rollDice();
-  showDice(scene, roll); // Keine Position übergeben, damit Standard (Mitte) genutzt wird
-  // Zeige das Ergebnis oben links neben dem Button an
+  throwPhysicsDice(scene); // Physik-Würfel werfen
   diceResult.textContent = roll;
   diceResult.style.color = '#fff';
   window.dispatchEvent(new CustomEvent('diceRolled', { detail: roll }));
@@ -166,6 +165,7 @@ window.addEventListener('keydown', e => {
 // Animation
 function animate() {
     updateNumberTokensFacingCamera(scene, camera);
+    updateDicePhysics(); // Physik-Würfel animieren
     renderer.render(scene, camera);
 }
 

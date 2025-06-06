@@ -1,5 +1,6 @@
 // modules/dice.js
 import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
 
 export function rollDice() {
   // Simuliere zwei Würfel (2-12)
@@ -114,4 +115,59 @@ export function showDice(scene, value, pos = { x: 0, y: 0, z: 2 }) {
     }
   }
   animateFall();
+}
+
+// Globale Physik-Welt für die Würfel
+let world, diceBodies = [], diceMeshes = [], groundBody;
+
+export function setupDicePhysics() {
+  // Physik-Welt initialisieren
+  world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, -30) });
+  world.broadphase = new CANNON.NaiveBroadphase();
+  world.solver.iterations = 10;
+
+  // Boden (unsichtbar, damit Würfel nicht durchfallen)
+  groundBody = new CANNON.Body({ mass: 0, shape: new CANNON.Plane() });
+  world.addBody(groundBody);
+}
+
+export function throwPhysicsDice(scene) {
+  if (!world) setupDicePhysics();
+  // Alte Würfel entfernen
+  diceBodies.forEach(b => world.removeBody(b));
+  diceMeshes.forEach(m => scene.remove(m));
+  diceBodies = [];
+  diceMeshes = [];
+
+  // Zwei Würfel erzeugen
+  for (let i = 0; i < 2; i++) {
+    // Physik-Body
+    const shape = new CANNON.Box(new CANNON.Vec3(1, 1, 1));
+    const body = new CANNON.Body({ mass: 1, shape });
+    body.position.set(i === 0 ? -1.2 : 1.2, 0, 12);
+    // Zufälliger Impuls und Drehimpuls
+    body.velocity.set((Math.random()-0.5)*8, (Math.random()-0.5)*8, -5-Math.random()*5);
+    body.angularVelocity.set(Math.random()*10, Math.random()*10, Math.random()*10);
+    world.addBody(body);
+    diceBodies.push(body);
+    // Three.js Mesh
+    const geometry = new THREE.BoxGeometry(2, 2, 2);
+    const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+    diceMeshes.push(mesh);
+  }
+}
+
+// Im Haupt-Renderloop aufrufen:
+export function updateDicePhysics() {
+  if (!world) return;
+  world.step(1/60);
+  for (let i = 0; i < diceBodies.length; i++) {
+    const b = diceBodies[i], m = diceMeshes[i];
+    m.position.copy(b.position);
+    m.quaternion.copy(b.quaternion);
+  }
 }
