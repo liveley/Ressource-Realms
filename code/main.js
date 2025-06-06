@@ -63,11 +63,14 @@ const diceBtn = document.getElementById('roll-dice');
 const diceResult = document.getElementById('dice-result');
 
 diceBtn.onclick = () => {
-  const roll = rollDice();
-  throwPhysicsDice(scene); // Physik-Würfel werfen
-  diceResult.textContent = roll;
-  diceResult.style.color = '#fff';
-  window.dispatchEvent(new CustomEvent('diceRolled', { detail: roll }));
+  // Nur Physik-Würfel werfen, keine showDice mehr aufrufen!
+  throwPhysicsDice(scene);
+  // Callback, der nach dem Auswürfeln die Augenzahlen erkennt und UI aktualisiert
+  window.setDiceResultFromPhysics = (result) => {
+    diceResult.textContent = result.sum; // Zeige die Summe im UI
+    diceResult.style.color = '#fff';
+    window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
+  };
 };
 
 // Raycaster und Maus-Tracking für Tile-Infos

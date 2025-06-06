@@ -182,6 +182,36 @@ export function throwPhysicsDice(scene) {
   }
 }
 
+// Hilfsfunktion: Bestimme die obenliegende Zahl eines Würfels anhand der Rotation
+function getDiceTopNumber(mesh) {
+  // ANPASSUNG: Seitenzuordnung für dein Modell (bitte ggf. anpassen!)
+  // Beispiel: +Z = 1, -Z = 6, +Y = 2, -Y = 5, +X = 3, -X = 4
+  // Wenn dein Modell anders ist, ändere die Zuordnung unten:
+  const up = new THREE.Vector3(0, 0, 1);
+  const localAxes = [
+    { dir: new THREE.Vector3(0, 0, 1), num: 6 }, // +Z
+    { dir: new THREE.Vector3(0, 0, -1), num: 1 }, // -Z
+    { dir: new THREE.Vector3(0, 1, 0), num: 5 }, // +Y
+    { dir: new THREE.Vector3(0, -1, 0), num: 2 }, // -Y
+    { dir: new THREE.Vector3(1, 0, 0), num: 3 }, // +X
+    { dir: new THREE.Vector3(-1, 0, 0), num: 4 }  // -X
+  ];
+  let maxDot = -1, topNum = 1;
+  let debugArr = [];
+  for (const axis of localAxes) {
+    const worldDir = axis.dir.clone().applyQuaternion(mesh.quaternion);
+    const dot = worldDir.dot(up);
+    debugArr.push({num: axis.num, dot: dot.toFixed(3)});
+    if (dot > maxDot) {
+      maxDot = dot;
+      topNum = axis.num;
+    }
+  }
+  // Debug-Ausgabe: Welche Seite wurde erkannt?
+  console.log('Würfel-Orientierung:', debugArr, 'Erkannt oben:', topNum);
+  return topNum;
+}
+
 // Im Haupt-Renderloop aufrufen:
 export function updateDicePhysics() {
   if (!world) return;
@@ -189,8 +219,22 @@ export function updateDicePhysics() {
   for (let i = 0; i < diceBodies.length; i++) {
     const b = diceBodies[i], m = diceMeshes[i];
     m.position.copy(b.position);
-    // Fester Offset wie zuvor, damit die Würfel exakt auf dem Feld liegen
     m.position.z += 0.7; // Noch etwas tiefer für perfekten Kontakt
     m.quaternion.copy(b.quaternion);
+  }
+  // === Nach dem Auswürfeln: Augenzahlen erkennen und Summe setzen ===
+  if (window.setDiceResultFromPhysics) {
+    // Prüfe, ob beide Würfel wirklich liegen (kaum Bewegung)
+    const threshold = 0.15; // Geschwindigkeitsschwelle
+    const allResting = diceBodies.every(b =>
+      b.velocity.length() < threshold && b.angularVelocity.length() < threshold
+    );
+    if (allResting) {
+      const left = getDiceTopNumber(diceMeshes[0]);
+      const right = getDiceTopNumber(diceMeshes[1]);
+      const sum = left + right;
+      window.setDiceResultFromPhysics({ left, right, sum });
+      window.setDiceResultFromPhysics = null; // Nur einmal pro Wurf
+    }
   }
 }
