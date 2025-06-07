@@ -147,9 +147,29 @@ function createNumberTokenSprite(number) {
     ctx.lineWidth = 6;
     ctx.strokeStyle = '#222';
     ctx.stroke();
-    // Zahl
-    ctx.font = 'bold 64px Arial';
-    ctx.fillStyle = '#d7263d'; // kräftiges Rot für bessere Sichtbarkeit
+    // === Dynamische Größe und Farbe ===
+    let fontSize, fontColor;
+    if (number === 6 || number === 8) {
+        fontSize = 90;
+        fontColor = '#d7263d';
+    } else if (number === 2 || number === 12) {
+        fontSize = 45;
+        fontColor = '#222';
+    } else if (number === 3 || number === 11) {
+        fontSize = 54;
+        fontColor = '#222';
+    } else if (number === 4 || number === 10) {
+        fontSize = 62;
+        fontColor = '#222';
+    } else if (number === 5 || number === 9) {
+        fontSize = 76;
+        fontColor = '#222';
+    } else { // fallback
+        fontSize = 60;
+        fontColor = '#222';
+    }
+    ctx.font = `bold ${fontSize}px Arial`;
+    ctx.fillStyle = fontColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(number, size/2, size/2);
