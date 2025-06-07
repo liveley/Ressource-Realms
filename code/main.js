@@ -5,7 +5,7 @@ import { camera } from './modules/camera.js';
 import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
 import { createDirectionArrows } from './modules/directionArrows.js'; 
-import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, highlightNumberTokens } from './modules/game_board.js'; 
+import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, highlightNumberTokens, getTileWorldPosition } from './modules/game_board.js'; 
 import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
@@ -13,6 +13,7 @@ import { createGamePieces } from './modules/gamePieces.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult } from './modules/uiDice.js';
 import { initTileInfoOverlay } from './modules/uiTileInfo.js';
+import { showBanditOnTile } from './modules/bandit.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -77,3 +78,11 @@ window.addEventListener('resize', () => {
 });
 
 window.addEventListener('keydown', handleResourceKeydown);
+
+// === Bandit-Logik: Zeige Bandit auf Wüste, wenn eine 7 gewürfelt wurde ===
+window.addEventListener('diceRolled', (e) => {
+    if (e.detail === 7) {
+        const desertPos = getTileWorldPosition(0, 0); // axial 0,0 = Wüste
+        showBanditOnTile(scene, desertPos);
+    }
+});

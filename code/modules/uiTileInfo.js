@@ -7,7 +7,17 @@ export function initTileInfoOverlay(scene, camera) {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
+  function isGameActive() {
+    // Das Menü ist nur sichtbar, wenn das Spiel noch nicht gestartet wurde
+    const menu = document.getElementById('main-menu');
+    return !menu || menu.style.display === 'none';
+  }
+
   function onMouseMove(event) {
+    if (!isGameActive()) {
+      hideInfoOverlay();
+      return;
+    }
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
