@@ -30,6 +30,12 @@ export function axialToWorld(q, r) {
   return [x, y, z];
 }
 
+// === Hilfsfunktion für main.js: Weltkoordinaten eines Tiles (axial) ===
+export function getTileWorldPosition(q, r) {
+    const [x, y, z] = axialToWorld(q, r);
+    return { x, y, z };
+}
+
 // Helper: Returns all axial coordinates of land tiles (including center)
 function getLandTileAxials() {
   const landTypes = ['clay', 'ore', 'sheep', 'wheat', 'wood'];
