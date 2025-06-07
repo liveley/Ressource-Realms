@@ -14,6 +14,10 @@ export function loadTile(filename, callback) {
     tile.rotation.y = Math.PI / 6;
     tile.scale.set(2.6, 2.6, 2.6);
 
+    // Zufällige zusätzliche Drehung um die Y-Achse in 60°-Schritten
+    const randomHexRotation = Math.floor(Math.random() * 6) * (Math.PI / 3);
+    tile.rotation.y += randomHexRotation;
+
     tile.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
