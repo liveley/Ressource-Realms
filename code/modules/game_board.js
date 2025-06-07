@@ -104,17 +104,25 @@ function drawRoadMeshes(scene) {
 // Hilfsfunktion: Simuliere Tile-Nummern für Demo-Zwecke (echte Zuordnung nach Catan-Regeln möglich)
 const tileNumbers = {};
 (function assignTileNumbers() {
-  // Verteile Zahlen 2-12 (ohne 7) zufällig auf Land-Tiles (Demo)
-  const numbers = [2,3,3,4,4,5,5,5,6,6,8,8,9,9,10,10,11,11,12]; // Jetzt 19 Zahlen
-  const landTiles = getLandTileAxials();
-  let i = 0;
-  landTiles.forEach(([q, r]) => {
-    if (i < numbers.length) {
-      tileNumbers[`${q},${r}`] = numbers[i++];
-    } else {
-      tileNumbers[`${q},${r}`] = null;
-    }
+  // Catan-Standard: 18 Zahlenchips (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
+  const numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]; // 18 chips, no 7
+  // Get all land tiles except center (desert)
+  const landTypes = ['clay', 'ore', 'sheep', 'wheat', 'wood'];
+  let coords = [];
+  landTypes.forEach(type => {
+    coords = coords.concat(tilePositions[type]);
   });
+  // Shuffle coords for random assignment
+  for (let i = coords.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [coords[i], coords[j]] = [coords[j], coords[i]];
+  }
+  // Assign numbers to shuffled land tiles
+  coords.forEach(([q, r], i) => {
+    tileNumbers[`${q},${r}`] = numbers[i] || null;
+  });
+  // Center (desert) gets no number
+  tileNumbers['0,0'] = null;
 })();
 
 // Speichere Referenzen auf die Tile-Meshes
@@ -132,21 +140,24 @@ function createNumberTokenSprite(number) {
     ctx.arc(size/2, size/2, size/2 - 8, 0, 2 * Math.PI);
     ctx.fillStyle = '#fff8dc';
     ctx.shadowColor = '#000';
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 12;
     ctx.fill();
     ctx.shadowBlur = 0;
+    // Rand für bessere Sichtbarkeit
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#222';
+    ctx.stroke();
     // Zahl
     ctx.font = 'bold 64px Arial';
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = '#d7263d'; // kräftiges Rot für bessere Sichtbarkeit
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(number, size/2, size/2);
     // Texture & Sprite
     const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.3 });
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.95 });
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(0.8, 0.8, 1); // Noch kleinere Größe
-    // Positioniere das Token mittig, aber sehr knapp über dem Tile (Y-Achse = Höhe)
+    sprite.scale.set(0.9, 0.9, 1); // etwas größer
     sprite.position.set(0, HEX_RADIUS * 0.35, 0);
     sprite.userData.number = number;
     return sprite;
@@ -199,13 +210,7 @@ export function createGameBoard(scene) {
     hexGroup.add(centerTile);
     scene.add(hexGroup);
     tileMeshes[`0,0`] = centerTile;
-    // Number Token für die Mitte (falls vorhanden)
-    const number = tileNumbers[`0,0`];
-    if (number) {
-      const sprite = createNumberTokenSprite(number);
-      sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Hier Höhe auf Y-Achse
-      centerTile.add(sprite);
-    }
+    // Kein Number Token für die Mitte (Wüste)
   });
 
   // Lade und platziere die umgebenden Tiles
