@@ -1,45 +1,46 @@
 // modules/game_board.js
-// Import des game_board-Moduls    ->  import { createGameBoard } from './modules/game_board.js';
-// Hex-Grid hinzufügen  ->  createGameBoard(scene);
+// Import the game_board module -> import { createGameBoard } from './modules/game_board.js';
+// Add hex grid -> createGameBoard(scene);
 
 import * as THREE from 'three';
-import { loadTile } from '../loader.js'; // Importiere die Funktion zum Laden eines einzelnen Tiles
+import { loadTile } from '../loader.js'; // Import the function to load a single tile
 
 const HEX_RADIUS = 3;
 const hexGroup = new THREE.Group();
 
-// Positionen der Tiles
+// Positions of the tiles (axial coordinates)
 const tilePositions = {
-  'clay': [[-1, -1], [-2, 0], [1, -1]], //3/3 Feldern platziert
-  'ore': [[-1, 2], [1, 0], [2, -2]], //3/3 Feldern platziert
-  'sheep': [[2, 0], [0, 2], [-2, 2], [-1, 0]], //4/4 Felder platziert
-  'wheat': [[2, -1], [1, -2], [0, -1], [-2, 1]], //4/4 Feldern platziert
-  'wood': [[-1, 1], [0, 1], [0, -2], [1, 1]], //4/4 Feldern paltziert
-  'water': [[3, -1], [3, -2], [3, -3], [2, -3], [1, -3], [0, -3], [-1, -2], [-2, -1], [-3, 1], [-3, 2], [-3, 0], [-3, 3], [-2, 3], [-1, 3], [0, 3], [1, 2], [2, 1], [3, 0],// 1 Ring Hafen
-            [4, -1], [4, -2], [4, -3], [3, -4], [2, -4], [1, -4], [0, -4], [-1, -3], [-2, -2], [-3, -1], [-4, 0], [-4, 1], [-4, 2], [-4, 3], [-3, 4], [-2, 4], [-1, 4], [0, 4], [1, 3], [2, 2], [3, 1], [4, 0], [4, -4], [-4 , 4], //erster Wasserring
-            [5, -1], [5, -2], [5, -3], [5, -4], [4, -5], [3, -5], [2, -5], [1, -5], [0, -5], [-1, -4], [-2, -3], [-3, -2], [-4, -1], [-5, 0], [-5, 1], [-5, 2], [-5, 3], [-5, 4], [-4, 5], [-3, 5], [-2, 5], [-1, 5], [0, 5], [1, 4], [2, 3], [3, 2], [4, 1], [5, 0], [-5, 5], [5, -5] //zweiter Wasserring
-]
+  'clay': [[-1, -1], [-2, 0], [1, -1]], // 3/3 clay tiles placed
+  'ore': [[-1, 2], [1, 0], [2, -2]], // 3/3 ore tiles placed
+  'sheep': [[2, 0], [0, 2], [-2, 2], [-1, 0]], // 4/4 sheep tiles placed
+  'wheat': [[2, -1], [1, -2], [0, -1], [-2, 1]], // 4/4 wheat tiles placed
+  'wood': [[-1, 1], [0, 1], [0, -2], [1, 1]], // 4/4 wood tiles placed
+  'water': [
+    [3, -1], [3, -2], [3, -3], [2, -3], [1, -3], [0, -3], [-1, -2], [-2, -1], [-3, 1], [-3, 2], [-3, 0], [-3, 3], [-2, 3], [-1, 3], [0, 3], [1, 2], [2, 1], [3, 0], // 1st harbor ring
+    [4, -1], [4, -2], [4, -3], [3, -4], [2, -4], [1, -4], [0, -4], [-1, -3], [-2, -2], [-3, -1], [-4, 0], [-4, 1], [-4, 2], [-4, 3], [-3, 4], [-2, 4], [-1, 4], [0, 4], [1, 3], [2, 2], [3, 1], [4, 0], [4, -4], [-4 , 4], // 1st water ring
+    [5, -1], [5, -2], [5, -3], [5, -4], [4, -5], [3, -5], [2, -5], [1, -5], [0, -5], [-1, -4], [-2, -3], [-3, -2], [-4, -1], [-5, 0], [-5, 1], [-5, 2], [-5, 3], [-5, 4], [-4, 5], [-3, 5], [-2, 5], [-1, 5], [0, 5], [1, 4], [2, 3], [3, 2], [4, 1], [5, 0], [-5, 5], [5, -5] // 2nd water ring
+  ]
 };
 
-// Funktion zur Umwandlung von axialen Koordinaten zu Weltkoordinaten
+// Converts axial coordinates (q, r) to world coordinates (x, y, z)
 export function axialToWorld(q, r) {
   const x = HEX_RADIUS * 3/2 * q;
   const y = HEX_RADIUS * Math.sqrt(3) * (r + q/2);
-  const z = 0; // Höhe bleibt konstant
+  const z = 0; // Height remains constant
   return [x, y, z];
 }
 
-// Hilfsfunktion: Gibt alle axialen Koordinaten der Land-Tiles zurück (inkl. Zentrum)
+// Helper: Returns all axial coordinates of land tiles (including center)
 function getLandTileAxials() {
   const landTypes = ['clay', 'ore', 'sheep', 'wheat', 'wood'];
-  let coords = [[0, 0]]; // Zentrum hinzufügen
+  let coords = [[0, 0]]; // Add center
   landTypes.forEach(type => {
     coords = coords.concat(tilePositions[type]);
   });
   return coords;
 }
 
-// Hilfsfunktion: Berechnet die sechs Ecken eines Hexfelds in Weltkoordinaten (wie in hexGrid.js)
+// Helper: Calculates the six corners of a hex tile in world coordinates
 function getHexCorners(q, r) {
   const corners = [];
   for (let i = 0; i < 6; i++) {
@@ -52,16 +53,16 @@ function getHexCorners(q, r) {
   return corners;
 }
 
-// Hilfsfunktion: Gibt die axiale Koordinate des Nachbarn für eine Kante zurück
+// Helper: Returns the axial coordinate of the neighbor for a given edge
 function neighborAxial(q, r, edge) {
-  // Reihenfolge: 0 = rechts oben, dann im Uhrzeigersinn
+  // Order: 0 = top right, then clockwise
   const directions = [
     [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
   ];
   return [q + directions[edge][0], r + directions[edge][1]];
 }
 
-// Funktion zum Zeichnen der Straßen als Zylinder-Meshes
+// Draws the road meshes as box geometries between tile edges
 function drawRoadMeshes(scene) {
   const landAxials = getLandTileAxials();
   const landSet = new Set(landAxials.map(([q, r]) => `${q},${r}`));
@@ -80,18 +81,18 @@ function drawRoadMeshes(scene) {
           drawnEdges.add(key);
           const start = corners[edge];
           const end = corners[(edge + 1) % 6];
-          // Quader-Geometrie als Straße
+          // Box geometry as road
           const roadLength = start.distanceTo(end);
-          const roadWidth = HEX_RADIUS * 0.20; // Dicke der Straße
-          const roadHeight = HEX_RADIUS * 0.40; // Höhe der Straße
+          const roadWidth = HEX_RADIUS * 0.20; // Road thickness
+          const roadHeight = HEX_RADIUS * 0.40; // Road height
           const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
-          const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 }); // Dunkelgrau
+          const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 }); // Dark gray
           const mesh = new THREE.Mesh(geometry, material);
-          // Position: Mittelpunkt der Kante
+          // Position: center of the edge
           mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
-          // Rotation: Quader entlang der Kante ausrichten
+          // Rotation: align box along the edge
           const direction = end.clone().sub(start).normalize();
-          const axis = new THREE.Vector3(1, 0, 0); // BoxGeometry ist entlang X
+          const axis = new THREE.Vector3(1, 0, 0); // BoxGeometry is along X
           const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
           mesh.setRotationFromQuaternion(quaternion);
           scene.add(mesh);
@@ -101,10 +102,10 @@ function drawRoadMeshes(scene) {
   });
 }
 
-// Hilfsfunktion: Simuliere Tile-Nummern für Demo-Zwecke (echte Zuordnung nach Catan-Regeln möglich)
+// Helper: Simulate tile numbers for demo purposes (real assignment according to Catan rules possible)
 const tileNumbers = {};
 (function assignTileNumbers() {
-  // Catan-Standard: 18 Zahlenchips (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
+  // Catan standard: 18 number tokens (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
   const numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]; // 18 chips, no 7
   // Get all land tiles except center (desert)
   const landTypes = ['clay', 'ore', 'sheep', 'wheat', 'wood'];
@@ -125,17 +126,17 @@ const tileNumbers = {};
   tileNumbers['0,0'] = null;
 })();
 
-// Speichere Referenzen auf die Tile-Meshes
+// Store references to the tile meshes
 const tileMeshes = {}
 
-// Hilfsfunktion: Erstelle ein Sprite mit Zahl und Hintergrund
+// Helper: Create a sprite with a number and background
 function createNumberTokenSprite(number) {
     const size = 128;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
-    // Hintergrund (Kreis)
+    // Background (circle)
     ctx.beginPath();
     ctx.arc(size/2, size/2, size/2 - 8, 0, 2 * Math.PI);
     ctx.fillStyle = '#fff8dc';
@@ -143,15 +144,15 @@ function createNumberTokenSprite(number) {
     ctx.shadowBlur = 12;
     ctx.fill();
     ctx.shadowBlur = 0;
-    // Rand für bessere Sichtbarkeit
+    // Border for better visibility
     ctx.lineWidth = 6;
     ctx.strokeStyle = '#222';
     ctx.stroke();
-    // === Dynamische Größe und Farbe ===
+    // === Dynamic size and color for the number ===
     let fontSize, fontColor;
     if (number === 6 || number === 8) {
         fontSize = 90;
-        fontColor = '#d7263d';
+        fontColor = '#d7263d'; // strong red
     } else if (number === 2 || number === 12) {
         fontSize = 45;
         fontColor = '#222';
@@ -173,29 +174,29 @@ function createNumberTokenSprite(number) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(number, size/2, size/2);
-    // Texture & Sprite
+    // Create texture and sprite
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.95 });
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(0.9, 0.9, 1); // etwas größer
+    sprite.scale.set(0.9, 0.9, 1); // slightly larger
     sprite.position.set(0, HEX_RADIUS * 0.35, 0);
     sprite.userData.number = number;
     return sprite;
 }
 
-// Füge Number Tokens zu allen Land-Tiles hinzu
+// Add number tokens to all land tiles
 export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
     Object.entries(tileMeshes).forEach(([key, mesh]) => {
         const number = tileNumbers[key];
         if (number) {
             const sprite = createNumberTokenSprite(number);
-            sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Sehr knapp über der Oberfläche (Y-Achse)
+            sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Just above the surface (Y axis)
             mesh.add(sprite);
         }
     });
 }
 
-// Animation: Tokens immer zur Kamera drehen
+// Animation: Always face number tokens towards the camera
 export function updateNumberTokensFacingCamera(scene, camera) {
     scene.traverse(obj => {
         if (obj.type === 'Sprite' && obj.userData.number) {
@@ -204,14 +205,14 @@ export function updateNumberTokensFacingCamera(scene, camera) {
     });
 }
 
-// Highlight-Logik für Number Tokens
+// Highlight logic for number tokens (e.g. after dice roll)
 export function highlightNumberTokens(scene, tileMeshes, tileNumbers, rolledNumber) {
     Object.entries(tileMeshes).forEach(([key, mesh]) => {
         const number = tileNumbers[key];
         mesh.traverse(child => {
             if (child.type === 'Sprite' && child.userData.number) {
                 if (number === rolledNumber) {
-                    child.material.color.set('#ffe066'); // gelb hervorheben
+                    child.material.color.set('#ffe066'); // highlight yellow
                 } else {
                     child.material.color.set('#ffffff'); // normal
                 }
@@ -220,27 +221,27 @@ export function highlightNumberTokens(scene, tileMeshes, tileNumbers, rolledNumb
     });
 }
 
-// Füge Number Tokens direkt beim Laden eines Tiles hinzu
+// Add number tokens directly when loading a tile
 export function createGameBoard(scene) {
-  // Lade und platziere die Mitte
+  // Load and place the center tile (desert)
   loadTile('center.glb', (centerTile) => {
     const centerPos = axialToWorld(0, 0);
     centerTile.position.set(...centerPos);
-    centerTile.name = 'center.glb'; // Name für Raycaster
+    centerTile.name = 'center.glb'; // Name for raycaster
     hexGroup.add(centerTile);
     scene.add(hexGroup);
     tileMeshes[`0,0`] = centerTile;
-    // Kein Number Token für die Mitte (Wüste)
+    // No number token for the center (desert)
   });
 
-  // Lade und platziere die umgebenden Tiles
+  // Load and place the surrounding tiles
   Object.entries(tilePositions).forEach(([tileName, positions]) => {
     positions.forEach(([q, r]) => {
       loadTile(`${tileName}.glb`, (tile) => {
         const pos = axialToWorld(q, r);
         tile.position.set(...pos);
-        tile.name = `${tileName}.glb`; // Name für Raycaster
-        // === Wasser-Tiles blau einfärben ===
+        tile.name = `${tileName}.glb`; // Name for raycaster
+        // === Color water tiles blue ===
         if (tileName === 'water') {
           tile.traverse(child => {
             if (child.isMesh) {
@@ -251,35 +252,35 @@ export function createGameBoard(scene) {
         hexGroup.add(tile);
         scene.add(hexGroup);
         tileMeshes[`${q},${r}`] = tile;
-        // Number Token für dieses Tile (falls vorhanden)
+        // Number token for this tile (if present)
         const number = tileNumbers[`${q},${r}`];
         if (number) {
           const sprite = createNumberTokenSprite(number);
-          sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Hier Höhe auf Y-Achse
+          sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Height on Y axis
           tile.add(sprite);
         }
       });
     });
   });
 
-  // Nach dem Platzieren der Tiles: Straßen als Meshes zeichnen
+  // After placing the tiles: draw road meshes
   drawRoadMeshes(scene);
-  hexGroup.name = 'HexGroup'; // HexGroup benennen für Raycaster
-  // Rückgabe für main.js
+  hexGroup.name = 'HexGroup'; // Name HexGroup for raycaster
+  // Return for main.js
   return { tileMeshes, tileNumbers };
 }
 
-// Highlight-Logik für Tiles
+// Highlight logic for tiles (e.g. after dice roll)
 window.addEventListener('diceRolled', (e) => {
   const number = e.detail;
   Object.entries(tileMeshes).forEach(([key, mesh]) => {
-    // Entferne altes Highlight
+    // Remove old highlight
     mesh.traverse(child => {
       if (child.material && child.material.emissive) {
         child.material.emissive.setHex(0x000000);
       }
     });
-    // Highlight, wenn Zahl passt
+    // Highlight if number matches
     if (tileNumbers[key] === number) {
       mesh.traverse(child => {
         if (child.material && child.material.emissive) {
