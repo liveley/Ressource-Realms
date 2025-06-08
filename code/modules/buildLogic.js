@@ -33,25 +33,16 @@ export function canBuildCity(player) {
 
 // Siedlung bauen (ohne Platzierungslogik)
 export function buildSettlement(player, q, r, corner) {
-  if (!canBuildSettlement(player)) return false;
-  // Ressourcen abziehen
-  player.resources.wood--;
-  player.resources.clay--;
-  player.resources.wheat--;
-  player.resources.sheep--;
+  // Nur Spielfeld-Update, KEIN Ressourcenabzug mehr!
   player.settlements.push({ q, r, corner });
   return true;
 }
 
 // Stadt bauen (Upgrade)
 export function buildCity(player, q, r, corner) {
-  if (!canBuildCity(player)) return false;
-  // Muss bereits eigene Siedlung an dieser Stelle haben
+  // Nur Spielfeld-Update, KEIN Ressourcenabzug mehr!
   const idx = player.settlements.findIndex(s => s.q === q && s.r === r && s.corner === corner);
   if (idx === -1) return false;
-  // Ressourcen abziehen
-  player.resources.wheat -= 2;
-  player.resources.ore -= 3;
   player.settlements.splice(idx, 1);
   player.cities.push({ q, r, corner });
   return true;
@@ -64,11 +55,10 @@ export function tryBuildCity(player, q, r, corner) {
   // Muss bereits eigene Siedlung an dieser Stelle haben
   const idx = player.settlements.findIndex(s => s.q === q && s.r === r && s.corner === corner);
   if (idx === -1) return { success: false, reason: 'Keine eigene Siedlung an dieser Stelle' };
-  // Bauen
+  // Bauen & Ressourcen abziehen
   player.resources.wheat -= 2;
   player.resources.ore -= 3;
-  player.settlements.splice(idx, 1);
-  player.cities.push({ q, r, corner });
+  buildCity(player, q, r, corner);
   return { success: true };
 }
 
@@ -135,20 +125,92 @@ function isRoadAdjacentToCorner(road, q, r, corner) {
   );
 }
 
+// Helper: Prüft, ob ein Tile ein Landfeld ist (kein Wasser, keine Wüste)
+function isLandTile(q, r) {
+  // Prüfe, ob das Tile laut tileMeshes ein Wasserfeld ist
+  if (typeof window.tileMeshes === 'object') {
+    const mesh = window.tileMeshes[`${q},${r}`];
+    if (!mesh) return false;
+    // Wasser-Tiles haben name === 'water.glb'
+    if (mesh.name && mesh.name.startsWith('water')) return false;
+    // Wüste
+    if (mesh.name && mesh.name.startsWith('center')) return false;
+    return true;
+  }
+  // Fallback: explizite Liste der Wasserkoordinaten (aus game_board.js)
+  const waterCoords = [
+    [3,-1],[3,-2],[3,-3],[2,-3],[1,-3],[0,-3],[-1,-2],[-2,-1],[-3,1],[-3,2],[-3,0],[-3,3],[-2,3],[-1,3],[0,3],[1,2],[2,1],[3,0],
+    [4,-1],[4,-2],[4,-3],[3,-4],[2,-4],[1,-4],[0,-4],[-1,-3],[-2,-2],[-3,-1],[-4,0],[-4,1],[-4,2],[-4,3],[-3,4],[-2,4],[-1,4],[0,4],[1,3],[2,2],[3,1],[4,0],[4,-4],[-4,4],
+    [5,-1],[5,-2],[5,-3],[5,-4],[4,-5],[3,-5],[2,-5],[1,-5],[0,-5],[-1,-4],[-2,-3],[-3,-2],[-4,-1],[-5,0],[-5,1],[-5,2],[-5,3],[-5,4],[-4,5],[-3,5],[-2,5],[-1,5],[0,5],[1,4],[2,3],[3,2],[4,1],[5,0],[-5,5],[5,-5]
+  ];
+  for (const [wq, wr] of waterCoords) {
+    if (q === wq && r === wr) return false;
+  }
+  // Wüste
+  if (q === 0 && r === 0) return false;
+  return true;
+}
+
 // Siedlung bauen (mit Platzierungslogik)
-export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoad = true} = {}) {
+export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoad = true, ignoreDistanceRule = false, ignoreResourceRule = false} = {}) {
+  // Verhindere Bau auf Wasser- oder Wüsten-Tiles
+  if (!isLandTile(q, r)) {
+    return { success: false, reason: 'Hier kann nicht gebaut werden (kein Landfeld)' };
+  }
+  // Bereits eigene Siedlung/Stadt an dieser Ecke?
+  if (player.settlements.some(s => s.q === q && s.r === r && s.corner === corner) ||
+      player.cities.some(c => c.q === q && c.r === r && c.corner === corner)) {
+    return { success: false, reason: 'Hier steht bereits deine Siedlung/Stadt' };
+  }
+  // Irgendein Spieler hat an dieser Ecke schon gebaut?
+  for (const other of allPlayers) {
+    if (other !== player && (other.settlements.some(s => s.q === q && s.r === r && s.corner === corner) ||
+      other.cities.some(c => c.q === q && c.r === r && c.corner === corner))) {
+      return { success: false, reason: 'Hier steht bereits eine Siedlung/Stadt' };
+    }
+  }
   // Ressourcen prüfen
-  if (!canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
+  if (!ignoreResourceRule && !canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
   // Abstand zu anderen Siedlungen/Städten prüfen
-  if (!isSettlementPlacementValid(q, r, corner, allPlayers)) return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+  if (!ignoreDistanceRule && !isSettlementPlacementValid(q, r, corner, allPlayers)) return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
   // Straßenanbindung prüfen (außer bei Startaufstellung)
   if (requireRoad && !isSettlementConnectedToOwnRoad(player, q, r, corner)) return { success: false, reason: 'Keine eigene Straße an dieser Ecke' };
-  // Bauen
+  // Bauen & Ressourcen abziehen
   player.resources.wood--;
   player.resources.clay--;
   player.resources.wheat--;
   player.resources.sheep--;
-  player.settlements.push({ q, r, corner });
+  buildSettlement(player, q, r, corner);
+  return { success: true };
+}
+
+// === Nur-Prüf-Funktion für Build-Preview (ohne Ressourcenabzug, ohne Bauen) ===
+export function canPlaceSettlement(player, q, r, corner, allPlayers, {requireRoad = true, ignoreDistanceRule = false, ignoreResourceRule = false} = {}) {
+  if (!isLandTile(q, r)) {
+    return { success: false, reason: 'Hier kann nicht gebaut werden (kein Landfeld)' };
+  }
+  // Bereits eigene Siedlung/Stadt an dieser Ecke?
+  if (player.settlements.some(s => s.q === q && s.r === r && s.corner === corner) ||
+      player.cities.some(c => c.q === q && c.r === r && c.corner === corner)) {
+    return { success: false, reason: 'Hier steht bereits deine Siedlung/Stadt' };
+  }
+  // Irgendein Spieler hat an dieser Ecke schon gebaut?
+  for (const other of allPlayers) {
+    if (other !== player && (other.settlements.some(s => s.q === q && s.r === r && s.corner === corner) ||
+      other.cities.some(c => c.q === q && c.r === r && c.corner === corner))) {
+      return { success: false, reason: 'Hier steht bereits eine Siedlung/Stadt' };
+    }
+  }
+  if (!ignoreResourceRule && !canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
+  if (!ignoreDistanceRule && !isSettlementPlacementValid(q, r, corner, allPlayers)) return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+  if (requireRoad && !isSettlementConnectedToOwnRoad(player, q, r, corner)) return { success: false, reason: 'Keine eigene Straße an dieser Ecke' };
+  return { success: true };
+}
+
+export function canPlaceCity(player, q, r, corner) {
+  if (!canBuildCity(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
+  const idx = player.settlements.findIndex(s => s.q === q && s.r === r && s.corner === corner);
+  if (idx === -1) return { success: false, reason: 'Keine eigene Siedlung an dieser Stelle' };
   return { success: true };
 }
 

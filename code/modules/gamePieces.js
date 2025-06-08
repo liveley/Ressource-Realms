@@ -53,10 +53,14 @@ export function createGamePieces(scene) {
 
 // === Place settlement/city mesh at corner ===
 export function placeBuildingMesh(scene, getCornerWorldPosition, q, r, corner, type, color) {
+  if (!scene || typeof scene.traverse !== 'function') {
+    console.error('[placeBuildingMesh] Scene-Objekt ist ungültig oder undefined!', scene);
+    return;
+  }
   // Remove settlement if upgrading to city
   if (type === 'city') {
     // Remove existing settlement mesh at this corner (if any)
-    scene.traverse(obj => {
+    scene.children.slice().forEach(obj => {
       if (obj.userData && obj.userData.type === 'settlement' && obj.userData.q === q && obj.userData.r === r && obj.userData.corner === corner) {
         scene.remove(obj);
       }
@@ -69,6 +73,7 @@ export function placeBuildingMesh(scene, getCornerWorldPosition, q, r, corner, t
       new THREE.BoxGeometry(1, 1, 1.2),
       new THREE.MeshStandardMaterial({ color })
     );
+    mesh.position.copy(getCornerWorldPosition(q, r, corner));
   } else {
     // City: prism
     const shape = new THREE.Shape();
@@ -83,9 +88,11 @@ export function placeBuildingMesh(scene, getCornerWorldPosition, q, r, corner, t
       geometry,
       new THREE.MeshStandardMaterial({ color })
     );
+    mesh.position.copy(getCornerWorldPosition(q, r, corner));
+    mesh.position.x -= 0.6;
+    mesh.position.y -= 0.3;
+    mesh.position.z -= 0.6; // Stadt noch etwas tiefer (vorher -0.5, jetzt -0.6)
   }
-  mesh.position.copy(getCornerWorldPosition(q, r, corner));
-  mesh.position.z += 0.6; // slightly above tile
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.userData = { type, q, r, corner };

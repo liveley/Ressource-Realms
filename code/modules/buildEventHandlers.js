@@ -60,7 +60,8 @@ export function setupBuildEventHandler({
     const player = players[getActivePlayerIdx()];
     let result;
     if (getBuildMode() === 'settlement') {
-      result = tryBuildSettlement(player, q, r, nearest, players);
+      // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
+      result = tryBuildSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
     } else {
       result = tryBuildCity(player, q, r, nearest);
     }

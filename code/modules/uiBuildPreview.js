@@ -2,10 +2,11 @@
 // Vorschau-Piece für Siedlung/Stadt beim Hover auf dem Spielfeld
 import * as THREE from 'three';
 import { getCornerWorldPosition } from './game_board.js';
+import { canPlaceSettlement, canPlaceCity } from './buildLogic.js';
 
 let previewMesh = null;
 
-export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, getBuildMode, getActivePlayerIdx, tryBuildSettlement, tryBuildCity) {
+export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, getBuildMode, getActivePlayerIdx) {
   renderer.domElement.addEventListener('mousemove', (event) => {
     const menu = document.getElementById('main-menu');
     if (menu && menu.style.display !== 'none') {
@@ -60,10 +61,11 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
     const player = players[getActivePlayerIdx()];
     let canBuild = false;
     if (buildMode === 'settlement') {
-      const res = tryBuildSettlement(player, q, r, nearest, players);
+      // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
+      const res = canPlaceSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
       canBuild = res.success;
     } else {
-      const res = tryBuildCity(player, q, r, nearest);
+      const res = canPlaceCity(player, q, r, nearest);
       canBuild = res.success;
     }
     const previewColor = canBuild ? player.color : 0xffe066;
@@ -78,6 +80,8 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
         new THREE.BoxGeometry(1, 1, 1.2),
         new THREE.MeshStandardMaterial({ color: previewColor, transparent: true, opacity: previewOpacity, depthWrite: false })
       );
+      mesh.position.copy(getCornerWorldPosition(q, r, nearest));
+      // Vorschau: KEIN z-Offset für Siedlung
     } else {
       const shape = new THREE.Shape();
       shape.moveTo(0, 0);
@@ -94,13 +98,9 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
       mesh.position.copy(getCornerWorldPosition(q, r, nearest));
       mesh.position.x -= 0.6;
       mesh.position.y -= 0.3;
+      // Vorschau: Stadt braucht x/y-Korrektur wie vorher
     }
-    mesh.position.copy(getCornerWorldPosition(q, r, nearest));
-    if (buildMode === 'city') {
-      mesh.position.x -= 0.6;
-      mesh.position.y -= 0.3;
-    }
-    mesh.position.z -= 0.5;
+    // Vorschau: KEIN z-Offset für beide
     mesh.renderOrder = 999;
     mesh.userData = { preview: true, q, r, corner: nearest, type: buildMode, color: previewColor };
     scene.add(mesh);
