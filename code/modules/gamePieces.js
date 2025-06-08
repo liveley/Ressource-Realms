@@ -98,3 +98,32 @@ export function placeBuildingMesh(scene, getCornerWorldPosition, q, r, corner, t
   mesh.userData = { type, q, r, corner };
   scene.add(mesh);
 }
+
+// === Place road mesh at edge ===
+export function placeRoadMesh(scene, getCornerWorldPosition, q, r, edge, color) {
+  if (!scene || typeof scene.traverse !== 'function') {
+    console.error('[placeRoadMesh] Scene-Objekt ist ungültig oder undefined!', scene);
+    return;
+  }
+  // Endpunkte der Straße bestimmen
+  const start = getCornerWorldPosition(q, r, edge);
+  const end = getCornerWorldPosition(q, r, (edge + 1) % 6);
+  // Geometrie: schmaler Quader zwischen start und end
+  const roadLength = start.distanceTo(end);
+  const roadWidth = 0.4; // wie pieceTypes road
+  const roadHeight = 0.4;
+  const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
+  const material = new THREE.MeshStandardMaterial({ color });
+  const mesh = new THREE.Mesh(geometry, material);
+  // Position: Mittelpunkt der Kante
+  mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
+  // Rotation: Quader entlang der Kante ausrichten (X-Achse der Box zeigt von start nach end)
+  const direction = end.clone().sub(start).normalize();
+  const axis = new THREE.Vector3(1, 0, 0); // BoxGeometry ist entlang X
+  const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
+  mesh.setRotationFromQuaternion(quaternion);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData = { type: 'road', q, r, edge };
+  scene.add(mesh);
+}

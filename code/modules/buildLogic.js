@@ -31,6 +31,12 @@ export function canBuildCity(player) {
   return r.wheat >= 2 && r.ore >= 3;
 }
 
+// Ressourcenprüfung für Straße
+export function canBuildRoad(player) {
+  const r = player.resources;
+  return r.wood >= 1 && r.clay >= 1;
+}
+
 // Siedlung bauen (ohne Platzierungslogik)
 export function buildSettlement(player, q, r, corner) {
   // Nur Spielfeld-Update, KEIN Ressourcenabzug mehr!
@@ -212,6 +218,51 @@ export function canPlaceCity(player, q, r, corner) {
   const idx = player.settlements.findIndex(s => s.q === q && s.r === r && s.corner === corner);
   if (idx === -1) return { success: false, reason: 'Keine eigene Siedlung an dieser Stelle' };
   return { success: true };
+}
+
+// Prüft, ob an dieser Kante schon eine Straße liegt (egal von wem)
+function isRoadOccupied(q, r, edge, allPlayers) {
+  for (const player of allPlayers) {
+    if (!player.roads) continue;
+    for (const road of player.roads) {
+      if (
+        (road.q === q && road.r === r && road.edge === edge) ||
+        (road.q === neighborAxial(q, r, edge)[0] && road.r === neighborAxial(q, r, edge)[1] && road.edge === (edge + 3) % 6)
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Straße bauen (mit Platzierungslogik)
+export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
+  if (!ignoreResourceRule && !canBuildRoad(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
+  if (isRoadOccupied(q, r, edge, allPlayers)) return { success: false, reason: 'Hier liegt schon eine Straße' };
+  // TODO: Anbindung an eigene Straße/Siedlung prüfen (optional)
+  // Ressourcen abziehen
+  player.resources.wood--;
+  player.resources.clay--;
+  if (!player.roads) player.roads = [];
+  player.roads.push({ q, r, edge });
+  return { success: true };
+}
+
+// Nur-Prüf-Funktion für Preview
+export function canPlaceRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
+  if (!ignoreResourceRule && !canBuildRoad(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
+  if (isRoadOccupied(q, r, edge, allPlayers)) return { success: false, reason: 'Hier liegt schon eine Straße' };
+  // TODO: Anbindung an eigene Straße/Siedlung prüfen (optional)
+  return { success: true };
+}
+
+// Hilfsfunktion: Nachbarfeld für eine Kante (aus game_board.js kopiert)
+function neighborAxial(q, r, edge) {
+  const directions = [
+    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+  ];
+  return [q + directions[edge][0], r + directions[edge][1]];
 }
 
 // TODO: UI-Integration

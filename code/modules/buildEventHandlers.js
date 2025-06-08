@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { placeBuildingMesh } from './gamePieces.js';
+import { placeBuildingMesh, placeRoadMesh } from './gamePieces.js';
 
 // Build-Event-Handler für das Bauen von Siedlungen und Städten
 // Kapselt die Click-Logik für das Spielfeld
@@ -14,6 +14,7 @@ export function setupBuildEventHandler({
   getActivePlayerIdx,
   tryBuildSettlement,
   tryBuildCity,
+  tryBuildRoad,
   getCornerWorldPosition,
   updateResourceUI // now expects no arguments, closure from main.js
 }) {
@@ -59,11 +60,45 @@ export function setupBuildEventHandler({
     // Try to build
     const player = players[getActivePlayerIdx()];
     let result;
+    let meshPlaced = false;
     if (getBuildMode() === 'settlement') {
       // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
       result = tryBuildSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
-    } else {
+      if (result.success) {
+        placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'settlement', player.color);
+        meshPlaced = true;
+      }
+    } else if (getBuildMode() === 'city') {
       result = tryBuildCity(player, q, r, nearest);
+      if (result.success) {
+        placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'city', player.color);
+        meshPlaced = true;
+      }
+    } else if (getBuildMode() === 'road') {
+      // Für Straßenbau: Kante (edge) statt Ecke bestimmen
+      // Finde die nächste Kante (edge) zur Klickposition
+      let minEdgeDist = Infinity, nearestEdge = 0;
+      for (let edge = 0; edge < 6; edge++) {
+        // Mittelpunkt der Kante zwischen zwei Ecken
+        const a = getCornerWorldPosition(q, r, edge);
+        const b = getCornerWorldPosition(q, r, (edge + 1) % 6);
+        const mid = a.clone().add(b).multiplyScalar(0.5);
+        const d = mid.distanceTo(intersect.point);
+        if (d < minEdgeDist) { minEdgeDist = d; nearestEdge = edge; }
+      }
+      if (minEdgeDist > 1.5) return;
+      // tryBuildRoad benötigt: player, q, r, edge, allPlayers
+      if (typeof tryBuildRoad === 'function') {
+        result = tryBuildRoad(player, q, r, nearestEdge, players);
+        if (result.success) {
+          placeRoadMesh(scene, getCornerWorldPosition, q, r, nearestEdge, player.color);
+          meshPlaced = true;
+        }
+      } else {
+        result = { success: false, reason: 'Straßenbau nicht implementiert' };
+      }
+    } else {
+      result = { success: false, reason: 'Unbekannter Build-Modus' };
     }
     // === Feedback-Element holen (immer aus Build-UI!) ===
     const feedback = document.getElementById('build-feedback');
@@ -115,9 +150,8 @@ export function setupBuildEventHandler({
         window._buildFeedbackTimeout = null;
       }, 1200);
     }
-    // Place 3D mesh
-    placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, getBuildMode(), player.color);
-    updateResourceUI(); // Will update for the current player
+    // Ressourcen-UI nur aktualisieren, wenn gebaut wurde
+    if (meshPlaced) updateResourceUI();
   }
   renderer.domElement.addEventListener('click', onBoardClick, false);
 }

@@ -14,7 +14,7 @@ import { createResourceUI, updateResourceUI, handleResourceKeydown } from './mod
 import { createDiceUI, setDiceResult } from './modules/uiDice.js';
 import { initTileInfoOverlay } from './modules/uiTileInfo.js';
 import { showBanditOnTile } from './modules/bandit.js';
-import { players, tryBuildSettlement, tryBuildCity } from './modules/buildLogic.js';
+import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/game_board.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import { createBuildUI } from './modules/uiBuild.js';
@@ -124,6 +124,7 @@ setupBuildEventHandler({
   getActivePlayerIdx: () => activePlayerIdx,
   tryBuildSettlement,
   tryBuildCity,
+  tryBuildRoad, // <--- HINZUGEFÜGT
   getCornerWorldPosition,
   updateResourceUI: () => updateResourceUI(players[activePlayerIdx]) // Always update for current player
 });

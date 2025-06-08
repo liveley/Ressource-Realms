@@ -2,7 +2,8 @@
 // Vorschau-Piece für Siedlung/Stadt beim Hover auf dem Spielfeld
 import * as THREE from 'three';
 import { getCornerWorldPosition } from './game_board.js';
-import { canPlaceSettlement, canPlaceCity } from './buildLogic.js';
+import { canPlaceSettlement, canPlaceCity, canPlaceRoad } from './buildLogic.js';
+import { placeRoadMesh } from './gamePieces.js';
 
 let previewMesh = null;
 
@@ -60,13 +61,35 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
     const buildMode = getBuildMode();
     const player = players[getActivePlayerIdx()];
     let canBuild = false;
+    let previewType = buildMode;
+    let previewParams = {};
+    let previewEdge = 0;
     if (buildMode === 'settlement') {
       // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
       const res = canPlaceSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
       canBuild = res.success;
-    } else {
+    } else if (buildMode === 'city') {
       const res = canPlaceCity(player, q, r, nearest);
       canBuild = res.success;
+    } else if (buildMode === 'road') {
+      // Finde die nächste Kante (edge) zur Mausposition
+      let minEdgeDist = Infinity, nearestEdge = 0;
+      for (let edge = 0; edge < 6; edge++) {
+        const a = getCornerWorldPosition(q, r, edge);
+        const b = getCornerWorldPosition(q, r, (edge + 1) % 6);
+        const mid = a.clone().add(b).multiplyScalar(0.5);
+        const d = mid.distanceTo(intersects[0].point);
+        if (d < minEdgeDist) { minEdgeDist = d; nearestEdge = edge; }
+      }
+      if (minEdgeDist > 1.5) {
+        removePreviewMesh(scene, renderer, camera);
+        return;
+      }
+      const res = canPlaceRoad(player, q, r, nearestEdge, players);
+      canBuild = res.success;
+      previewType = 'road';
+      previewParams = { q, r, edge: nearestEdge };
+      previewEdge = nearestEdge;
     }
     const previewColor = canBuild ? player.color : 0xffe066;
     const previewOpacity = canBuild ? 0.45 : 0.32;
@@ -82,7 +105,7 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
       );
       mesh.position.copy(getCornerWorldPosition(q, r, nearest));
       // Vorschau: KEIN z-Offset für Siedlung
-    } else {
+    } else if (buildMode === 'city') {
       const shape = new THREE.Shape();
       shape.moveTo(0, 0);
       shape.lineTo(1, 0);
@@ -99,6 +122,22 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
       mesh.position.x -= 0.6;
       mesh.position.y -= 0.3;
       // Vorschau: Stadt braucht x/y-Korrektur wie vorher
+    } else if (buildMode === 'road') {
+      // Vorschau für Straße: schmaler transparenter Quader zwischen zwei Ecken
+      const a = getCornerWorldPosition(q, r, previewEdge);
+      const b = getCornerWorldPosition(q, r, (previewEdge + 1) % 6);
+      const roadLength = a.distanceTo(b);
+      const roadWidth = 0.4;
+      const roadHeight = 0.4;
+      const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
+      const material = new THREE.MeshStandardMaterial({ color: previewColor, transparent: true, opacity: previewOpacity, depthWrite: false });
+      mesh = new THREE.Mesh(geometry, material);
+      mesh.position.copy(a.clone().add(b).multiplyScalar(0.5));
+      const direction = b.clone().sub(a).normalize();
+      const axis = new THREE.Vector3(1, 0, 0);
+      const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
+      mesh.setRotationFromQuaternion(quaternion);
+      mesh.userData = { preview: true, q, r, edge: previewEdge, type: 'road', color: previewColor };
     }
     // Vorschau: KEIN z-Offset für beide
     mesh.renderOrder = 999;

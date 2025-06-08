@@ -22,12 +22,14 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   ui.innerHTML = `
     <button id="build-settlement">Siedlung bauen</button>
     <button id="build-city">Stadt bauen</button>
+    <button id="build-road">Straße bauen</button>
     <span>Aktiver Spieler: <select id="player-select"></select></span>
     <span id="build-feedback" style="color:#d7263d;margin-left:1em;min-width:7em;min-height:1.5em;display:inline-block;vertical-align:middle;"></span>
   `;
   document.body.appendChild(ui);
   document.getElementById('build-settlement').onclick = () => setBuildMode('settlement');
   document.getElementById('build-city').onclick = () => setBuildMode('city');
+  document.getElementById('build-road').onclick = () => setBuildMode('road');
   const sel = document.getElementById('player-select');
   players.forEach((p, i) => {
     const opt = document.createElement('option');
