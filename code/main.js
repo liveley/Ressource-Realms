@@ -50,16 +50,17 @@ const cardPaths = ['./assets/item_card_wood.jpg']; // Testkarte
 cardLoader.loadCards(cardPaths);
 
 // Warte kurz, bis Karten geladen sind, und füge sie dann zur Szene hinzu
-// (für robustere Lösung später Promises verwenden)
-setTimeout(() => {
-  const cards = cardLoader.getCards();
-  if (cards.length === 0) {
-    console.warn('Keine Karten geladen – überprüfe Pfade oder Dateiformate.');
-  } else {
-    cards.forEach(card => scene.add(card));
-    console.log(`${cards.length} Karte(n) zur Szene hinzugefügt.`);
-  }
-}, 1000); // ggf. anpassen
+Promise.all(cardPaths.map(path => new Promise(resolve => {
+    cardLoader.loadCards([path]);
+    setTimeout(() => resolve(cardLoader.getCards()), 500); // Warten auf das Laden der Karte
+}))).then(cards => {
+    if (cards.length === 0) {
+        console.warn('Keine Karten geladen – überprüfe Pfade oder Dateiformate.');
+    } else {
+        cards.flat().forEach(card => scene.add(card)); // Alle Karten zur Szene hinzufügen
+        console.log(`${cards.flat().length} Karte(n) zur Szene hinzugefügt.`);
+    }
+});
 
 // Platzhalter-Spielsteine erstellen
 createGamePieces(scene);
