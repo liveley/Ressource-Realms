@@ -90,7 +90,9 @@ function drawRoadMeshes(scene) {
     const corners = getHexCorners(q, r);
     for (let edge = 0; edge < 6; edge++) {
       const [nq, nr] = neighborAxial(q, r, edge);
-      if (landSet.has(`${nq},${nr}`)) {
+      const isNeighborLand = landSet.has(`${nq},${nr}`);
+      // Kante zwischen zwei Land-Tiles: wie bisher, aber nur einmal zeichnen
+      if (isNeighborLand) {
         const key = [[q, r, edge], [nq, nr, (edge + 3) % 6]]
           .map(([a, b, e]) => `${a},${b},${e}`)
           .sort()
@@ -99,22 +101,35 @@ function drawRoadMeshes(scene) {
           drawnEdges.add(key);
           const start = corners[edge];
           const end = corners[(edge + 1) % 6];
-          // Box geometry as road
           const roadLength = start.distanceTo(end);
-          const roadWidth = HEX_RADIUS * 0.20; // Road thickness
-          const roadHeight = HEX_RADIUS * 0.40; // Road height
+          const roadWidth = HEX_RADIUS * 0.20;
+          const roadHeight = HEX_RADIUS * 0.40;
           const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
-          const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 }); // Dark gray
+          const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 });
           const mesh = new THREE.Mesh(geometry, material);
-          // Position: center of the edge
           mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
-          // Rotation: align box along the edge
           const direction = end.clone().sub(start).normalize();
-          const axis = new THREE.Vector3(1, 0, 0); // BoxGeometry is along X
+          const axis = new THREE.Vector3(1, 0, 0);
           const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
           mesh.setRotationFromQuaternion(quaternion);
           scene.add(mesh);
         }
+      } else {
+        // Außenkante: immer Quader zeichnen
+        const start = corners[edge];
+        const end = corners[(edge + 1) % 6];
+        const roadLength = start.distanceTo(end);
+        const roadWidth = HEX_RADIUS * 0.20;
+        const roadHeight = HEX_RADIUS * 0.40;
+        const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
+        const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
+        const direction = end.clone().sub(start).normalize();
+        const axis = new THREE.Vector3(1, 0, 0);
+        const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
+        mesh.setRotationFromQuaternion(quaternion);
+        scene.add(mesh);
       }
     }
   });
@@ -239,6 +254,23 @@ export function highlightNumberTokens(scene, tileMeshes, tileNumbers, rolledNumb
     });
 }
 
+// === Zeichnet eine beige Outline um alle Land-Tiles (inkl. Wüste) ===
+function drawLandTileOutline(scene) {
+  const outlineColor = 0xffe066; // schönes Beige
+  const outlineWidth = 0.13; // etwas dicker
+  const landAxials = getLandTileAxials();
+  landAxials.forEach(([q, r]) => {
+    const corners = getHexCorners(q, r);
+    // Hex-Outline als geschlossene Linie
+    const points = [...corners, corners[0]];
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({ color: outlineColor, linewidth: outlineWidth });
+    const line = new THREE.Line(geometry, material);
+    line.position.z += 1.25; // leicht über dem Tile, damit sichtbar
+    scene.add(line);
+  });
+}
+
 // Add number tokens directly when loading a tile
 export function createGameBoard(scene) {
   // Load and place the center tile (desert)
@@ -280,6 +312,9 @@ export function createGameBoard(scene) {
       });
     });
   });
+
+  // Nach dem Platzieren der Tiles: Outline um Land-Tiles zeichnen
+  drawLandTileOutline(scene);
 
   // After placing the tiles: draw road meshes
   drawRoadMeshes(scene);
