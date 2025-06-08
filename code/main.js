@@ -55,6 +55,11 @@ createGamePieces(scene);
 // Ressourcen-UI anzeigen
 createResourceUI();
 
+let buildMode = 'settlement'; // 'settlement' or 'city'
+let activePlayerIdx = 0;
+
+updateResourceUI(players[activePlayerIdx]); // Show initial player resources
+
 // UI-Elemente für Würfeln
 createDiceUI(() => {
   throwPhysicsDice(scene);
@@ -86,7 +91,7 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-window.addEventListener('keydown', handleResourceKeydown);
+window.addEventListener('keydown', (e) => handleResourceKeydown(e)); // handleResourceKeydown uses current player
 
 // === Bandit-Logik: Zeige Bandit auf Wüste, wenn eine 7 gewürfelt wurde ===
 window.addEventListener('diceRolled', (e) => {
@@ -97,15 +102,15 @@ window.addEventListener('diceRolled', (e) => {
 });
 
 // === Build Mode UI ===
-let buildMode = 'settlement'; // 'settlement' or 'city'
-let activePlayerIdx = 0;
-
 createBuildUI({
   players,
   getBuildMode: () => buildMode,
   setBuildMode: (mode) => { buildMode = mode; },
   getActivePlayerIdx: () => activePlayerIdx,
-  setActivePlayerIdx: (idx) => { activePlayerIdx = idx; }
+  setActivePlayerIdx: (idx) => {
+    activePlayerIdx = idx;
+    updateResourceUI(players[activePlayerIdx]); // Update resource UI on player switch
+  }
 });
 
 // === Build Event Handler Setup ===
@@ -120,7 +125,7 @@ setupBuildEventHandler({
   tryBuildSettlement,
   tryBuildCity,
   getCornerWorldPosition,
-  updateResourceUI
+  updateResourceUI: () => updateResourceUI(players[activePlayerIdx]) // Always update for current player
 });
 
 // === Build Preview Setup ===

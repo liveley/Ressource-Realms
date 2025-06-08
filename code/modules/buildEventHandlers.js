@@ -15,7 +15,7 @@ export function setupBuildEventHandler({
   tryBuildSettlement,
   tryBuildCity,
   getCornerWorldPosition,
-  updateResourceUI
+  updateResourceUI // now expects no arguments, closure from main.js
 }) {
   function onBoardClick(event) {
     // Only if menu is hidden
@@ -116,7 +116,7 @@ export function setupBuildEventHandler({
     }
     // Place 3D mesh
     placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, getBuildMode(), player.color);
-    updateResourceUI();
+    updateResourceUI(); // Will update for the current player
   }
   renderer.domElement.addEventListener('click', onBoardClick, false);
 }
