@@ -14,6 +14,7 @@ import { createResourceUI, updateResourceUI, handleResourceKeydown } from './mod
 import { createDiceUI, setDiceResult } from './modules/uiDice.js';
 import { initTileInfoOverlay } from './modules/uiTileInfo.js';
 import { showBanditOnTile } from './modules/bandit.js';
+import CardLoader from './modules/loader_jpeg.js'; //JPEG-Karten-Loader
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -42,6 +43,23 @@ addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 
 // Platzhalter-Spielkarten erstellen
 createPlaceholderCards(scene);
+// === JPEG-Karten laden und zur Szene hinzufügen ===
+const cardLoader = new CardLoader();
+const cardPaths = ['./assets/item_card_wood.jpg']; // Testkarte
+
+cardLoader.loadCards(cardPaths);
+
+// Warte kurz, bis Karten geladen sind, und füge sie dann zur Szene hinzu
+// (für robustere Lösung später Promises verwenden)
+setTimeout(() => {
+  const cards = cardLoader.getCards();
+  if (cards.length === 0) {
+    console.warn('Keine Karten geladen – überprüfe Pfade oder Dateiformate.');
+  } else {
+    cards.forEach(card => scene.add(card));
+    console.log(`${cards.length} Karte(n) zur Szene hinzugefügt.`);
+  }
+}, 1000); // ggf. anpassen
 
 // Platzhalter-Spielsteine erstellen
 createGamePieces(scene);

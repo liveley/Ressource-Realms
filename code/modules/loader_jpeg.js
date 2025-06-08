@@ -54,7 +54,7 @@ class CardLoader {
                     //    z: negativ = weiter hinten, positiv = näher zur Kamera
                     //
                     // → Ändere z. B. Y auf 1, um Karten höher zu platzieren
-                    cardMesh.position.set(index * 1.5, 0, 0);
+                    cardMesh.position.set(index * 1.5, 1, 3);
 
                     // Füge die Karte dem Array hinzu
                     this.cards.push(cardMesh);
