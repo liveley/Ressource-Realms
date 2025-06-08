@@ -1,6 +1,7 @@
+import * as THREE from 'three';
+
 // modules/gamePieces.js
 // Platzhalter-Spielsteine für Prototyp
-import * as THREE from 'three';
 
 // Definition der Spielsteintypen und Farben
 const pieceTypes = [
@@ -9,47 +10,6 @@ const pieceTypes = [
   { type: 'road', shape: 'bar', size: [1.8, 0.4, 0.4] }
 ];
 const playerColors = [0xd7263d, 0x277da1]; // rot, blau
-
-// Erstellt und platziert Platzhalter-Spielsteine für alle Typen und Farben
-export function createGamePieces(scene) {
-  const startX = -10;
-  const startY = -10;
-  pieceTypes.forEach((piece, i) => {
-    playerColors.forEach((color, j) => {
-      let mesh;
-      if (piece.shape === 'cube') {
-        mesh = new THREE.Mesh(
-          new THREE.BoxGeometry(...piece.size),
-          new THREE.MeshStandardMaterial({ color })
-        );
-      } else if (piece.shape === 'prism') {
-        // Prisma als extrudiertes Dreieck
-        const shape = new THREE.Shape();
-        shape.moveTo(0, 0);
-        shape.lineTo(1, 0);
-        shape.lineTo(0.5, 0.9);
-        shape.lineTo(0, 0);
-        const extrudeSettings = { depth: piece.size[2], bevelEnabled: false };
-        const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-        geometry.scale(piece.size[0], piece.size[1], 1);
-        mesh = new THREE.Mesh(
-          geometry,
-          new THREE.MeshStandardMaterial({ color })
-        );
-      } else if (piece.shape === 'bar') {
-        mesh = new THREE.Mesh(
-          new THREE.BoxGeometry(...piece.size),
-          new THREE.MeshStandardMaterial({ color })
-        );
-      }
-      mesh.position.set(startX + i * 4, startY + j * 3, 2 + j * 0.2);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.userData = { type: piece.type, player: j };
-      scene.add(mesh);
-    });
-  });
-}
 
 // === Place settlement/city mesh at corner ===
 export function placeBuildingMesh(scene, getCornerWorldPosition, q, r, corner, type, color) {

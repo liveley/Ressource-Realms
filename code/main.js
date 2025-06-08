@@ -9,7 +9,6 @@ import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera
 import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
-import { createGamePieces } from './modules/gamePieces.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult } from './modules/uiDice.js';
 import { initTileInfoOverlay, createInfoOverlayToggle } from './modules/uiTileInfo.js';
@@ -19,7 +18,6 @@ import { getCornerWorldPosition } from './modules/game_board.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
-import { placeBuildingMesh } from './modules/gamePieces.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -48,9 +46,6 @@ addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 
 // Platzhalter-Spielkarten erstellen
 createPlaceholderCards(scene);
-
-// Platzhalter-Spielsteine erstellen
-createGamePieces(scene);
 
 // Ressourcen-UI anzeigen
 createResourceUI();
