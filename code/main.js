@@ -12,7 +12,7 @@ import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createGamePieces } from './modules/gamePieces.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult } from './modules/uiDice.js';
-import { initTileInfoOverlay } from './modules/uiTileInfo.js';
+import { initTileInfoOverlay, createInfoOverlayToggle } from './modules/uiTileInfo.js';
 import { showBanditOnTile } from './modules/bandit.js';
 import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/game_board.js';
@@ -68,6 +68,7 @@ createDiceUI(() => {
     window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
   };
 });
+createInfoOverlayToggle();
 
 // Info-Overlay und Mousemove-Handling für Tile-Infos
 initTileInfoOverlay(scene, camera);
