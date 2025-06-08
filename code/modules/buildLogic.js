@@ -139,8 +139,7 @@ function isLandTile(q, r) {
     if (!mesh) return false;
     // Wasser-Tiles haben name === 'water.glb'
     if (mesh.name && mesh.name.startsWith('water')) return false;
-    // Wüste
-    if (mesh.name && mesh.name.startsWith('center')) return false;
+    // Wüste (center) ist jetzt erlaubt!
     return true;
   }
   // Fallback: explizite Liste der Wasserkoordinaten (aus game_board.js)
@@ -152,8 +151,7 @@ function isLandTile(q, r) {
   for (const [wq, wr] of waterCoords) {
     if (q === wq && r === wr) return false;
   }
-  // Wüste
-  if (q === 0 && r === 0) return false;
+  // Wüste (0,0) ist jetzt erlaubt!
   return true;
 }
 
@@ -236,8 +234,23 @@ function isRoadOccupied(q, r, edge, allPlayers) {
   return false;
 }
 
-// Straße bauen (mit Platzierungslogik)
+// Hilfsfunktion: Nachbarfeld für eine Kante (aus game_board.js kopiert)
+function neighborAxial(q, r, edge) {
+  const directions = [
+    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+  ];
+  return [q + directions[edge][0], r + directions[edge][1]];
+}
+
 export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
+  // Verhindere Bau auf Wasser-Tiles (beide Enden prüfen, Wüste ist erlaubt)
+  if (!isLandTile(q, r)) {
+    return { success: false, reason: 'Straßenbau auf Wasser nicht erlaubt' };
+  }
+  const [nq, nr] = neighborAxial(q, r, edge);
+  if (!isLandTile(nq, nr)) {
+    return { success: false, reason: 'Straßenbau auf Wasser nicht erlaubt' };
+  }
   if (!ignoreResourceRule && !canBuildRoad(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
   if (isRoadOccupied(q, r, edge, allPlayers)) return { success: false, reason: 'Hier liegt schon eine Straße' };
   // TODO: Anbindung an eigene Straße/Siedlung prüfen (optional)
@@ -251,18 +264,18 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
 
 // Nur-Prüf-Funktion für Preview
 export function canPlaceRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
+  // Verhindere Bau auf Wasser-Tiles (beide Enden prüfen, Wüste ist erlaubt)
+  if (!isLandTile(q, r)) {
+    return { success: false, reason: 'Straßenbau auf Wasser nicht erlaubt' };
+  }
+  const [nq, nr] = neighborAxial(q, r, edge);
+  if (!isLandTile(nq, nr)) {
+    return { success: false, reason: 'Straßenbau auf Wasser nicht erlaubt' };
+  }
   if (!ignoreResourceRule && !canBuildRoad(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
   if (isRoadOccupied(q, r, edge, allPlayers)) return { success: false, reason: 'Hier liegt schon eine Straße' };
   // TODO: Anbindung an eigene Straße/Siedlung prüfen (optional)
   return { success: true };
-}
-
-// Hilfsfunktion: Nachbarfeld für eine Kante (aus game_board.js kopiert)
-function neighborAxial(q, r, edge) {
-  const directions = [
-    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  ];
-  return [q + directions[edge][0], r + directions[edge][1]];
 }
 
 // TODO: UI-Integration
