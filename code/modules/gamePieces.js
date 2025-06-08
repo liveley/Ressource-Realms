@@ -50,3 +50,44 @@ export function createGamePieces(scene) {
     });
   });
 }
+
+// === Place settlement/city mesh at corner ===
+export function placeBuildingMesh(scene, getCornerWorldPosition, q, r, corner, type, color) {
+  // Remove settlement if upgrading to city
+  if (type === 'city') {
+    // Remove existing settlement mesh at this corner (if any)
+    scene.traverse(obj => {
+      if (obj.userData && obj.userData.type === 'settlement' && obj.userData.q === q && obj.userData.r === r && obj.userData.corner === corner) {
+        scene.remove(obj);
+      }
+    });
+  }
+  // Create mesh
+  let mesh;
+  if (type === 'settlement') {
+    mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1.2),
+      new THREE.MeshStandardMaterial({ color })
+    );
+  } else {
+    // City: prism
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0);
+    shape.lineTo(1, 0);
+    shape.lineTo(0.5, 0.9);
+    shape.lineTo(0, 0);
+    const extrudeSettings = { depth: 1.8, bevelEnabled: false };
+    const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    geometry.scale(1.2, 1.2, 1);
+    mesh = new THREE.Mesh(
+      geometry,
+      new THREE.MeshStandardMaterial({ color })
+    );
+  }
+  mesh.position.copy(getCornerWorldPosition(q, r, corner));
+  mesh.position.z += 0.6; // slightly above tile
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData = { type, q, r, corner };
+  scene.add(mesh);
+}

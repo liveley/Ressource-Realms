@@ -36,6 +36,18 @@ export function getTileWorldPosition(q, r) {
     return { x, y, z };
 }
 
+// === Export: Weltkoordinaten einer bestimmten Ecke (Vertex) eines Hexfelds ===
+export function getCornerWorldPosition(q, r, corner) {
+  // Returns THREE.Vector3 of the specified corner
+  const HEX_RADIUS = 3; // must match above
+  const angle = Math.PI / 3 * corner;
+  const [cx, cy, cz] = axialToWorld(q, r);
+  const x = cx + HEX_RADIUS * Math.cos(angle);
+  const y = cy + HEX_RADIUS * Math.sin(angle);
+  const z = cz + 1.2; // slightly above tile for visibility
+  return new THREE.Vector3(x, y, z);
+}
+
 // Helper: Returns all axial coordinates of land tiles (including center)
 function getLandTileAxials() {
   const landTypes = ['clay', 'ore', 'sheep', 'wheat', 'wood'];

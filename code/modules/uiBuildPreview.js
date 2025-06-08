@@ -1,0 +1,118 @@
+// modules/uiBuildPreview.js
+// Vorschau-Piece für Siedlung/Stadt beim Hover auf dem Spielfeld
+import * as THREE from 'three';
+import { getCornerWorldPosition } from './game_board.js';
+
+let previewMesh = null;
+
+export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, getBuildMode, getActivePlayerIdx, tryBuildSettlement, tryBuildCity) {
+  renderer.domElement.addEventListener('mousemove', (event) => {
+    const menu = document.getElementById('main-menu');
+    if (menu && menu.style.display !== 'none') {
+      removePreviewMesh(scene, renderer, camera);
+      return;
+    }
+    const mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    const hexGroup = scene.getObjectByName('HexGroup');
+    if (!hexGroup) {
+      removePreviewMesh(scene, renderer, camera);
+      return;
+    }
+    const intersects = raycaster.intersectObjects(hexGroup.children, true);
+    if (intersects.length === 0) {
+      removePreviewMesh(scene, renderer, camera);
+      return;
+    }
+    let tileMesh = intersects[0].object;
+    while (tileMesh && !tileMesh.name.endsWith('.glb')) tileMesh = tileMesh.parent;
+    if (!tileMesh) {
+      removePreviewMesh(scene, renderer, camera);
+      return;
+    }
+    let tileKey = null;
+    for (const [key, mesh] of Object.entries(tileMeshes)) {
+      if (mesh === tileMesh) { tileKey = key; break; }
+    }
+    if (!tileKey) {
+      removePreviewMesh(scene, renderer, camera);
+      return;
+    }
+    const [q, r] = tileKey.split(',').map(Number);
+    const corners = [];
+    for (let i = 0; i < 6; i++) {
+      const pos = getCornerWorldPosition(q, r, i);
+      corners.push({ i, pos });
+    }
+    let minDist = Infinity, nearest = 0;
+    for (let i = 0; i < 6; i++) {
+      const d = corners[i].pos.distanceTo(intersects[0].point);
+      if (d < minDist) { minDist = d; nearest = i; }
+    }
+    if (minDist > 1.5) {
+      removePreviewMesh(scene, renderer, camera);
+      return;
+    }
+    const buildMode = getBuildMode();
+    const player = players[getActivePlayerIdx()];
+    let canBuild = false;
+    if (buildMode === 'settlement') {
+      const res = tryBuildSettlement(player, q, r, nearest, players);
+      canBuild = res.success;
+    } else {
+      const res = tryBuildCity(player, q, r, nearest);
+      canBuild = res.success;
+    }
+    const previewColor = canBuild ? player.color : 0xffe066;
+    const previewOpacity = canBuild ? 0.45 : 0.32;
+    if (previewMesh && previewMesh.userData && previewMesh.userData.q === q && previewMesh.userData.r === r && previewMesh.userData.corner === nearest && previewMesh.userData.type === buildMode && previewMesh.userData.color === previewColor) {
+      return;
+    }
+    removePreviewMesh(scene, renderer, camera);
+    let mesh;
+    if (buildMode === 'settlement') {
+      mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1.2),
+        new THREE.MeshStandardMaterial({ color: previewColor, transparent: true, opacity: previewOpacity, depthWrite: false })
+      );
+    } else {
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.lineTo(1, 0);
+      shape.lineTo(0.5, 0.9);
+      shape.lineTo(0, 0);
+      const extrudeSettings = { depth: 1.8, bevelEnabled: false };
+      const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      geometry.scale(1.2, 1.2, 1);
+      mesh = new THREE.Mesh(
+        geometry,
+        new THREE.MeshStandardMaterial({ color: previewColor, transparent: true, opacity: previewOpacity, depthWrite: false })
+      );
+      mesh.position.copy(getCornerWorldPosition(q, r, nearest));
+      mesh.position.x -= 0.6;
+      mesh.position.y -= 0.3;
+    }
+    mesh.position.copy(getCornerWorldPosition(q, r, nearest));
+    if (buildMode === 'city') {
+      mesh.position.x -= 0.6;
+      mesh.position.y -= 0.3;
+    }
+    mesh.position.z -= 0.5;
+    mesh.renderOrder = 999;
+    mesh.userData = { preview: true, q, r, corner: nearest, type: buildMode, color: previewColor };
+    scene.add(mesh);
+    previewMesh = mesh;
+    renderer.render(scene, camera);
+  });
+}
+
+export function removePreviewMesh(scene, renderer, camera) {
+  if (previewMesh) {
+    scene.remove(previewMesh);
+    previewMesh = null;
+    renderer.render(scene, camera);
+  }
+}
