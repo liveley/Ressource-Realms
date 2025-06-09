@@ -1,36 +1,76 @@
 // cards.js
-import { scene } from './scene';
-import CardLoader from './loader_jpeg';
+import * as THREE from 'three';
+import { scene } from './scene.js';
+import CardLoader from './loader_jpeg.js';
 
-// Diese Klasse verwaltet die Platzierung der Karten in der Szene
+// Beispielhafte Default-Konfiguration für Karten (nur front und back)
+const defaultCardConfigs = [
+  {
+    front: "/assets/item_card_wood.jpg", // Vorderseite
+    back: "/assets/item_card_wood.jpg"   // Rückseite
+  }
+  // Weitere Kartenkonfigurationen lassen sich hier ergänzen...
+];
+
 class CardManager {
-    constructor() {
-        this.cardLoader = new CardLoader();
-    }
+  constructor() {
+    this.cardLoader = new CardLoader();
+    this.cards = [];
+  }
 
-    // Lädt Karten und fügt sie zur Szene hinzu
-    async loadAndPlaceCards(cardPaths) {
-        await this.cardLoader.loadCards(cardPaths); // Warte auf das Laden der Karten
+  // Lädt Karten und fügt sie zur Szene hinzu anhand der Konfigurationen
+  async loadAndPlaceCards(configs) {
+    const loadPromises = configs.map(async (config, index) => {
+      console.log(`Lade Karte ${index}: Konfiguration`, config);
+      
+      // Lade nur Front- und Back-Textur
+      const frontTexture = await this.cardLoader.loadTexture(config.front);
+      console.log(`Front-Texture für Karte ${index} geladen:`, frontTexture);
+      
+      const backTexture = await this.cardLoader.loadTexture(config.back);
+      console.log(`Back-Texture für Karte ${index} geladen:`, backTexture);
+      
+      // Erstelle ein creamMaterial für Seiten ohne Bild
+      const creamMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFDD0 });
+  
+      // BoxGeometry Reihung: [Rechts, Links, Oben, Unten, Vorne, Hinten]
+      // Nur die vordere und hintere Seite erhalten Bilder.
+      const materials = [
+        creamMaterial,                                        // Rechte Seite
+        creamMaterial,                                        // Linke Seite
+        creamMaterial,                                        // Obere Seite
+        creamMaterial,                                        // Untere Seite
+        new THREE.MeshBasicMaterial({ map: frontTexture }),   // Vordere Seite
+        new THREE.MeshBasicMaterial({ map: backTexture })     // Hintere Seite
+      ];
+  
+      // Erstelle die flache Box-Geometrie der Kartenform
+      const geometry = new THREE.BoxGeometry(1, 1.25, 0.025);
+  
+      // Erstelle das Mesh und setze Position und Rotation
+      const cardMesh = new THREE.Mesh(geometry, materials);
+      cardMesh.position.set(4.5, 0, 3);
+      cardMesh.rotation.z = Math.PI / 2;
+      
+      console.log(`Karte ${index} erstellt:`, cardMesh);
+      return cardMesh;
+    });
+  
+    this.cards = await Promise.all(loadPromises);
+    this.cards.forEach(card => scene.add(card));
+  
+    console.log(`${this.cards.length} Karte(n) zur Szene hinzugefügt.`);
+  }
 
-        const cards = this.cardLoader.getCards(); // Jetzt sind die Karten verfügbar
+  // Lädt alle Karten aus der Default-Konfiguration
+  async loadAllCards() {
+    console.log("Lade alle Karten aus der Default-Konfiguration...");
+    await this.loadAndPlaceCards(defaultCardConfigs);
+  }
 
-        if (cards.length === 0) {
-            console.warn('Keine Karten geladen – überprüfe Pfade oder Dateiformate.');
-            return;
-        }
-
-        cards.forEach((cardMesh, index) => {
-            // Positioniere die Karte im Raum
-            cardMesh.position.set(4.5, 0, 3 + index); // Beispiel: Karten leicht versetzt anordnen
-            cardMesh.rotation.z = Math.PI / 2; // Karte um 90° im Uhrzeigersinn drehen
-
-            // Füge die Karte zur Szene hinzu
-            scene.add(cardMesh);
-        });
-
-        console.log(`${cards.length} Karte(n) zur Szene hinzugefügt.`);
-    }
+  getCards() {
+    return this.cards;
+  }
 }
 
-// Exportiere die Klasse, damit sie in anderen Dateien verwendet werden kann
 export default CardManager;

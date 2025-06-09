@@ -44,23 +44,10 @@ addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 // Platzhalter-Spielkarten erstellen
 createPlaceholderCards(scene);
 // === JPEG-Karten laden und zur Szene hinzufügen ===
+//const cardManager = new CardManager();
+//cardManager.loadAllCards(); // Lädt und platziert alle Karten automatisch
 const cardManager = new CardManager();
-const cardPaths = ['./assets/item_card_wood.jpg']; // Testkarte
-cardManager.loadAndPlaceCards(cardPaths); // Karten laden und platzieren
-
-
-// Warte kurz, bis Karten geladen sind, und füge sie dann zur Szene hinzu
-//Promise.all(cardPaths.map(path => new Promise(resolve => {
-//    cardLoader.loadCards([path]);
-//    setTimeout(() => resolve(cardLoader.getCards()), 500); // Warten auf das Laden der Karte
-//}))).then(cards => {
-//    if (cards.length === 0) {
-//        console.warn('Keine Karten geladen – überprüfe Pfade oder Dateiformate.');
-//    } else {
-//        cards.flat().forEach(card => scene.add(card)); // Alle Karten zur Szene hinzufügen
-//        console.log(`${cards.flat().length} Karte(n) zur Szene hinzugefügt.`);
-//    }
-//});
+cardManager.loadAllCards().catch(error => console.error("Fehler beim Laden der Karten:", error));
 
 // Platzhalter-Spielsteine erstellen
 createGamePieces(scene);
