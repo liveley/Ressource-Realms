@@ -50,14 +50,32 @@ class CardLoader {
                                 texture.generateMipmaps = false;
                             
                                 // Erstelle eine flache rechteckige Fläche (Box) mit Breite 1, Höhe 1, Tiefe 0.05
-                                const geometry = new THREE.BoxGeometry(1, 1, 0.05);
-                            
-                                // Erstelle ein einziges Material mit der geladenen Textur (Bild)
-                                const material = new THREE.MeshBasicMaterial({ map: texture });
-                            
-                                // Kombiniere Geometrie und Material zu einem sichtbaren Objekt (Mesh)
-                                const cardMesh = new THREE.Mesh(geometry, material);
-                            
+                                const geometry = new THREE.BoxGeometry(1, 1.25, 0.025);
+
+                                // Lade zusätzliche Texturen für die Vorder- und Rückseite
+                                // (Diese könntest du auch asynchron laden und per Promise abwarten – hier als synchrones Beispiel)
+                                const frontTexture = new THREE.TextureLoader().load('../assets/item_ressource_card_jpg'); // Vorderseite
+                                const backTexture  = new THREE.TextureLoader().load('path/to/backImage.jpg');  // Rückseite
+
+                                // Erstelle Materialien für die einzelnen Seiten der Karte
+                                const topMaterial    = new THREE.MeshBasicMaterial({ map: texture });    // Obere Seite (Bild, z. B. als Kartenrücken)
+                                const creamMaterial  = new THREE.MeshBasicMaterial({ color: 0xFFFDD0 });   // Weiß-creme Ton für die Kanten und ggf. Unterseite
+                                //const frontMaterial  = new THREE.MeshBasicMaterial({ map: frontTexture}); // Vordere Seite
+                                const backMaterial   = new THREE.MeshBasicMaterial({ map: backTexture});  // Hintere Seite
+
+                                // Array von Materialien in der Reihenfolge: Rechts, Links, Oben, Unten, Vorne, Hinten
+                                const materials = [
+                                    creamMaterial,   // Rechte Seite
+                                    creamMaterial,   // Linke Seite
+                                    creamMaterial,     // vordere Seite
+                                    creamMaterial,   // Untere Seite
+                                    topMaterial,   // obere Seite
+                                    backMaterial     // untere Seite
+                                ];
+
+                                // Kombiniere Geometrie und Materialien zu einem sichtbaren Objekt (Mesh)
+                                const cardMesh = new THREE.Mesh(geometry, materials);
+
                                 // Füge die Karte dem Array hinzu (aber nicht zur Szene!)
                                 this.cards.push(cardMesh);
                                 resolve(cardMesh);
