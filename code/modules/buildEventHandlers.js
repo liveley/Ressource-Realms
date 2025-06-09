@@ -1,0 +1,157 @@
+import * as THREE from 'three';
+import { placeBuildingMesh, placeRoadMesh } from './gamePieces.js';
+
+// Build-Event-Handler für das Bauen von Siedlungen und Städten
+// Kapselt die Click-Logik für das Spielfeld
+
+export function setupBuildEventHandler({
+  renderer,
+  scene,
+  camera,
+  tileMeshes,
+  players,
+  getBuildMode,
+  getActivePlayerIdx,
+  tryBuildSettlement,
+  tryBuildCity,
+  tryBuildRoad,
+  getCornerWorldPosition,
+  updateResourceUI // now expects no arguments, closure from main.js
+}) {
+  function onBoardClick(event) {
+    // Only if menu is hidden
+    const menu = document.getElementById('main-menu');
+    if (menu && menu.style.display !== 'none') return;
+    // Raycast to find nearest tile and corner
+    const mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    const hexGroup = scene.getObjectByName('HexGroup');
+    if (!hexGroup) return;
+    const intersects = raycaster.intersectObjects(hexGroup.children, true);
+    if (intersects.length === 0) return;
+    const intersect = intersects[0];
+    // Find which tile was clicked
+    let tileMesh = intersect.object;
+    while (tileMesh && !tileMesh.name.endsWith('.glb')) tileMesh = tileMesh.parent;
+    if (!tileMesh) return;
+    // Parse tile axial coordinates from tileMeshes
+    let tileKey = null;
+    for (const [key, mesh] of Object.entries(tileMeshes)) {
+      if (mesh === tileMesh) { tileKey = key; break; }
+    }
+    if (!tileKey) return;
+    const [q, r] = tileKey.split(',').map(Number);
+    // Find nearest corner
+    const corners = [];
+    for (let i = 0; i < 6; i++) {
+      const pos = getCornerWorldPosition(q, r, i);
+      corners.push({ i, pos });
+    }
+    let minDist = Infinity, nearest = 0;
+    for (let i = 0; i < 6; i++) {
+      const d = corners[i].pos.distanceTo(intersect.point);
+      if (d < minDist) { minDist = d; nearest = i; }
+    }
+    // Only allow if close enough (e.g. <1.5 units)
+    if (minDist > 1.5) return;
+    // Try to build
+    const player = players[getActivePlayerIdx()];
+    let result;
+    let meshPlaced = false;
+    if (getBuildMode() === 'settlement') {
+      // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
+      result = tryBuildSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
+      if (result.success) {
+        placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'settlement', player.color);
+        meshPlaced = true;
+      }
+    } else if (getBuildMode() === 'city') {
+      result = tryBuildCity(player, q, r, nearest);
+      if (result.success) {
+        placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'city', player.color);
+        meshPlaced = true;
+      }
+    } else if (getBuildMode() === 'road') {
+      // Für Straßenbau: Kante (edge) statt Ecke bestimmen
+      // Finde die nächste Kante (edge) zur Klickposition
+      let minEdgeDist = Infinity, nearestEdge = 0;
+      for (let edge = 0; edge < 6; edge++) {
+        // Mittelpunkt der Kante zwischen zwei Ecken
+        const a = getCornerWorldPosition(q, r, edge);
+        const b = getCornerWorldPosition(q, r, (edge + 1) % 6);
+        const mid = a.clone().add(b).multiplyScalar(0.5);
+        const d = mid.distanceTo(intersect.point);
+        if (d < minEdgeDist) { minEdgeDist = d; nearestEdge = edge; }
+      }
+      if (minEdgeDist > 1.5) return;
+      // tryBuildRoad benötigt: player, q, r, edge, allPlayers
+      if (typeof tryBuildRoad === 'function') {
+        result = tryBuildRoad(player, q, r, nearestEdge, players);
+        if (result.success) {
+          placeRoadMesh(scene, getCornerWorldPosition, q, r, nearestEdge, player.color);
+          meshPlaced = true;
+        }
+      } else {
+        result = { success: false, reason: 'Straßenbau nicht implementiert' };
+      }
+    } else {
+      result = { success: false, reason: 'Unbekannter Build-Modus' };
+    }
+    // === Feedback-Element holen (immer aus Build-UI!) ===
+    const feedback = document.getElementById('build-feedback');
+    // === Feedback-Timeout robust machen ===
+    if (window._buildFeedbackTimeout) {
+      clearTimeout(window._buildFeedbackTimeout);
+      window._buildFeedbackTimeout = null;
+    }
+    if (!result.success) {
+      if (feedback) {
+        console.log('[Build-Feedback]', result.reason || 'Bau nicht möglich');
+        feedback.textContent = result.reason || 'Bau nicht möglich';
+        feedback.style.display = 'inline';
+        feedback.style.visibility = 'visible';
+        feedback.style.opacity = '1';
+        feedback.style.background = '#ffe066';
+        feedback.style.color = '#d7263d';
+        feedback.style.fontWeight = 'bold';
+        window._buildFeedbackTimeout = setTimeout(() => {
+          feedback.textContent = '';
+          feedback.style.display = '';
+          feedback.style.visibility = '';
+          feedback.style.opacity = '';
+          feedback.style.background = '';
+          feedback.style.color = '';
+          feedback.style.fontWeight = '';
+          window._buildFeedbackTimeout = null;
+        }, 2200);
+      }
+      return;
+    }
+    if (feedback) {
+      console.log('[Build-Feedback] Gebaut!');
+      feedback.textContent = 'Gebaut!';
+      feedback.style.display = 'inline';
+      feedback.style.visibility = 'visible';
+      feedback.style.opacity = '1';
+      feedback.style.background = '#8fd19e';
+      feedback.style.color = '#222';
+      feedback.style.fontWeight = 'bold';
+      window._buildFeedbackTimeout = setTimeout(() => {
+        feedback.textContent = '';
+        feedback.style.display = '';
+        feedback.style.visibility = '';
+        feedback.style.opacity = '';
+        feedback.style.background = '';
+        feedback.style.color = '';
+        feedback.style.fontWeight = '';
+        window._buildFeedbackTimeout = null;
+      }, 1200);
+    }
+    // Ressourcen-UI nur aktualisieren, wenn gebaut wurde
+    if (meshPlaced) updateResourceUI();
+  }
+  renderer.domElement.addEventListener('click', onBoardClick, false);
+}

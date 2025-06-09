@@ -9,11 +9,15 @@ import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera
 import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
-import { createGamePieces } from './modules/gamePieces.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult } from './modules/uiDice.js';
-import { initTileInfoOverlay } from './modules/uiTileInfo.js';
+import { initTileInfoOverlay, createInfoOverlayToggle } from './modules/uiTileInfo.js';
 import { showBanditOnTile } from './modules/bandit.js';
+import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
+import { getCornerWorldPosition } from './modules/game_board.js';
+import { setupBuildPreview } from './modules/uiBuildPreview.js';
+import { createBuildUI } from './modules/uiBuild.js';
+import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -43,8 +47,13 @@ addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 // Platzhalter-Spielkarten erstellen
 createPlaceholderCards(scene);
 
-// Platzhalter-Spielsteine erstellen
-createGamePieces(scene);
+// Ressourcen-UI anzeigen
+createResourceUI();
+
+let buildMode = 'settlement'; // 'settlement' or 'city'
+let activePlayerIdx = 0;
+
+updateResourceUI(players[activePlayerIdx]); // Show initial player resources
 
 // UI-Elemente für Würfeln
 createDiceUI(() => {
@@ -54,6 +63,7 @@ createDiceUI(() => {
     window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
   };
 });
+createInfoOverlayToggle();
 
 // Info-Overlay und Mousemove-Handling für Tile-Infos
 initTileInfoOverlay(scene, camera);
@@ -77,7 +87,7 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-window.addEventListener('keydown', handleResourceKeydown);
+window.addEventListener('keydown', (e) => handleResourceKeydown(e)); // handleResourceKeydown uses current player
 
 // === Bandit-Logik: Zeige Bandit auf Wüste, wenn eine 7 gewürfelt wurde ===
 window.addEventListener('diceRolled', (e) => {
@@ -86,3 +96,46 @@ window.addEventListener('diceRolled', (e) => {
         showBanditOnTile(scene, desertPos);
     }
 });
+
+// === Build Mode UI ===
+createBuildUI({
+  players,
+  getBuildMode: () => buildMode,
+  setBuildMode: (mode) => { buildMode = mode; },
+  getActivePlayerIdx: () => activePlayerIdx,
+  setActivePlayerIdx: (idx) => {
+    activePlayerIdx = idx;
+    updateResourceUI(players[activePlayerIdx]); // Update resource UI on player switch
+  }
+});
+
+// === Build Event Handler Setup ===
+setupBuildEventHandler({
+  renderer,
+  scene,
+  camera,
+  tileMeshes,
+  players,
+  getBuildMode: () => buildMode,
+  getActivePlayerIdx: () => activePlayerIdx,
+  tryBuildSettlement,
+  tryBuildCity,
+  tryBuildRoad, // <--- HINZUGEFÜGT
+  getCornerWorldPosition,
+  updateResourceUI: () => updateResourceUI(players[activePlayerIdx]) // Always update for current player
+});
+
+// === Build Preview Setup ===
+setupBuildPreview(
+  renderer,
+  scene,
+  camera,
+  tileMeshes,
+  players,
+  () => buildMode,
+  () => activePlayerIdx,
+  tryBuildSettlement,
+  tryBuildCity
+);
+
+// === Place settlement/city mesh at corner ===
