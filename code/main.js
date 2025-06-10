@@ -18,6 +18,7 @@ import { getCornerWorldPosition } from './modules/game_board.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
+import CardManager from './modules/cards.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -46,6 +47,9 @@ addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 
 // Platzhalter-Spielkarten erstellen
 createPlaceholderCards(scene);
+// === JPEG-Karten laden und zur Szene hinzufügen ===
+const cardManager = new CardManager();
+cardManager.loadAllCards().catch(error => console.error("Fehler beim Laden der Karten:", error));
 
 // Ressourcen-UI anzeigen
 createResourceUI();
