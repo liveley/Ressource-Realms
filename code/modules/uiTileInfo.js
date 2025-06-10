@@ -3,6 +3,9 @@
 import * as THREE from 'three';
 import { tileInfo } from './tileInfo.js';
 
+let infoOverlayEnabled = true;
+let infoToggleBtn = null;
+
 export function initTileInfoOverlay(scene, camera) {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
@@ -14,7 +17,7 @@ export function initTileInfoOverlay(scene, camera) {
   }
 
   function onMouseMove(event) {
-    if (!isGameActive()) {
+    if (!isGameActive() || !isInfoOverlayEnabled()) {
       hideInfoOverlay();
       return;
     }
@@ -52,4 +55,41 @@ export function initTileInfoOverlay(scene, camera) {
   }
 
   window.addEventListener('mousemove', onMouseMove, false);
+}
+
+export function createInfoOverlayToggle() {
+  // Füge den Button neben dem Würfel-Button ein (oben links, unter dem Würfeln-Button)
+  let diceUI = document.getElementById('dice-ui');
+  if (!diceUI) {
+    // Falls dice-ui noch nicht existiert, warte kurz und versuche es erneut
+    setTimeout(createInfoOverlayToggle, 300);
+    return;
+  }
+  infoToggleBtn = document.createElement('button');
+  infoToggleBtn.id = 'toggle-info-overlay';
+  infoToggleBtn.textContent = infoOverlayEnabled ? 'Tile-Info: AN' : 'Tile-Info: AUS';
+  infoToggleBtn.style.marginTop = '0.5em';
+  infoToggleBtn.style.fontSize = '1em';
+  infoToggleBtn.style.padding = '0.3em 1.2em';
+  infoToggleBtn.style.borderRadius = '7px';
+  infoToggleBtn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
+  infoToggleBtn.style.border = 'none';
+  infoToggleBtn.style.fontFamily = "'Montserrat', Arial, sans-serif";
+  infoToggleBtn.style.fontWeight = '700';
+  infoToggleBtn.style.cursor = 'pointer';
+  infoToggleBtn.style.boxShadow = '0 1px 4px #0001';
+  infoToggleBtn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s';
+  infoToggleBtn.onclick = () => {
+    infoOverlayEnabled = !infoOverlayEnabled;
+    infoToggleBtn.textContent = infoOverlayEnabled ? 'Tile-Info: AN' : 'Tile-Info: AUS';
+    if (!infoOverlayEnabled) {
+      const overlay = document.getElementById('infoOverlay');
+      if (overlay) overlay.style.display = 'none';
+    }
+  };
+  diceUI.appendChild(infoToggleBtn);
+}
+
+export function isInfoOverlayEnabled() {
+  return infoOverlayEnabled;
 }

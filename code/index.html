@@ -8,6 +8,79 @@
     body { margin: 0; overflow: hidden; }
     #main-menu h1 { font-family: 'Montserrat', Arial, sans-serif; }
     #main-menu button { font-family: 'Montserrat', Arial, sans-serif; }
+
+    /* --- Build UI Modern Styles --- */
+    #build-ui {
+      position: absolute;
+      bottom: 2em;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.97);
+      border-radius: 18px;
+      padding: 18px 36px;
+      box-shadow: 0 4px 24px #0003, 0 1.5px 0 #ffe066;
+      display: flex;
+      gap: 2em;
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-size: 1.25em;
+      align-items: center;
+      z-index: 20;
+      border: 2px solid #ffe066;
+      min-width: 480px;
+      max-width: 90vw;
+      justify-content: center;
+      transition: box-shadow 0.2s;
+    }
+    #build-ui button {
+      background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+      border: none;
+      border-radius: 8px;
+      padding: 0.5em 1.5em;
+      font-size: 1em;
+      font-family: inherit;
+      font-weight: 700;
+      color: #222;
+      box-shadow: 0 2px 8px #0001;
+      cursor: pointer;
+      transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+      outline: none;
+    }
+    #build-ui button:hover, #build-ui button:focus {
+      background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+      box-shadow: 0 4px 16px #ffe06655, 0 2px 8px #0002;
+      transform: translateY(-2px) scale(1.04);
+    }
+    #build-ui select {
+      border-radius: 6px;
+      border: 1.5px solid #ffe066;
+      padding: 0.2em 0.7em;
+      font-size: 1em;
+      font-family: inherit;
+      background: #fffbe6;
+      color: #222;
+      margin-left: 0.3em;
+      outline: none;
+      transition: border 0.15s;
+    }
+    #build-ui select:focus {
+      border: 2px solid #d7263d;
+    }
+    #build-feedback {
+      color: #d7263d;
+      background: #fff0f3;
+      border-radius: 6px;
+      margin-left: 1em;
+      min-width: 8em;
+      min-height: 1.7em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 0.7em;
+      font-size: 1em;
+      border: 1.5px solid #ffe066;
+      box-shadow: 0 1px 4px #ffe06633;
+      transition: background 0.18s, color 0.18s;
+    }
   </style>
 </head>
 <body>
