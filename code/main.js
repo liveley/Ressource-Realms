@@ -18,6 +18,7 @@ import { getCornerWorldPosition } from './modules/game_board.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
+import CardManager from './modules/cards.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
