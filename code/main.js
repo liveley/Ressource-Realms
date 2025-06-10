@@ -46,11 +46,6 @@ addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 
 // Platzhalter-Spielkarten erstellen
 createPlaceholderCards(scene);
-// === JPEG-Karten laden und zur Szene hinzufügen ===
-//const cardManager = new CardManager();
-//cardManager.loadAllCards(); // Lädt und platziert alle Karten automatisch
-const cardManager = new CardManager();
-cardManager.loadAllCards().catch(error => console.error("Fehler beim Laden der Karten:", error));
 
 // Ressourcen-UI anzeigen
 createResourceUI();
