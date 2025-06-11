@@ -6,8 +6,24 @@ import CardLoader from './loader_jpeg.js';
 // Beispielhafte Default-Konfiguration für Karten (nur front und back)
 const defaultCardConfigs = [
   {
-    front: "/assets/item_card_wood.jpg", // Vorderseite
-    back: "/assets/item_card_wood.jpg"   // Rückseite
+    front: "/assets/item_card_wood.jpeg", // Vorderseite
+    back: "/assets/item_card_back.jpeg"   // Rückseite
+  },
+  {
+    front: "/assets/item_card_wool.jpeg", // Vorderseite
+    back: "/assets/item_card_back.jpeg"   // Rückseite
+  },
+  {
+    front: "/assets/item_card_wheat.jpeg", // Vorderseite
+    back: "/assets/item_card_back.jpeg"   // Rückseite
+  },
+  {
+    front: "/assets/item_card_ore.jpeg", // Vorderseite
+    back: "/assets/item_card_back.jpeg"   // Rückseite
+  },
+  {
+    front: "/assets/item_card_clay.jpeg", // Vorderseite
+    back: "/assets/item_card_back.jpeg"   // Rückseite
   }
   // Weitere Kartenkonfigurationen lassen sich hier ergänzen...
 ];
@@ -45,12 +61,13 @@ class CardManager {
       ];
   
       // Erstelle die flache Box-Geometrie der Kartenform
-      const geometry = new THREE.BoxGeometry(1, 1.25, 0.025);
+      const geometry = new THREE.BoxGeometry(2, 3, 0.025);
   
       // Erstelle das Mesh und setze Position und Rotation
       const cardMesh = new THREE.Mesh(geometry, materials);
-      cardMesh.position.set(4.5, 0, 3);
-      cardMesh.rotation.z = Math.PI / 2;
+      cardMesh.position.set(-4.75 +index*2.4, -18, 4.5);
+      //cardMesh.rotation.z = Math.PI / 2;  //drehung zu den Spielern
+      cardMesh.rotation.x = Math.PI / 2;  //Drehung Karten liegend oder aufgestellt
       
       console.log(`Karte ${index} erstellt:`, cardMesh);
       return cardMesh;
