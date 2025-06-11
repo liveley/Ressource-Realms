@@ -16,18 +16,7 @@ export function createResourceUI() {
   resUI = document.createElement('div');
   resUI.id = 'ressource-ui';
   resUI.style.position = 'absolute';
-  resUI.style.top = '2em';
-  resUI.style.right = '2em';
   resUI.style.zIndex = '10';
-  resUI.style.background = 'rgba(255,255,255,0.92)';
-  resUI.style.borderRadius = '10px';
-  resUI.style.padding = '12px 18px';
-  resUI.style.boxShadow = '0 2px 8px #0002';
-  resUI.style.display = 'flex';
-  resUI.style.gap = '1.5em';
-  resUI.style.fontFamily = "'Montserrat', Arial, sans-serif";
-  resUI.style.fontSize = '1.5em';
-  resUI.style.alignItems = 'center';
   document.body.appendChild(resUI);
 }
 
