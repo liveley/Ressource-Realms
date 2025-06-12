@@ -120,6 +120,26 @@
       margin-left: 1.5em;
       margin-right: 0;
     }
+    #roll-dice {
+      font-size: clamp(1em, 2vw, 1.3em);
+      padding: clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em);
+      border-radius: 0.5em;
+      background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+      border: none;
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-weight: 700;
+      color: #222;
+      box-shadow: 0 2px 8px #0001;
+      cursor: pointer;
+      transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+      outline: none;
+      margin-bottom: 0.5em;
+    }
+    #roll-dice:hover, #roll-dice:focus {
+      background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+      box-shadow: 0 4px 16px #ffe06655, 0 2px 8px #0002;
+      transform: translateY(-2px) scale(1.04);
+    }
     @media (max-width: 1200px) {
       #build-ui {
         font-size: clamp(0.8em, 1.5vw, 0.95em);
@@ -177,6 +197,11 @@
       }
       #ressource-ui span span:first-child {
         font-size: clamp(0.8em, 0.8vw, 0.95em);
+      }
+      #roll-dice {
+        width: 100%;
+        font-size: clamp(0.9em, 2vw, 1.1em);
+        padding: clamp(0.2em, 0.7vw, 0.4em) clamp(0.7em, 2vw, 1.2em);
       }
     }
   </style>

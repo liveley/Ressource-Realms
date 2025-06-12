@@ -12,7 +12,7 @@ import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult } from './modules/uiDice.js';
 import { initTileInfoOverlay, createInfoOverlayToggle } from './modules/uiTileInfo.js';
-import { showBanditOnTile } from './modules/bandit.js';
+import { showBanditOnTile, hideBandit } from './modules/bandit.js';
 import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/game_board.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
