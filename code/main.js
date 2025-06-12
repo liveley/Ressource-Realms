@@ -12,7 +12,7 @@ import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult } from './modules/uiDice.js';
 import { initTileInfoOverlay, createInfoOverlayToggle } from './modules/uiTileInfo.js';
-import { showBanditOnTile } from './modules/bandit.js';
+import { showBanditOnTile, hideBandit } from './modules/bandit.js';
 import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/game_board.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
@@ -95,6 +95,7 @@ window.addEventListener('keydown', (e) => handleResourceKeydown(e)); // handleRe
 
 // === Bandit-Logik: Zeige Bandit auf Wüste, wenn eine 7 gewürfelt wurde ===
 window.addEventListener('diceRolled', (e) => {
+    hideBandit(); // Bandit immer zuerst verstecken
     if (e.detail === 7) {
         const desertPos = getTileWorldPosition(0, 0); // axial 0,0 = Wüste
         showBanditOnTile(scene, desertPos);
