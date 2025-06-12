@@ -95,7 +95,6 @@ window.addEventListener('keydown', (e) => handleResourceKeydown(e)); // handleRe
 
 // === Bandit-Logik: Zeige Bandit auf Wüste, wenn eine 7 gewürfelt wurde ===
 window.addEventListener('diceRolled', (e) => {
-    hideBandit(); // Bandit immer zuerst verstecken
     if (e.detail === 7) {
         const desertPos = getTileWorldPosition(0, 0); // axial 0,0 = Wüste
         showBanditOnTile(scene, desertPos);
