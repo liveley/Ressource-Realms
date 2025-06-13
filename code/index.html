@@ -13,8 +13,11 @@
     #build-ui {
       position: absolute;
       bottom: clamp(1em, 2.5vh, 2.5em);
-      left: 50%;
-      transform: translateX(-50%);
+      right: 1em;
+      /**transform: translateX(-50%);**/
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       background: rgba(255,255,255,0.97);
       border-radius: 0.8em;
       padding: clamp(0.5em, 1vw, 1em) clamp(0.8em, 2vw, 1.2em);
@@ -26,8 +29,8 @@
       align-items: center;
       z-index: 20;
       border: 2px solid #ffe066;
-      min-width: clamp(180px, 28vw, 320px);
-      max-width: 90vw;
+      min-width: clamp(100px, 14vw, 180px);
+      max-width: 40vw;
       justify-content: center;
       transition: box-shadow 0.2s;
     }

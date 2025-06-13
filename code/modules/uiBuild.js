@@ -28,7 +28,7 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     <button id="build-settlement">Siedlung bauen</button>
     <button id="build-city">Stadt bauen</button>
     <button id="build-road">Straße bauen</button>
-    <span>Aktiver Spieler: <select id="player-select"></select></span>
+    <span><select id="player-select"></select></span>
     <span id="build-feedback"></span>
   `;
   ui.appendChild(buildMenu);
