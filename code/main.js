@@ -20,6 +20,7 @@ import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
 import CardManager from './modules/cards.js';
+import { createPlayerOverviews, updatePlayerOverviews } from './modules/ui_player_overview.js';
 import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 
@@ -273,6 +274,8 @@ createBuildUI({
   getActivePlayerIdx: () => activePlayerIdx,
   setActivePlayerIdx: (idx) => {
     activePlayerIdx = idx;
+    updateResourceUI(players[activePlayerIdx]); // Update resource UI on player switch
+    updatePlayerOverviews(players, () => activePlayerIdx);
     updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
   }
 });
