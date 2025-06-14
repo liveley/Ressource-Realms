@@ -29,11 +29,29 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     <button id="build-city">Stadt bauen</button>
     <button id="build-road">Straße bauen</button>
     <span><select id="player-select"></select></span>
-    <span id="build-feedback"></span>
+    <!-- build-feedback entfernt, Pop-up ist jetzt global -->
   `;
   ui.appendChild(buildMenu);
   document.body.appendChild(ui);
 
+  // Pop-up-Feedback-Element global anlegen, falls nicht vorhanden
+  if (!document.getElementById('build-popup-feedback')) {
+    const popup = document.createElement('div');
+    popup.id = 'build-popup-feedback';
+    popup.style.position = 'fixed';
+    popup.style.left = '50%';
+    popup.style.top = '12%';
+    popup.style.transform = 'translateX(-50%)';
+    popup.style.minWidth = '200px';
+    popup.style.padding = '1em 2em';
+    popup.style.borderRadius = '12px';
+    popup.style.fontSize = '1.3em';
+    popup.style.fontFamily = "'Montserrat', Arial, sans-serif";
+    popup.style.textAlign = 'center';
+    popup.style.zIndex = '1000';
+    popup.style.display = 'none';
+    document.body.appendChild(popup);
+  }
   document.getElementById('build-settlement').onclick = () => setBuildMode('settlement');
   document.getElementById('build-city').onclick = () => setBuildMode('city');
   document.getElementById('build-road').onclick = () => setBuildMode('road');
@@ -50,4 +68,22 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
 
 export function isBuildEnabled() {
   return buildEnabled;
+}
+
+// Pop-up Feedback-Funktion
+export function showBuildPopupFeedback(message, success = true) {
+  const popup = document.getElementById('build-popup-feedback');
+  if (!popup) return;
+  popup.textContent = message;
+  popup.style.display = 'block';
+  popup.style.background = success ? '#8fd19e' : '#ffe066';
+  popup.style.color = success ? '#222' : '#d7263d';
+  popup.style.boxShadow = '0 2px 12px #0006';
+  popup.style.opacity = '1';
+  popup.style.transition = 'opacity 0.3s';
+  clearTimeout(window._buildPopupTimeout);
+  window._buildPopupTimeout = setTimeout(() => {
+    popup.style.opacity = '0';
+    setTimeout(() => { popup.style.display = 'none'; }, 350);
+  }, success ? 1200 : 2200);
 }
