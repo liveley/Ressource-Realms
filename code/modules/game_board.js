@@ -8,7 +8,7 @@ import { loadTile } from '../loader.js'; // Import the function to load a single
 const HEX_RADIUS = 3;
 const hexGroup = new THREE.Group();
 
-// Positions of the tiles (axial coordinates)
+// Axial coordinates for all tile types. Resource tiles will be randomized, water tiles are fixed.
 const tilePositions = {
   'clay': [[-1, -1], [-2, 0], [1, -1]], // 3/3 clay tiles placed
   'ore': [[-1, 2], [1, 0], [2, -2]], // 3/3 ore tiles placed
@@ -22,21 +22,21 @@ const tilePositions = {
   ]
 };
 
-// Converts axial coordinates (q, r) to world coordinates (x, y, z)
+// Converts axial coordinates (q, r) to world coordinates (x, y, z) for tile placement
 export function axialToWorld(q, r) {
   const x = HEX_RADIUS * 3/2 * q;
   const y = HEX_RADIUS * Math.sqrt(3) * (r + q/2);
-  const z = 0; // Height remains constant
+  const z = 0; // All tiles are on the same plane
   return [x, y, z];
 }
 
-// === Hilfsfunktion für main.js: Weltkoordinaten eines Tiles (axial) ===
+// === Helper function for main.js: World coordinates of a tile (axial) ===
 export function getTileWorldPosition(q, r) {
     const [x, y, z] = axialToWorld(q, r);
     return { x, y, z };
 }
 
-// === Export: Weltkoordinaten einer bestimmten Ecke (Vertex) eines Hexfelds ===
+// === Export: World coordinates of a specific corner (Vertex) of a hex tile ===
 export function getCornerWorldPosition(q, r, corner) {
   // Returns THREE.Vector3 of the specified corner
   const HEX_RADIUS = 3; // must match above
@@ -48,17 +48,17 @@ export function getCornerWorldPosition(q, r, corner) {
   return new THREE.Vector3(x, y, z);
 }
 
-// Helper: Returns all axial coordinates of land tiles (including center)
+// Returns all axial coordinates for land tiles (including the center desert)
 function getLandTileAxials() {
   const landTypes = ['clay', 'ore', 'sheep', 'wheat', 'wood'];
-  let coords = [[0, 0]]; // Add center
+  let coords = [[0, 0]]; // Center desert tile
   landTypes.forEach(type => {
     coords = coords.concat(tilePositions[type]);
   });
   return coords;
 }
 
-// Helper: Calculates the six corners of a hex tile in world coordinates
+// Returns the world coordinates of the 6 corners of a hex tile
 function getHexCorners(q, r) {
   const corners = [];
   for (let i = 0; i < 6; i++) {
@@ -71,16 +71,16 @@ function getHexCorners(q, r) {
   return corners;
 }
 
-// Helper: Returns the axial coordinate of the neighbor for a given edge
+// Returns the axial coordinates of the neighboring tile for a given edge (0-5, clockwise)
 function neighborAxial(q, r, edge) {
-  // Order: 0 = top right, then clockwise
+  // Edge order: 0 = top right, then clockwise
   const directions = [
     [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
   ];
   return [q + directions[edge][0], r + directions[edge][1]];
 }
 
-// Draws the road meshes as box geometries between tile edges
+// Draws all road meshes (as box geometries) between adjacent land tiles
 function drawRoadMeshes(scene) {
   const landAxials = getLandTileAxials();
   const landSet = new Set(landAxials.map(([q, r]) => `${q},${r}`));
@@ -91,7 +91,7 @@ function drawRoadMeshes(scene) {
     for (let edge = 0; edge < 6; edge++) {
       const [nq, nr] = neighborAxial(q, r, edge);
       const isNeighborLand = landSet.has(`${nq},${nr}`);
-      // Kante zwischen zwei Land-Tiles: wie bisher, aber nur einmal zeichnen
+      // Edge between two land tiles: draw only once to avoid duplicates
       if (isNeighborLand) {
         const key = [[q, r, edge], [nq, nr, (edge + 3) % 6]]
           .map(([a, b, e]) => `${a},${b},${e}`)
@@ -101,28 +101,31 @@ function drawRoadMeshes(scene) {
           drawnEdges.add(key);
           const start = corners[edge];
           const end = corners[(edge + 1) % 6];
+          // Create box geometry for the road
           const roadLength = start.distanceTo(end);
-          const roadWidth = HEX_RADIUS * 0.20;
-          const roadHeight = HEX_RADIUS * 0.40;
+          const roadWidth = HEX_RADIUS * 0.20; // Road thickness
+          const roadHeight = HEX_RADIUS * 0.40; // Road height
           const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
-          const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 });
+          const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 }); // Light brown
           const mesh = new THREE.Mesh(geometry, material);
+          // Position: center of the edge
           mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
+          // Rotate the box to align with the edge direction
           const direction = end.clone().sub(start).normalize();
-          const axis = new THREE.Vector3(1, 0, 0);
+          const axis = new THREE.Vector3(1, 0, 0); // BoxGeometry is along X axis
           const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
           mesh.setRotationFromQuaternion(quaternion);
           scene.add(mesh);
         }
       } else {
-        // Außenkante: immer Quader zeichnen
+        // Outer edge: always draw a box (e.g., for the border)
         const start = corners[edge];
         const end = corners[(edge + 1) % 6];
         const roadLength = start.distanceTo(end);
         const roadWidth = HEX_RADIUS * 0.20;
         const roadHeight = HEX_RADIUS * 0.40;
         const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
-        const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 });
+        const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 }); // Light color for border
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
         const direction = end.clone().sub(start).normalize();
@@ -254,73 +257,102 @@ export function highlightNumberTokens(scene, tileMeshes, tileNumbers, rolledNumb
     });
 }
 
-// === Zeichnet eine beige Outline um alle Land-Tiles (inkl. Wüste) ===
+// === Draws a beige outline around all land tiles (including desert) ===
 function drawLandTileOutline(scene) {
-  const outlineColor = 0xffe066; // schönes Beige
-  const outlineWidth = 0.13; // etwas dicker
+  const outlineColor = 0xffe066; // nice beige color
+  const outlineWidth = 0.13; // slightly thicker
   const landAxials = getLandTileAxials();
   landAxials.forEach(([q, r]) => {
     const corners = getHexCorners(q, r);
-    // Hex-Outline als geschlossene Linie
+    // Hex outline as a closed line
     const points = [...corners, corners[0]];
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const material = new THREE.LineBasicMaterial({ color: outlineColor, linewidth: outlineWidth });
     const line = new THREE.Line(geometry, material);
-    line.position.z += 1.25; // leicht über dem Tile, damit sichtbar
+    line.position.z += 1.25; // slightly above the tile for visibility
     scene.add(line);
   });
 }
 
+// Returns a shuffled array of resource tile types (excluding desert)
+function getShuffledResourceTiles() {
+    // Standard Catan: 4 sheep, 4 wheat, 4 wood, 3 clay, 3 ore, 1 desert (center)
+    const resourceTiles = [
+        ...Array(4).fill('sheep'),
+        ...Array(4).fill('wheat'),
+        ...Array(4).fill('wood'),
+        ...Array(3).fill('clay'),
+        ...Array(3).fill('ore')
+    ];
+    // Shuffle using Fisher-Yates
+    for (let i = resourceTiles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [resourceTiles[i], resourceTiles[j]] = [resourceTiles[j], resourceTiles[i]];
+    }
+    return resourceTiles;
+}
+
 // Add number tokens directly when loading a tile
 export function createGameBoard(scene) {
-  // Load and place the center tile (desert)
-  loadTile('center.glb', (centerTile) => {
-    const centerPos = axialToWorld(0, 0);
-    centerTile.position.set(...centerPos);
-    centerTile.name = 'center.glb'; // Name for raycaster
-    hexGroup.add(centerTile);
-    scene.add(hexGroup);
-    tileMeshes[`0,0`] = centerTile;
-    // No number token for the center (desert)
-  });
-
-  // Load and place the surrounding tiles
-  Object.entries(tilePositions).forEach(([tileName, positions]) => {
-    positions.forEach(([q, r]) => {
-      loadTile(`${tileName}.glb`, (tile) => {
-        const pos = axialToWorld(q, r);
-        tile.position.set(...pos);
-        tile.name = `${tileName}.glb`; // Name for raycaster
-        // === Color water tiles blue ===
-        if (tileName === 'water') {
-          tile.traverse(child => {
-            if (child.isMesh) {
-              child.material = new THREE.MeshStandardMaterial({ color: 0x2da7c1, transparent: true, opacity: 0.98 });
-            }
-          });
-        }
-        hexGroup.add(tile);
+    // --- Place the center desert tile ---
+    loadTile('center.glb', (centerTile) => {
+        const centerPos = axialToWorld(0, 0);
+        centerTile.position.set(...centerPos);
+        centerTile.name = 'center.glb';
+        hexGroup.add(centerTile);
         scene.add(hexGroup);
-        tileMeshes[`${q},${r}`] = tile;
-        // Number token for this tile (if present)
-        const number = tileNumbers[`${q},${r}`];
-        if (number) {
-          const sprite = createNumberTokenSprite(number);
-          sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Height on Y axis
-          tile.add(sprite);
-        }
-      });
+        tileMeshes[`0,0`] = centerTile;
+        // No number token for the center (desert)
     });
-  });
 
+    // --- Randomize and place resource tiles ---
+    // Get all land tile axial coordinates except center
+    const landAxials = getLandTileAxials().filter(([q, r]) => !(q === 0 && r === 0));
+    const shuffledResources = getShuffledResourceTiles();
+    landAxials.forEach(([q, r], idx) => {
+        const resource = shuffledResources[idx];
+        loadTile(`${resource}.glb`, (tile) => {
+            const pos = axialToWorld(q, r);
+            tile.position.set(...pos);
+            tile.name = `${resource}.glb`;
+            hexGroup.add(tile);
+            scene.add(hexGroup);
+            tileMeshes[`${q},${r}`] = tile;
+            // Number token for this tile (if present)
+            const number = tileNumbers[`${q},${r}`];
+            if (number) {
+                const sprite = createNumberTokenSprite(number);
+                sprite.position.set(0, HEX_RADIUS * 0.35, 0);
+                tile.add(sprite);
+            }
+        });
+    });
+
+    // --- Place water tiles (fixed positions) ---
+    tilePositions.water.forEach(([q, r]) => {
+        loadTile('water.glb', (tile) => {
+            const pos = axialToWorld(q, r);
+            tile.position.set(...pos);
+            tile.name = 'water.glb';
+            tile.traverse(child => {
+                if (child.isMesh) {
+                    child.material = new THREE.MeshStandardMaterial({ color: 0x2da7c1, transparent: true, opacity: 0.98 });
+                }
+            });
+            hexGroup.add(tile);
+            scene.add(hexGroup);
+            tileMeshes[`${q},${r}`] = tile;
+        });
+    });
+    
   // Nach dem Platzieren der Tiles: Outline um Land-Tiles zeichnen
   drawLandTileOutline(scene);
 
-  // After placing the tiles: draw road meshes
-  drawRoadMeshes(scene);
-  hexGroup.name = 'HexGroup'; // Name HexGroup for raycaster
-  // Return for main.js
-  return { tileMeshes, tileNumbers };
+    // After placing the tiles: draw road meshes
+    drawRoadMeshes(scene);
+    hexGroup.name = 'HexGroup'; // Name HexGroup for raycaster
+    // Return for main.js
+    return { tileMeshes, tileNumbers };
 }
 
 // Highlight logic for tiles (e.g. after dice roll)
