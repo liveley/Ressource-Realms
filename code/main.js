@@ -5,7 +5,7 @@ import { camera } from './modules/camera.js';
 import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
 import { createDirectionArrows } from './modules/directionArrows.js'; 
-import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, highlightNumberTokens, getTileWorldPosition } from './modules/game_board.js'; 
+import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, highlightNumberTokens, getTileWorldPosition, animateHalos } from './modules/game_board.js'; 
 import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
@@ -74,8 +74,16 @@ initTileInfoOverlay(scene, camera);
 
 // Animation
 function animate() {
+    // Update number tokens to face camera
     updateNumberTokensFacingCamera(scene, camera);
-    updateDicePhysics(); // Physik-Würfel animieren
+    
+    // Update physics for dice
+    updateDicePhysics();
+    
+    // Animate the sunbeam effects - ensure this runs on every frame
+    animateHalos();
+    
+    // Render the scene
     renderer.render(scene, camera);
 }
 
