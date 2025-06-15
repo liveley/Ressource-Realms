@@ -441,34 +441,7 @@ function createTileHalo(position, height = HEX_RADIUS * 1.5, color = 0xffdd66) {
   };
     // Position the entire group at the tile position, but slightly higher to avoid any division effect
   beamGroup.position.set(position.x, position.y, position.z + 0.5);
-  
-  return beamGroup;
-}
-
-// Add halo effects to all land tiles
-export function addTileHalos(scene, tileMeshes) {
-    Object.entries(tileMeshes).forEach(([key, mesh]) => {
-        const position = mesh.position;
-        // Create and add the halo
-        const halo = createTileHalo(position);
-        scene.add(halo);
-    });
-}
-
-// Animation: Update halo visibility based on camera distance
-export function updateTileHaloVisibility(scene, camera) {
-    const distanceThreshold = HEX_RADIUS * 2; // Distance at which halos start to fade
-    const maxOpacity = 0.6; // Fully visible
-    const minOpacity = 0.0; // Fully transparent
-    
-    scene.traverse(obj => {
-        if (obj.userData.isHalo) {
-            const distance = camera.position.distanceTo(obj.position);
-            // Calculate opacity based on distance
-            const opacity = Math.max(minOpacity, maxOpacity - (distance / distanceThreshold));
-            obj.material.opacity = opacity;
-        }
-    });
+    return beamGroup;
 }
 
 // Animate the sunbeams to create a dynamic lighting effect
