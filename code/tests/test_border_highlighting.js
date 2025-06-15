@@ -26,34 +26,46 @@ import { testBorderHighlighting } from '../modules/game_board.js';
 setTimeout(() => {
   console.log("%c===== BORDER HIGHLIGHTING TEST =====", "font-size: 16px; font-weight: bold; color: blue;");
   
-  // Test for all possible dice numbers
-  const diceNumbers = [2, 3, 4, 5, 6, 8, 9, 10, 11, 12];
+  // Test for all possible dice numbers  const diceNumbers = [2, 3, 4, 5, 6, 8, 9, 10, 11, 12];
   
   let allTestsPassed = true;
   
   diceNumbers.forEach(number => {
     const result = testBorderHighlighting(number);
     
-    // Determine expected count
-    let expectedCount = null;
+    // Determine expected counts
+    let expectedBorderCount = null;
     if (result.tilesWithNumber === 2) {
-      expectedCount = result.areAdjacent ? 11 : 12;
+      expectedBorderCount = result.areAdjacent ? 11 : 12;
     } else if (result.tilesWithNumber === 1) {
-      expectedCount = 6;
+      expectedBorderCount = 6;
     }
     
-    const passed = expectedCount === null || result.highlightCount === expectedCount;
+    // The number of sunbeams should match the number of tiles with this number
+    const expectedSunbeamCount = result.tilesWithNumber;
+    
+    const borderPassed = expectedBorderCount === null || result.highlightCount === expectedBorderCount;
+    const sunbeamPassed = result.sunbeamCount === expectedSunbeamCount;
+    const passed = borderPassed && sunbeamPassed;
     
     console.log(
       `%cTest for number ${number}: ${passed ? 'PASSED' : 'FAILED'}\n` +
       `  Tiles with number: ${result.tilesWithNumber}\n` +
       `  Adjacent: ${result.areAdjacent}\n` +
-      `  Highlight count: ${result.highlightCount}\n` +
-      `  Expected: ${expectedCount || 'N/A (multiple tiles)'}\n`,
+      `  Border highlight count: ${result.highlightCount}\n` +
+      `  Expected borders: ${expectedBorderCount || 'N/A (multiple tiles)'}\n` +
+      `  Sunbeam count: ${result.sunbeamCount}\n` +
+      `  Expected sunbeams: ${expectedSunbeamCount}\n`,
       `color: ${passed ? 'green' : 'red'}; font-weight: ${passed ? 'normal' : 'bold'}`
     );
     
     if (!passed) {
+      if (!borderPassed) {
+        console.log(`%cBorder highlight count mismatch for number ${number}!`, 'color: red');
+      }
+      if (!sunbeamPassed) {
+        console.log(`%cSunbeam count mismatch for number ${number}!`, 'color: red');
+      }
       allTestsPassed = false;
     }
   });
