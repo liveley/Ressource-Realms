@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { placeBuildingMesh, placeRoadMesh } from './gamePieces.js';
+import { isBuildEnabled } from './uiBuild.js';
 
 // Build-Event-Handler für das Bauen von Siedlungen und Städten
 // Kapselt die Click-Logik für das Spielfeld
@@ -22,6 +23,8 @@ export function setupBuildEventHandler({
     // Only if menu is hidden
     const menu = document.getElementById('main-menu');
     if (menu && menu.style.display !== 'none') return;
+    // Nur bauen, wenn Bauen aktiviert ist
+    if (!isBuildEnabled()) return;
     // Raycast to find nearest tile and corner
     const mouse = new THREE.Vector2();
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
