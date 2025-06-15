@@ -1,5 +1,26 @@
+/*
+ * BORDER HIGHLIGHTING TEST SCRIPT (DETAILED VERSION)
+ * ------------------------------------------------
+ * 
+ * This script provides more detailed testing for border highlighting functionality.
+ * It performs similar tests to test_highlight.js but with more verification logic.
+ * 
+ * HOW TO USE THIS SCRIPT:
+ * 
+ * Option 1: Add to index.html
+ * ---------------------------
+ * Add this line to your index.html after your main game scripts:
+ * <script type="module" src="./tests/test_border_highlighting.js"></script>
+ * 
+ * Option 2: Run manually in browser console
+ * ----------------------------------------
+ * 1. Load your game in the browser
+ * 2. Open the browser console (F12 or right-click → Inspect → Console)
+ * 3. Run: import('./tests/test_border_highlighting.js')
+ */
+
 // Test script for border highlighting
-import { testBorderHighlighting } from './modules/game_board.js';
+import { testBorderHighlighting } from '../modules/game_board.js';
 
 // Wait for the game to initialize fully
 setTimeout(() => {
