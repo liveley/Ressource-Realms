@@ -388,98 +388,29 @@ window.addEventListener('diceRolled', (e) => {
       const mesh = roadMeshes[edgeKey];
       
       if (mesh) {
-        meshesToHighlight.set(mesh, {
-          tile: [q, r],
-          edge: edge
-        });
+        meshesToHighlight.set(mesh, true);
       }
     }
   });
   
   // Highlight all unique meshes
-  meshesToHighlight.forEach((info, mesh) => {
+  meshesToHighlight.forEach((_, mesh) => {
     mesh.material.color.set(0xffff00); // Yellow
   });
   
-  // Count is the number of unique meshes highlighted
-  const highlightCount = meshesToHighlight.size;
-  
   // Store the count for later use or testing
-  window.lastHighlightCount = highlightCount;
-  console.log('Highlighted border pieces:', highlightCount);
-  
-  // Extra debug info
-  if (matchingTiles.length === 2) {
-    // Check if tiles are adjacent (share a border)
-    const [q1, r1] = matchingTiles[0];
-    const [q2, r2] = matchingTiles[1];
-    
-    // Check all neighbors of first tile
-    let areAdjacent = false;
-    for (let edge = 0; edge < 6; edge++) {
-      const [nq, nr] = neighborAxial(q1, r1, edge);
-      if (nq === q2 && nr === r2) {
-        areAdjacent = true;
-        console.log(`Tiles are adjacent at edge ${edge} of tile [${q1},${r1}]`);
-        break;
-      }
-    }
-    
-    if (areAdjacent) {
-      console.log('Tiles are adjacent, expecting 11 highlighted edges');
-    } else {
-      console.log('Tiles are not adjacent, expecting 12 highlighted edges');
-    }
-  }
+  window.lastHighlightCount = meshesToHighlight.size;
 });
 
 // Test function to verify border highlighting
 export function testBorderHighlighting(number) {
-  console.group(`Testing highlighting for number ${number}`);
-  
-  // Get tiles with this number before triggering event
-  const tilesWithNumber = [];
-  Object.entries(tileNumbers).forEach(([key, tileNumber]) => {
-    if (tileNumber === number) {
-      tilesWithNumber.push(key);
-    }
-  });
-  
-  console.log(`Tiles with number ${number}:`, tilesWithNumber);
-  
-  // Check if tiles are adjacent (if there are exactly 2)
-  let areAdjacent = false;
-  if (tilesWithNumber.length === 2) {
-    const [q1, r1] = tilesWithNumber[0].split(',').map(Number);
-    const [q2, r2] = tilesWithNumber[1].split(',').map(Number);
-    
-    // Check all neighbors of first tile
-    for (let edge = 0; edge < 6; edge++) {
-      const [nq, nr] = neighborAxial(q1, r1, edge);
-      if (nq === q2 && nr === r2) {
-        areAdjacent = true;
-        break;
-      }
-    }
-    
-    console.log(`Tiles are adjacent: ${areAdjacent}`);
-    console.log(`Expected highlight count: ${areAdjacent ? 11 : 12}`);
-  }
-  
   // Trigger dice roll event with the given number
   const event = new CustomEvent('diceRolled', { detail: number });
   window.dispatchEvent(event);
   
-  // Log result
-  console.log(`Actual highlight count: ${window.lastHighlightCount}`);
-  console.groupEnd();
-  
-  // Return result
+  // Return the highlight count
   return {
     highlightCount: window.lastHighlightCount,
-    tilesWithNumber: tilesWithNumber.length,
-    areAdjacent: tilesWithNumber.length === 2 ? areAdjacent : "N/A",
-    expectedCount: tilesWithNumber.length === 2 ? (areAdjacent ? 11 : 12) : (tilesWithNumber.length * 6),
     message: `Highlighted ${window.lastHighlightCount} border segments for number ${number}`
   };
 }
