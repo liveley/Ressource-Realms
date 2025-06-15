@@ -80,59 +80,63 @@ function neighborAxial(q, r, edge) {
   return [q + directions[edge][0], r + directions[edge][1]];
 }
 
-// Draws all road meshes (as box geometries) between adjacent land tiles
+// Store all road meshes for later highlighting
+const roadMeshes = {};
 function drawRoadMeshes(scene) {
   const landAxials = getLandTileAxials();
   const landSet = new Set(landAxials.map(([q, r]) => `${q},${r}`));
   const drawnEdges = new Set();
-
+  
+  // Clear previous road meshes
+  Object.keys(roadMeshes).forEach(key => delete roadMeshes[key]);
+  
   landAxials.forEach(([q, r]) => {
     const corners = getHexCorners(q, r);
+    
+    // Process all 6 edges of the tile
     for (let edge = 0; edge < 6; edge++) {
       const [nq, nr] = neighborAxial(q, r, edge);
       const isNeighborLand = landSet.has(`${nq},${nr}`);
-      // Edge between two land tiles: draw only once to avoid duplicates
-      if (isNeighborLand) {
-        const key = [[q, r, edge], [nq, nr, (edge + 3) % 6]]
-          .map(([a, b, e]) => `${a},${b},${e}`)
-          .sort()
-          .join('|');
-        if (!drawnEdges.has(key)) {
-          drawnEdges.add(key);
-          const start = corners[edge];
-          const end = corners[(edge + 1) % 6];
-          // Create box geometry for the road
-          const roadLength = start.distanceTo(end);
-          const roadWidth = HEX_RADIUS * 0.20; // Road thickness
-          const roadHeight = HEX_RADIUS * 0.40; // Road height
-          const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
-          const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 }); // Light brown
-          const mesh = new THREE.Mesh(geometry, material);
-          // Position: center of the edge
-          mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
-          // Rotate the box to align with the edge direction
-          const direction = end.clone().sub(start).normalize();
-          const axis = new THREE.Vector3(1, 0, 0); // BoxGeometry is along X axis
-          const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
-          mesh.setRotationFromQuaternion(quaternion);
-          scene.add(mesh);
-        }
-      } else {
-        // Outer edge: always draw a box (e.g., for the border)
+      
+      // Create a unique key for this edge (tile1|tile2|edge1|edge2)
+      const edgeKey = [[q, r, edge], [nq, nr, (edge + 3) % 6]]
+        .sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1])
+        .map(([a, b, e]) => `${a},${b},${e}`)
+        .join('|');
+      
+      // Check if we've already drawn this edge
+      if (!drawnEdges.has(edgeKey)) {
+        drawnEdges.add(edgeKey);
+        
+        // Get the start and end points of this edge
         const start = corners[edge];
         const end = corners[(edge + 1) % 6];
+        
+        // Create road mesh
         const roadLength = start.distanceTo(end);
         const roadWidth = HEX_RADIUS * 0.20;
         const roadHeight = HEX_RADIUS * 0.40;
         const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
-        const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 }); // Light color for border
+        const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 });
         const mesh = new THREE.Mesh(geometry, material);
+        
+        // Position and orient the mesh
         mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
         const direction = end.clone().sub(start).normalize();
         const axis = new THREE.Vector3(1, 0, 0);
         const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
         mesh.setRotationFromQuaternion(quaternion);
+        
+        // Add to scene
         scene.add(mesh);
+        
+        // Store in roadMeshes for both the current tile and neighbor tile (if land)
+        roadMeshes[`${q},${r},${edge}`] = mesh;
+        
+        // If neighbor is land, also store reference from its perspective
+        if (isNeighborLand) {
+          roadMeshes[`${nq},${nr},${(edge + 3) % 6}`] = mesh;
+        }
       }
     }
   });
@@ -358,20 +362,124 @@ export function createGameBoard(scene) {
 // Highlight logic for tiles (e.g. after dice roll)
 window.addEventListener('diceRolled', (e) => {
   const number = e.detail;
-  Object.entries(tileMeshes).forEach(([key, mesh]) => {
-    // Remove old highlight
-    mesh.traverse(child => {
-      if (child.material && child.material.emissive) {
-        child.material.emissive.setHex(0x000000);
-      }
-    });
-    // Highlight if number matches
-    if (tileNumbers[key] === number) {
-      mesh.traverse(child => {
-        if (child.material && child.material.emissive) {
-          child.material.emissive.setHex(0xffff00);
-        }
-      });
+  
+  // Reset all road meshes to their default color
+  Object.values(roadMeshes).forEach(mesh => {
+    if (mesh) mesh.material.color.set(0xf5deb3);
+  });
+  
+  // Find all tiles with the rolled number
+  const matchingTiles = [];
+  Object.entries(tileNumbers).forEach(([key, tileNumber]) => {
+    if (tileNumber === number) {
+      const [q, r] = key.split(',').map(Number);
+      matchingTiles.push([q, r]);
     }
   });
+  
+  // Create a map to track each unique physical mesh that should be highlighted
+  const meshesToHighlight = new Map(); // Map of mesh object -> edge info
+  
+  // For each matching tile, find all its border segments
+  matchingTiles.forEach(([q, r]) => {
+    // Check all 6 edges of the tile
+    for (let edge = 0; edge < 6; edge++) {
+      const edgeKey = `${q},${r},${edge}`;
+      const mesh = roadMeshes[edgeKey];
+      
+      if (mesh) {
+        meshesToHighlight.set(mesh, {
+          tile: [q, r],
+          edge: edge
+        });
+      }
+    }
+  });
+  
+  // Highlight all unique meshes
+  meshesToHighlight.forEach((info, mesh) => {
+    mesh.material.color.set(0xffff00); // Yellow
+  });
+  
+  // Count is the number of unique meshes highlighted
+  const highlightCount = meshesToHighlight.size;
+  
+  // Store the count for later use or testing
+  window.lastHighlightCount = highlightCount;
+  console.log('Highlighted border pieces:', highlightCount);
+  
+  // Extra debug info
+  if (matchingTiles.length === 2) {
+    // Check if tiles are adjacent (share a border)
+    const [q1, r1] = matchingTiles[0];
+    const [q2, r2] = matchingTiles[1];
+    
+    // Check all neighbors of first tile
+    let areAdjacent = false;
+    for (let edge = 0; edge < 6; edge++) {
+      const [nq, nr] = neighborAxial(q1, r1, edge);
+      if (nq === q2 && nr === r2) {
+        areAdjacent = true;
+        console.log(`Tiles are adjacent at edge ${edge} of tile [${q1},${r1}]`);
+        break;
+      }
+    }
+    
+    if (areAdjacent) {
+      console.log('Tiles are adjacent, expecting 11 highlighted edges');
+    } else {
+      console.log('Tiles are not adjacent, expecting 12 highlighted edges');
+    }
+  }
 });
+
+// Test function to verify border highlighting
+export function testBorderHighlighting(number) {
+  console.group(`Testing highlighting for number ${number}`);
+  
+  // Get tiles with this number before triggering event
+  const tilesWithNumber = [];
+  Object.entries(tileNumbers).forEach(([key, tileNumber]) => {
+    if (tileNumber === number) {
+      tilesWithNumber.push(key);
+    }
+  });
+  
+  console.log(`Tiles with number ${number}:`, tilesWithNumber);
+  
+  // Check if tiles are adjacent (if there are exactly 2)
+  let areAdjacent = false;
+  if (tilesWithNumber.length === 2) {
+    const [q1, r1] = tilesWithNumber[0].split(',').map(Number);
+    const [q2, r2] = tilesWithNumber[1].split(',').map(Number);
+    
+    // Check all neighbors of first tile
+    for (let edge = 0; edge < 6; edge++) {
+      const [nq, nr] = neighborAxial(q1, r1, edge);
+      if (nq === q2 && nr === r2) {
+        areAdjacent = true;
+        break;
+      }
+    }
+    
+    console.log(`Tiles are adjacent: ${areAdjacent}`);
+    console.log(`Expected highlight count: ${areAdjacent ? 11 : 12}`);
+  }
+  
+  // Trigger dice roll event with the given number
+  const event = new CustomEvent('diceRolled', { detail: number });
+  window.dispatchEvent(event);
+  
+  // Log result
+  console.log(`Actual highlight count: ${window.lastHighlightCount}`);
+  console.groupEnd();
+  
+  // Return result
+  return {
+    highlightCount: window.lastHighlightCount,
+    tilesWithNumber: tilesWithNumber.length,
+    areAdjacent: tilesWithNumber.length === 2 ? areAdjacent : "N/A",
+    expectedCount: tilesWithNumber.length === 2 ? (areAdjacent ? 11 : 12) : (tilesWithNumber.length * 6),
+    message: `Highlighted ${window.lastHighlightCount} border segments for number ${number}`
+  };
+}
