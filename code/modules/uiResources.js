@@ -26,10 +26,8 @@ export function updateResourceUI(player, idx) {
   if (typeof idx === 'number') currentPlayerIdx = idx;
   currentPlayer = player;
   if (!resUI || !player) {
-    console.log('[UI] Kein resUI oder player:', resUI, player);
     return;
   }
-  console.log('[UI] updateResourceUI für', player.name, player.resources);
   resUI.innerHTML = resources.map(r => `
     <span style="display:inline-flex;align-items:center;gap:0.3em;min-width:3.5em;">
       <span style="font-size:1.5em;">${r.symbol}</span>

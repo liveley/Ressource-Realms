@@ -382,11 +382,9 @@ window.addEventListener('diceRolled', (e) => {
       // === Ressourcenverteilung (fix: alle angrenzenden Hexes/Corners prüfen) ===
       // Ermittle Rohstofftyp aus mesh.name (z.B. 'wood.glb' -> 'wood')
       let resourceType = null;
-      console.log('[DEBUG] mesh.name:', mesh.name, 'tileNumbers:', tileNumbers[key]);
       if (mesh.name && mesh.name.endsWith('.glb')) {
         resourceType = mesh.name.replace('.glb', '');
       }
-      console.log('[DEBUG] resourceType:', resourceType);
       if (resourceType && resourceType !== 'center' && resourceType !== 'water') {
         for (let corner = 0; corner < 6; corner++) {
           // Ermittle alle angrenzenden Hexes/Corners für diese physische Ecke
@@ -412,18 +410,13 @@ window.addEventListener('diceRolled', (e) => {
           for (const player of window.players || []) {
             for (const pos of adjacent) {
               // Debug: Zeige alle Siedlungen und die geprüften Koordinaten
-              if (player.settlements && player.settlements.length > 0) {
-                console.log(`[DEBUG] Prüfe Siedlungen von ${player.name}:`, player.settlements, 'gegen', pos);
-              }
               // Siedlung?
               if (player.settlements && player.settlements.some(s => s.q === pos.q && s.r === pos.r && s.corner === pos.corner)) {
                 player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
-                console.log(`[Ressourcen] ${player.name} erhält 1 ${resourceType} (Siedlung)`);
               }
               // Stadt?
               if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
                 player.resources[resourceType] = (player.resources[resourceType] || 0) + 2;
-                console.log(`[Ressourcen] ${player.name} erhält 2 ${resourceType} (Stadt)`);
               }
             }
           }
