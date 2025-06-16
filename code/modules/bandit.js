@@ -19,8 +19,15 @@ let validRobberTiles = []; // Will store valid tiles for robber placement
 let scene = null; // Store reference to scene
 const HEX_RADIUS = 3; // Match the radius used by game board for distance calculations
 
-// Function to consistently get the exact center of a tile in world coordinates
-// This ensures the robber is always placed in the center, regardless of tile position calculation
+/**
+ * Gets the exact center of a tile in world coordinates for consistent robber placement
+ * This ensures the robber is always placed precisely in the center, regardless of how the tile position was initially calculated
+ * 
+ * @param {number} q - The q coordinate in the axial coordinate system
+ * @param {number} r - The r coordinate in the axial coordinate system
+ * @param {Object} tileMeshes - Dictionary of all tile meshes indexed by their q,r coordinates as string
+ * @returns {THREE.Vector3} The world position for the center of the tile
+ */
 export function getTileCenter(q, r, tileMeshes) {
     const tileKey = `${q},${r}`;
     const tileMesh = tileMeshes[tileKey];
@@ -147,8 +154,8 @@ export function showRobberSelectionMessage(customMessage) {
         msg.style.zIndex = '100';
         msg.style.textAlign = 'center';
         document.body.appendChild(msg);
-    }
-      // Display message - use custom message or default
+    }    
+    // Display message - use custom message or default
     msg.textContent = customMessage || 'Eine 7 wurde gewürfelt! Wähle ein Feld für den Räuber.';
     msg.style.display = 'block';
 }
@@ -174,7 +181,7 @@ function showBanditMessage() {
         msg.style.textAlign = 'center';
         document.body.appendChild(msg);
     }
-    
+
     // Simple confirmation message
     msg.textContent = 'Der Räuber wurde bewegt!';
     msg.style.display = 'block';
@@ -272,6 +279,14 @@ export function hideBandit() {
 }
 
 // Start robber tile selection mode
+/**
+ * Initiates robber placement mode, identifying valid tiles where the robber can be placed
+ * Valid tiles are all non-water, non-desert tiles that are not the current robber location
+ * 
+ * @param {Object} tileMeshes - Dictionary of all tile meshes indexed by their q,r coordinates
+ * @param {Object} tileNumbers - Dictionary mapping tile coordinates to their number tokens
+ * @returns {boolean} True if robber placement mode was successfully started, false if already in placement mode
+ */
 export function startRobberPlacement(tileMeshes, tileNumbers) {
     // Only allow starting if not already in selection mode
     if (isSelectingRobberTile) return false;
@@ -293,8 +308,7 @@ export function startRobberPlacement(tileMeshes, tileNumbers) {
       console.log(`Robber selection started. ${validRobberTiles.length} valid tiles available.`);
     
     // Show debug indicator for robber selection mode
-    createRobberSelectionIndicator();
-      // Display message
+    createRobberSelectionIndicator();    // Display message
     showRobberSelectionMessage('Wähle ein Feld für den Räuber');
     
     // Return true to indicate we're in selection mode
@@ -308,7 +322,16 @@ function highlightTile(mesh, isHighlighted) {
     return;
 }
 
-// Handle a tile selection for robber placement
+/**
+ * Handles user interaction for selecting a tile to place the robber
+ * Uses multiple methods to determine which tile was clicked, validates if it's a legal placement,
+ * and handles the robber movement if valid
+ * 
+ * @param {Object} intersection - The intersection data from the raycaster
+ * @param {Object} tileMeshes - Dictionary of all tile meshes indexed by their q,r coordinates
+ * @param {Function} getTilePosition - Function to get the position of a tile from its q,r coordinates
+ * @returns {boolean} True if robber was successfully placed, false otherwise
+ */
 export function handleTileSelection(intersection, tileMeshes, getTilePosition) {
     if (!isSelectingRobberTile) return false;
     
@@ -470,8 +493,7 @@ export function handleTileSelection(intersection, tileMeshes, getTilePosition) {
             }));
             
             return true;        } else {
-            console.log(`Tile ${selectedTileKey} is not valid for robber placement (desert or current position)`);            // Show specific error message for invalid tiles
-            let reason = '';
+            console.log(`Tile ${selectedTileKey} is not valid for robber placement (desert or current position)`);            // Show specific error message for invalid tiles            let reason = '';
             if (q === 0 && r === 0) {
                 reason = ' (Wüste)';
             } else if (selectedTileMesh.name && selectedTileMesh.name.startsWith('water')) {
@@ -512,12 +534,23 @@ export function getRobberPosition() {
     return { ...currentRobberTile };
 }
 
-// Check if we're currently in robber placement mode
+/**
+ * Checks if the game is currently in robber placement mode
+ * Used by other modules to determine if clicks should be processed for robber placement
+ * 
+ * @returns {boolean} True if currently in robber placement mode, false otherwise
+ */
 export function isInRobberPlacementMode() {
     return isSelectingRobberTile;
 }
 
-// Cancel robber placement mode
+/**
+ * Cancels the current robber placement mode
+ * This function is retained for API compatibility but is no longer used by the keyboard handler
+ * May be useful for future development or for programmatic cancellation of robber placement
+ * 
+ * @deprecated The user can no longer cancel robber placement, must place the robber after rolling a 7
+ */
 export function cancelRobberPlacement() {
     if (!isSelectingRobberTile) return;
       // Exit selection mode
@@ -529,8 +562,8 @@ export function cancelRobberPlacement() {
     if (msg) msg.style.display = 'none';
       // Remove the robber selection indicator
     removeRobberSelectionIndicator();
-    
-    // Show simple cancellation message
+
+      // Show simple cancellation message
     const cancelMsg = document.createElement('div');
     cancelMsg.textContent = 'Räuberplatzierung abgebrochen';
     cancelMsg.style.position = 'fixed';

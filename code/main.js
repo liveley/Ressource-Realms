@@ -178,13 +178,6 @@ window.addEventListener('click', (event) => {
     }
 });
 
-// Listen for robber placement canceled event
-window.addEventListener('robberPlacementCanceled', () => {
-    console.log("Robber placement was canceled");
-    // Unblock dice rolls
-    unblockDiceRolls();
-});
-
 
 
 // Animation
