@@ -7,10 +7,14 @@ import { showPlayerSwitchButton } from './change_player.js';
 let buildEnabled = false;
 let buildMenu = null;
 
-export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePlayerIdx, setActivePlayerIdx }) {
+export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePlayerIdx, setActivePlayerIdx, parent }) {
   // Build-UI (wie bisher)
   const ui = document.createElement('div');
   ui.id = 'build-ui';
+  ui.style.display = 'flex';
+  ui.style.flexDirection = 'column';
+  ui.style.alignItems = 'center';
+  // Keine absolute Positionierung mehr!
 
   // Bau-Button (immer sichtbar)
   const buildToggleBtn = document.createElement('button');
@@ -19,13 +23,16 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildToggleBtn.style.fontSize = '2.5em'; // Emoji so groß wie beim Würfeln-Button
   buildToggleBtn.onclick = () => {
     buildEnabled = !buildEnabled;
-    buildToggleBtn.textContent = buildEnabled ? '🏗️ AUS' : '🏗️';
+    console.log('Build-UI: buildEnabled =', buildEnabled);
+    buildToggleBtn.textContent = buildEnabled ? '\ud83c\udfd7\ufe0f AUS' : '\ud83c\udfd7\ufe0f';
     if (buildMenu) buildMenu.style.display = buildEnabled ? 'flex' : 'none';
     // Hintergrund und Rand nur anzeigen, wenn Menü offen ist
     if (buildEnabled) {
       ui.classList.add('menu-open');
+      console.log('Build-UI: Menü geöffnet');
     } else {
       ui.classList.remove('menu-open');
+      console.log('Build-UI: Menü geschlossen');
     }
   };
   ui.appendChild(buildToggleBtn);
@@ -62,11 +69,14 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   cityBtn.onclick = () => setBuildMode('city');
   buildMenu.appendChild(cityBtn);
 
-  // Build-UI direkt an body anhängen
-  document.body.appendChild(ui);
   ui.appendChild(buildMenu);
 
-  // Spielerwechsel-Button wird nicht mehr im Build-Menü platziert
+  // In gewünschtes Parent-Element einfügen
+  if (parent) {
+    parent.appendChild(ui);
+  } else {
+    document.body.appendChild(ui);
+  }
 
   // Pop-up-Feedback-Element global anlegen, falls nicht vorhanden
   if (!document.getElementById('build-popup-feedback')) {
@@ -89,7 +99,9 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
 }
 
 export function isBuildEnabled() {
-  return buildEnabled;
+  // Prüfe, ob das Build-Menü offen ist (über die Klasse am UI-Element)
+  const ui = document.getElementById('build-ui');
+  return !!(ui && ui.classList.contains('menu-open'));
 }
 
 // Pop-up Feedback-Funktion

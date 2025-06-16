@@ -95,26 +95,19 @@ export function showPlayerSwitchButton(players, getActivePlayerIdx, setActivePla
  * @param {Function} getActivePlayerIdx - Funktion, die den aktuellen Spielerindex zurückgibt.
  * @param {Function} setActivePlayerIdx - Funktion, die den neuen Spielerindex setzt.
  */
-export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePlayerIdx) {
+export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePlayerIdx, parent) {
   // Prüfe, ob der Button schon existiert
   if (document.getElementById('player-switch-btn')) return;
-  // Button im Stil des Würfeln-Buttons
+  // Button im Stil des Würfeln- und Bauen-Buttons
   const btn = document.createElement('button');
   btn.id = 'player-switch-btn';
-  btn.style.position = 'absolute';
-  btn.style.right = '0.5em';
-  btn.style.bottom = '0em';
-  btn.style.zIndex = '20';
-  btn.style.width = 'auto';
-  btn.style.height = 'auto';
   btn.style.display = 'flex';
   btn.style.flexDirection = 'column';
   btn.style.alignItems = 'center';
   btn.style.justifyContent = 'center';
-  btn.style.padding = '0.4em';
   btn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
   btn.style.border = 'none';
-  btn.style.borderRadius = '6px';
+  btn.style.borderRadius = '0.5em';
   btn.style.boxShadow = '0 2px 8px #0001';
   btn.style.cursor = 'pointer';
   btn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s';
@@ -123,7 +116,10 @@ export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePl
   btn.style.fontWeight = '700';
   btn.style.color = '#222';
   btn.style.fontSize = '2.5em';
-  btn.style.marginBottom = '0.5em';
+  btn.style.minWidth = 'clamp(100px, 14vw, 180px)';
+  btn.style.minHeight = 'clamp(56px, 3.5em, 80px)';
+  btn.style.padding = 'clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em)';
+  btn.style.boxSizing = 'border-box';
 
   // Emoji (gleiche Größe wie Würfeln)
   const emoji = document.createElement('span');
@@ -146,5 +142,10 @@ export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePl
     const nextIdx = (idx + 1) % players.length;
     setActivePlayerIdx(nextIdx);
   };
-  document.body.appendChild(btn);
+  // Button in das gewünschte Parent-Element einfügen (z.B. Action Bar)
+  if (parent) {
+    parent.appendChild(btn);
+  } else {
+    document.body.appendChild(btn);
+  }
 }
