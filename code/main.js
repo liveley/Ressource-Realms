@@ -7,7 +7,7 @@ import { createHexGrid } from './modules/hexGrid.js';
 import { createDirectionArrows } from './modules/directionArrows.js'; 
 import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, updateNumberTokensForRobber } from './modules/game_board.js';
 import { animateHalos, highlightNumberTokens, getTileWorldPosition } from './modules/tileHighlight.js'; 
-import { rollDice, showDice, throwPhysicsDice, updateDicePhysics, setDebugDiceValue, toggleDebugDiceMode } from './modules/dice.js';
+import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
@@ -20,6 +20,7 @@ import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
 import CardManager from './modules/cards.js';
+import { showDebugMessage, createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugTools.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -299,50 +300,8 @@ window.addEventListener('keydown', (e) => {
             "Debug mode enabled: Dice will always roll 7" : 
             "Debug mode disabled: Dice will roll randomly";
         
-        // Display the message in the UI
-        const messageEl = document.createElement('div');
-        messageEl.className = 'debug-message';
-        messageEl.textContent = message;
-        messageEl.style.position = 'fixed';
-        messageEl.style.bottom = '20px';
-        messageEl.style.left = '20px';
-        messageEl.style.padding = '10px';
-        messageEl.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        messageEl.style.color = 'white';
-        messageEl.style.borderRadius = '5px';
-        messageEl.style.zIndex = '1000';
-        messageEl.style.fontFamily = "'Montserrat', Arial, sans-serif";
-        document.body.appendChild(messageEl);
-          // Create a debug indicator that stays when in debug mode
-        let debugIndicator = document.getElementById('debug-dice-indicator');
-        if (window.debugDiceEnabled) {
-            if (!debugIndicator) {
-                debugIndicator = document.createElement('div');
-                debugIndicator.id = 'debug-dice-indicator';
-                debugIndicator.textContent = '🎲 ALWAYS 7 MODE';
-                debugIndicator.style.position = 'fixed';
-                debugIndicator.style.top = '6em';
-                debugIndicator.style.right = '20px';
-                debugIndicator.style.padding = '5px 10px';
-                debugIndicator.style.backgroundColor = 'rgba(255, 50, 50, 0.85)';
-                debugIndicator.style.color = 'white';
-                debugIndicator.style.borderRadius = '5px';
-                debugIndicator.style.zIndex = '1000';
-                debugIndicator.style.fontFamily = "'Montserrat', Arial, sans-serif";
-                debugIndicator.style.fontSize = '0.85em';
-                debugIndicator.style.fontWeight = 'bold';
-                debugIndicator.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-                document.body.appendChild(debugIndicator);
-            }
-        } else if (debugIndicator) {
-            document.body.removeChild(debugIndicator);
-        }
-        
-        // Remove the message after 3 seconds
-        setTimeout(() => {
-            if (messageEl.parentNode) {
-                document.body.removeChild(messageEl);
-            }
-        }, 3000);
+        // Display the debug message and indicator
+        showDebugMessage(message, 3000);
+        createDebugDiceIndicator(window.debugDiceEnabled, 7);
     }
 });

@@ -2,38 +2,17 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { getDebugDiceValue } from './debugTools.js';
 
-// Debug flag to force certain dice values
-let debugForceValue = null;
-
-export function setDebugDiceValue(value) {
-  debugForceValue = value;
-  console.log(`Debug mode: Dice will roll ${value || 'randomly'}`);
-  return debugForceValue;
-}
-
-/**
- * Toggle debug dice mode between a specific value and normal random rolling
- * @param {number|null} value - The value to force (null for normal random rolling)
- * @returns {boolean} - Whether debug mode is now enabled
- */
-export function toggleDebugDiceMode(value = 7) {
-  if (debugForceValue === null) {
-    debugForceValue = value;
-    console.log(`%c🎲 DEBUG MODE ENABLED: Dice will always roll ${value}`, 'background: #d42; color: white; font-weight: bold; padding: 3px 5px; border-radius: 3px;');
-    return true;
-  } else {
-    debugForceValue = null;
-    console.log('%c🎲 DEBUG MODE DISABLED: Dice will roll randomly', 'background: #333; color: white; font-weight: bold; padding: 3px 5px; border-radius: 3px;');
-    return false;
-  }
-}
+// Re-export debug functions for backward compatibility
+export { setDebugDiceValue, toggleDebugDiceMode } from './debugTools.js';
 
 export function rollDice() {
   // Check if we're forcing a specific value for debugging
-  if (debugForceValue !== null) {
+  const debugValue = getDebugDiceValue();
+  if (debugValue !== null) {
     // For a forced 7, use 1+6 or 2+5 or 3+4 randomly
-    if (debugForceValue === 7) {
+    if (debugValue === 7) {
       const options = [[1,6], [2,5], [3,4]];
       const choice = options[Math.floor(Math.random() * options.length)];
       window.lastDice = { left: choice[0], right: choice[1], sum: 7 };
@@ -41,10 +20,10 @@ export function rollDice() {
     }
     
     // For other values, just split somewhat randomly
-    const left = Math.min(6, Math.max(1, Math.floor(debugForceValue / 2)));
-    const right = debugForceValue - left;
-    window.lastDice = { left, right, sum: debugForceValue };
-    return debugForceValue;
+    const left = Math.min(6, Math.max(1, Math.floor(debugValue / 2)));
+    const right = debugValue - left;
+    window.lastDice = { left, right, sum: debugValue };
+    return debugValue;
   }
   
   // Normal random dice roll
@@ -266,7 +245,8 @@ export function updateDicePhysics() {
     m.quaternion.copy(b.quaternion);
   }
   // === Nach dem Auswürfeln: Augenzahlen erkennen und Summe setzen ===
-  if (window.setDiceResultFromPhysics) {    // Prüfe, ob beide Würfel wirklich liegen (kaum Bewegung)
+  if (window.setDiceResultFromPhysics) {
+    // Prüfe, ob beide Würfel wirklich liegen (kaum Bewegung)
     const threshold = 0.15; // Geschwindigkeitsschwelle
     const allResting = diceBodies.every(b =>
       b.velocity.length() < threshold && b.angularVelocity.length() < threshold
@@ -277,13 +257,21 @@ export function updateDicePhysics() {
       setTimeout(() => {
         if (!window.setDiceResultFromPhysics) return; // Another call already handled it
         
-        // Check if we're in debug mode - if so, force result to 7
-        if (debugForceValue !== null) {
-          console.log('🎲 Debug mode activated: forcing dice to show 7');
+        // Check if we're in debug mode - if so, force result to the debug value
+        const debugValue = getDebugDiceValue();
+        if (debugValue !== null) {
+          console.log(`🎲 Debug mode activated: forcing dice to show ${debugValue}`);
           // For a forced 7, use 1+6 or 2+5 or 3+4 randomly
-          const options = [[1,6], [2,5], [3,4]];
-          const choice = options[Math.floor(Math.random() * options.length)];
-          window.setDiceResultFromPhysics({ left: choice[0], right: choice[1], sum: 7 });
+          if (debugValue === 7) {
+            const options = [[1,6], [2,5], [3,4]];
+            const choice = options[Math.floor(Math.random() * options.length)];
+            window.setDiceResultFromPhysics({ left: choice[0], right: choice[1], sum: 7 });
+          } else {
+            // For other values, just split somewhat randomly
+            const left = Math.min(6, Math.max(1, Math.floor(debugValue / 2)));
+            const right = debugValue - left;
+            window.setDiceResultFromPhysics({ left, right, sum: debugValue });
+          }
         } else {
           // Normal dice roll result from physics
           const left = getDiceTopNumber(diceMeshes[0]);
