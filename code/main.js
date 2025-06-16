@@ -5,7 +5,7 @@ import { camera } from './modules/camera.js';
 import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
 import { createDirectionArrows } from './modules/directionArrows.js'; 
-import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera } from './modules/game_board.js';
+import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, updateNumberTokensForRobber } from './modules/game_board.js';
 import { animateHalos, highlightNumberTokens, getTileWorldPosition } from './modules/tileHighlight.js'; 
 import { rollDice, showDice, throwPhysicsDice, updateDicePhysics, setDebugDiceValue, toggleDebugDiceMode } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
@@ -48,6 +48,16 @@ setupLights(scene);
 const { tileMeshes, tileNumbers } = createGameBoard(scene);
 // Nach dem Erstellen des Spielfelds: Number Tokens hinzufügen
 addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
+
+// Initialize robber position and update number token colors
+// At start, the robber is on the desert tile at 0,0, which has no number token
+// Wait a bit for all tokens to load before applying the colors
+const initialRobberTileKey = '0,0';
+// Use a slight delay to ensure all tokens are created
+setTimeout(() => {
+  console.log("Setting initial token colors for robber on desert");
+  updateNumberTokensForRobber(initialRobberTileKey);
+}, 500);
 
 // Initialize the robber on the desert tile (q=0, r=0)
 // We now pass tileMeshes to use the accurate center position calculation
@@ -217,6 +227,12 @@ window.addEventListener('robberMoved', (e) => {
     // This is a fallback to ensure proper placement even after the event
     const accuratePosition = getTileCenter(e.detail.q, e.detail.r, tileMeshes);
     console.log("Ensuring robber is at accurate position:", accuratePosition);
+      // Update the number token colors to show which one is blocked
+    // Use setTimeout to ensure any tile updates complete first
+    setTimeout(() => {
+        console.log("Updating token colors for robber moved to", blockedTileKey);
+        updateNumberTokensForRobber(blockedTileKey);
+    }, 100);
 });
 
 // Handle 7 being rolled

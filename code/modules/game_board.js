@@ -176,10 +176,13 @@ function createNumberTokenSprite(number) {
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext('2d');    // Background (circle)
+    const ctx = canvas.getContext('2d');    
+    
+    // Background (circle)
+    const defaultBackgroundColor = '#fff8dc'; // Default cream background color
     ctx.beginPath();
     ctx.arc(size/2, size/2, size/2 - 8, 0, 2 * Math.PI);
-    ctx.fillStyle = '#fff8dc';
+    ctx.fillStyle = defaultBackgroundColor;
     ctx.shadowColor = '#000';
     ctx.shadowBlur = 12;
     ctx.fill();
@@ -187,7 +190,9 @@ function createNumberTokenSprite(number) {
     // Border for better visibility
     ctx.lineWidth = 6;
     ctx.strokeStyle = '#222';
-    ctx.stroke();    // === Dynamic size and color for the number ===
+    ctx.stroke();    
+    
+    // === Dynamic size and color for the number ===
     let fontSize, fontColor;
     if (number === 6 || number === 8) {
         fontSize = 90;
@@ -203,21 +208,61 @@ function createNumberTokenSprite(number) {
         fontColor = '#222';
     } else if (number === 5 || number === 9) {
         fontSize = 76;
-        fontColor = '#222';
-    } else { // fallback
+        fontColor = '#222';    } else { // fallback
         fontSize = 60;
-        fontColor = '#222';}
-      ctx.font = `bold ${fontSize}px Arial`;
+        fontColor = '#222';
+    }
+    ctx.font = `bold ${fontSize}px Arial`;
     ctx.fillStyle = fontColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(number, size/2, size/2);    // Create texture and sprite
+    ctx.fillText(number, size/2, size/2);
+    
+    // Create texture and sprite
     const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.95 });    const sprite = new THREE.Sprite(material);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.95 });
+    const sprite = new THREE.Sprite(material);
     sprite.scale.set(0.9, 0.9, 1); // slightly larger
+    
+    // Store variables needed for updating the token color
+    sprite.userData.canvas = canvas;
+    sprite.userData.ctx = ctx;
+    sprite.userData.texture = texture;
+    sprite.userData.number = number;
+    sprite.userData.defaultBackgroundColor = defaultBackgroundColor;
+      // Store function to update background color and optionally text color
+    sprite.userData.updateBackgroundColor = function(bgColor, textColor = null) {
+        // Clear canvas
+        ctx.clearRect(0, 0, size, size);
+        
+        // Redraw background with new color
+        ctx.beginPath();
+        ctx.arc(size/2, size/2, size/2 - 8, 0, 2 * Math.PI);
+        ctx.fillStyle = bgColor;
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        // Border for better visibility
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#222';
+        ctx.stroke();
+        
+        // Redraw number with original or specified text color
+        ctx.font = `bold ${fontSize}px Arial`;
+        ctx.fillStyle = textColor || fontColor; // Use specified text color or fall back to original
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(number, size/2, size/2);
+        
+        // Update texture to show changes
+        texture.needsUpdate = true;
+    };
+    
     // Default position - will be overridden when added to tile
     sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden (moderat über dem Räuber)
-    sprite.userData.number = number;
+    
     return sprite;
 }
 
@@ -376,3 +421,34 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
 
 // Re-export the highlight functions from tileHighlight module
 export { animateHalos, testBorderHighlighting };
+
+// Function to update number token colors when the robber is moved
+// Function to update number token colors based on robber position
+export function updateNumberTokensForRobber(robberTileKey) {
+    const ROBBER_BLOCKED_COLOR = '#FF4D00'; // Vibrant orange color for blocked tile
+    
+    console.log(`Updating number token colors, robber on tile ${robberTileKey}`);
+    
+    // Reset all number tokens to default color first
+    Object.values(tileMeshes).forEach(mesh => {
+        mesh.traverse(child => {
+            if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
+                child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null); // Reset to default background with original text color
+                console.log(`Reset token color on tile ${child.userData.tileKey || 'unknown'}`);
+            }
+        });
+    });
+    
+    // If we have a blocked tile, change its token color
+    if (robberTileKey && tileMeshes[robberTileKey]) {
+        const blockedTileMesh = tileMeshes[robberTileKey];
+        
+        // Find the number token in this tile and change its color
+        blockedTileMesh.traverse(child => {
+            if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
+                console.log(`Changing token color on blocked tile ${robberTileKey} to #FF4D00`);
+                child.userData.updateBackgroundColor(ROBBER_BLOCKED_COLOR, '#000000'); // Orange background with black text
+            }
+        });
+    }
+}
