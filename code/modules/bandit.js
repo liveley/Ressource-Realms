@@ -278,13 +278,14 @@ export function startRobberPlacement(tileMeshes, tileNumbers) {
     
     isSelectingRobberTile = true;
     validRobberTiles = [];
-    
-    // Track valid tiles but don't highlight them
+      // Track valid tiles but don't highlight them
     Object.entries(tileMeshes).forEach(([key, mesh]) => {
         const [q, r] = key.split(',').map(Number);
         
-        // Skip desert tile (0,0) and current robber position
-        if (!(q === 0 && r === 0) && !(q === currentRobberTile.q && r === currentRobberTile.r)) {
+        // Skip desert tile (0,0), current robber position, and water tiles
+        if (!(q === 0 && r === 0) && 
+            !(q === currentRobberTile.q && r === currentRobberTile.r) && 
+            !(mesh.name && mesh.name.startsWith('water'))) {
             validRobberTiles.push({ q, r, key, mesh });
             // No highlighting - removed
         }
@@ -436,9 +437,10 @@ export function handleTileSelection(intersection, tileMeshes, getTilePosition) {
     if (selectedTileKey) {
         const [q, r] = selectedTileKey.split(',').map(Number);
         console.log(`Found tile at q=${q}, r=${r}, checking if it's valid for robber placement`);
-        
-        // Check if it's a valid selection (not desert and not current position)
-        if (!(q === 0 && r === 0) && !(q === currentRobberTile.q && r === currentRobberTile.r)) {
+          // Check if it's a valid selection (not desert, not water, and not current position)
+        if (!(q === 0 && r === 0) && 
+            !(q === currentRobberTile.q && r === currentRobberTile.r) && 
+            !(selectedTileMesh.name && selectedTileMesh.name.startsWith('water'))) {
             console.log(`Placing robber on tile ${selectedTileKey}`);
               // Update current robber position
             currentRobberTile = { q, r };
@@ -468,10 +470,17 @@ export function handleTileSelection(intersection, tileMeshes, getTilePosition) {
             }));
             
             return true;        } else {
-            console.log(`Tile ${selectedTileKey} is not valid for robber placement (desert or current position)`);
-              // Show specific error message for invalid tiles
+            console.log(`Tile ${selectedTileKey} is not valid for robber placement (desert or current position)`);            // Show specific error message for invalid tiles
+            let reason = '';
+            if (q === 0 && r === 0) {
+                reason = ' (Wüste)';
+            } else if (selectedTileMesh.name && selectedTileMesh.name.startsWith('water')) {
+                reason = ' (Wasser)';
+            } else {
+                reason = ' (aktuell blockiert)';
+            }
             showBanditActionMessage(
-                `Der Räuber kann nicht auf diesem Feld platziert werden${(q === 0 && r === 0) ? ' (Wüste)' : ' (aktuell blockiert)'}`,
+                `Der Räuber kann nicht auf diesem Feld platziert werden${reason}`,
                 3000
             );
         }
