@@ -5,7 +5,7 @@ import { camera } from './modules/camera.js';
 import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
 import { createDirectionArrows } from './modules/directionArrows.js'; 
-import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, highlightNumberTokens, getTileWorldPosition } from './modules/game_board.js'; 
+import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, highlightNumberTokens, getTileWorldPosition, getCornerWorldPosition } from './modules/game_board.js'; 
 import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
@@ -13,12 +13,30 @@ import { createResourceUI, updateResourceUI, handleResourceKeydown } from './mod
 import { createDiceUI, setDiceResult } from './modules/uiDice.js';
 import { initTileInfoOverlay, createInfoOverlayToggle } from './modules/uiTileInfo.js';
 import { showBanditOnTile, hideBandit } from './modules/bandit.js';
-import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
-import { getCornerWorldPosition } from './modules/game_board.js';
-import { setupBuildPreview } from './modules/uiBuildPreview.js';
+import { tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
 import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
+import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import CardManager from './modules/cards.js';
+
+window.players = window.players || [
+  {
+    name: 'Spieler 1',
+    color: 0xd7263d,
+    settlements: [],
+    cities: [],
+    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
+  },
+  {
+    name: 'Spieler 2',
+    color: 0x277da1,
+    settlements: [],
+    cities: [],
+    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
+  }
+];
+
+window.updateResourceUI = updateResourceUI;
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -57,7 +75,7 @@ createResourceUI();
 let buildMode = 'settlement'; // 'settlement' or 'city'
 let activePlayerIdx = 0;
 
-updateResourceUI(players[activePlayerIdx]); // Show initial player resources
+updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Show initial player resources
 
 // UI-Elemente für Würfeln
 createDiceUI(() => {
@@ -103,13 +121,13 @@ window.addEventListener('diceRolled', (e) => {
 
 // === Build Mode UI ===
 createBuildUI({
-  players,
+  players: window.players,
   getBuildMode: () => buildMode,
   setBuildMode: (mode) => { buildMode = mode; },
   getActivePlayerIdx: () => activePlayerIdx,
   setActivePlayerIdx: (idx) => {
     activePlayerIdx = idx;
-    updateResourceUI(players[activePlayerIdx]); // Update resource UI on player switch
+    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
   }
 });
 
@@ -119,14 +137,14 @@ setupBuildEventHandler({
   scene,
   camera,
   tileMeshes,
-  players,
+  players: window.players,
   getBuildMode: () => buildMode,
   getActivePlayerIdx: () => activePlayerIdx,
   tryBuildSettlement,
   tryBuildCity,
   tryBuildRoad, // <--- HINZUGEFÜGT
   getCornerWorldPosition,
-  updateResourceUI: () => updateResourceUI(players[activePlayerIdx]) // Always update for current player
+  updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx) // Always update for current player
 });
 
 // === Build Preview Setup ===
@@ -135,7 +153,7 @@ setupBuildPreview(
   scene,
   camera,
   tileMeshes,
-  players,
+  window.players,
   () => buildMode,
   () => activePlayerIdx,
   tryBuildSettlement,
@@ -143,3 +161,5 @@ setupBuildPreview(
 );
 
 // === Place settlement/city mesh at corner ===
+
+window.getActivePlayerIdx = () => activePlayerIdx;

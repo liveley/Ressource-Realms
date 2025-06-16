@@ -296,13 +296,15 @@ function getShuffledResourceTiles() {
 export function createGameBoard(scene) {
     // --- Place the center desert tile ---
     loadTile('center.glb', (centerTile) => {
-        const centerPos = axialToWorld(0, 0);
-        centerTile.position.set(...centerPos);
-        centerTile.name = 'center.glb';
-        hexGroup.add(centerTile);
-        scene.add(hexGroup);
-        tileMeshes[`0,0`] = centerTile;
-        // No number token for the center (desert)
+      centerTile.userData.q = 0;
+      centerTile.userData.r = 0;
+      const centerPos = axialToWorld(0, 0);
+      centerTile.position.set(...centerPos);
+      centerTile.name = 'center.glb';
+      hexGroup.add(centerTile);
+      scene.add(hexGroup);
+      tileMeshes[`0,0`] = centerTile;
+      // No number token for the center (desert)
     });
 
     // --- Randomize and place resource tiles ---
@@ -312,6 +314,8 @@ export function createGameBoard(scene) {
     landAxials.forEach(([q, r], idx) => {
         const resource = shuffledResources[idx];
         loadTile(`${resource}.glb`, (tile) => {
+          tile.userData.q = q;
+          tile.userData.r = r;
             const pos = axialToWorld(q, r);
             tile.position.set(...pos);
             tile.name = `${resource}.glb`;
@@ -331,6 +335,8 @@ export function createGameBoard(scene) {
     // --- Place water tiles (fixed positions) ---
     tilePositions.water.forEach(([q, r]) => {
         loadTile('water.glb', (tile) => {
+          tile.userData.q = q;
+          tile.userData.r = r;
             const pos = axialToWorld(q, r);
             tile.position.set(...pos);
             tile.name = 'water.glb';
@@ -357,6 +363,7 @@ export function createGameBoard(scene) {
 
 // Highlight logic for tiles (e.g. after dice roll)
 window.addEventListener('diceRolled', (e) => {
+  // --- Entferne asynchrone window.players/updateResourceUI-Initialisierung (Fehlerquelle) ---
   const number = e.detail;
   Object.entries(tileMeshes).forEach(([key, mesh]) => {
     // Remove old highlight
@@ -372,6 +379,67 @@ window.addEventListener('diceRolled', (e) => {
           child.material.emissive.setHex(0xffff00);
         }
       });
+      // === Ressourcenverteilung (fix: alle angrenzenden Hexes/Corners prüfen) ===
+      // Ermittle Rohstofftyp aus mesh.name (z.B. 'wood.glb' -> 'wood')
+      let resourceType = null;
+      console.log('[DEBUG] mesh.name:', mesh.name, 'tileNumbers:', tileNumbers[key]);
+      if (mesh.name && mesh.name.endsWith('.glb')) {
+        resourceType = mesh.name.replace('.glb', '');
+      }
+      console.log('[DEBUG] resourceType:', resourceType);
+      if (resourceType && resourceType !== 'center' && resourceType !== 'water') {
+        for (let corner = 0; corner < 6; corner++) {
+          // Ermittle alle angrenzenden Hexes/Corners für diese physische Ecke
+          // (das aktuelle Hex + 2 Nachbarhexes)
+          const adjacent = [
+            { q: mesh.userData.q, r: mesh.userData.r, corner },
+            (() => { // Nachbar 1
+              const directions = [
+                [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+              ];
+              const prev = (corner + 5) % 6;
+              const [dq, dr] = directions[prev];
+              return { q: mesh.userData.q + dq, r: mesh.userData.r + dr, corner: (corner + 2) % 6 };
+            })(),
+            (() => { // Nachbar 2
+              const directions = [
+                [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+              ];
+              const [dq, dr] = directions[corner];
+              return { q: mesh.userData.q + dq, r: mesh.userData.r + dr, corner: (corner + 4) % 6 };
+            })()
+          ];
+          for (const player of window.players || []) {
+            for (const pos of adjacent) {
+              // Debug: Zeige alle Siedlungen und die geprüften Koordinaten
+              if (player.settlements && player.settlements.length > 0) {
+                console.log(`[DEBUG] Prüfe Siedlungen von ${player.name}:`, player.settlements, 'gegen', pos);
+              }
+              // Siedlung?
+              if (player.settlements && player.settlements.some(s => s.q === pos.q && s.r === pos.r && s.corner === pos.corner)) {
+                player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
+                console.log(`[Ressourcen] ${player.name} erhält 1 ${resourceType} (Siedlung)`);
+              }
+              // Stadt?
+              if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
+                player.resources[resourceType] = (player.resources[resourceType] || 0) + 2;
+                console.log(`[Ressourcen] ${player.name} erhält 2 ${resourceType} (Stadt)`);
+              }
+            }
+          }
+        }
+      }
     }
   });
+  // UI-Update für alle Spieler
+  if (window.updateResourceUI && window.players) {
+    // Debug: Log Ressourcen nach Verteilung
+    window.players.forEach(p => console.log(`[Ressourcen nach Verteilung] ${p.name}:`, p.resources));
+    // UI-Update für aktiven Spieler mit Index
+    if (window.getActivePlayerIdx) {
+      window.updateResourceUI(window.players[window.getActivePlayerIdx()], window.getActivePlayerIdx());
+    } else {
+      window.updateResourceUI(window.players[0], 0);
+    }
+  }
 });
