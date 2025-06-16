@@ -4,14 +4,15 @@
 let diceUI = null;
 let diceResult = null;
 let diceBtn = null;
+let diceBar = null;
 
 // callback: Funktion, die beim Klick auf "Würfeln" ausgeführt wird
 export function createDiceUI(onRoll) {
   diceUI = document.createElement('div');
   diceUI.id = 'dice-ui';
   diceUI.style.position = 'absolute';
-  diceUI.style.top = '2em';
-  diceUI.style.left = '2em';
+  diceUI.style.bottom = '-3em';
+  diceUI.style.right = '7em';
   diceUI.style.zIndex = '5';
   diceUI.style.display = 'flex';
   diceUI.style.flexDirection = 'column';

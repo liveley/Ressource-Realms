@@ -38,6 +38,8 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildMenu.style.gap = '0.5em';
   buildMenu.style.marginTop = '0.7em';
   buildMenu.style.alignItems = 'stretch';
+  buildMenu.style.bottom = '2em'; // Abstand zum unteren Rand
+  buildMenu.style.right = '6em'; // Abstand zum rechten Rand
 
   // Straße bauen
   const roadBtn = document.createElement('button');
