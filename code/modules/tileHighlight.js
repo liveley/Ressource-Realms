@@ -53,14 +53,15 @@ function createTileHalo(position, height = HEX_RADIUS * 1.5, color = 0xffdd66) {
     side: THREE.DoubleSide,
     depthWrite: false
   });
-  
-  // Create the beam mesh
+    // Create the beam mesh
   const beam = new THREE.Mesh(beamGeometry, beamMaterial);
   beam.position.set(0, 0, height / 2);
   beam.rotation.x = Math.PI / 2; // Point downward
   
-  // Set userData directly on the beam
-  beam.userData = { isMainBeam: true };
+  // Set userData for animation directly on the beam
+  beam.userData = { 
+    isBeam: true
+  };
   beamGroup.add(beam);
   
   // Add some floating dust/light particles in the beam for visual interest
@@ -89,10 +90,13 @@ function createTileHalo(position, height = HEX_RADIUS * 1.5, color = 0xffdd66) {
       radius * Math.sin(angle),
       heightPos
     );
-    
-    // Set userData directly on the particle
+      // Set userData directly on the particle
     particle.userData = {
+      isHalo: true,
       isParticle: true,
+      animationTime: 0,
+      initialHeight: heightPos,
+      angle: angle,
       originalOpacity: particle.material.opacity
     };
     
@@ -100,15 +104,12 @@ function createTileHalo(position, height = HEX_RADIUS * 1.5, color = 0xffdd66) {
   }
   
   beamGroup.add(particleGroup);
-  
   // Set up the effect to fade out properly with even shorter duration values
   beamGroup.userData = {
     isHalo: true,
     isBeam: true,
-    isFading: false,
-    creationTime: Date.now() * 0.001,
-    lifespan: 0.3,     // Seconds before starting to fade (much shorter)
-    fadeDuration: 0.2  // Seconds to fade out (much faster fade)
+    animationTime: 0,    // Initialize animation timer
+    lastOscPhase: 0      // For oscillation tracking
   };
   
   // Position the entire group at the tile position, but slightly higher to avoid any division effect
@@ -124,39 +125,59 @@ export function animateHalos() {
   if (!scene) return;
   
   // Find all halo objects and animate them
+  // We need to first gather objects to remove before removing them
+  const objectsToRemove = [];
+  
   scene.traverse(obj => {
     if (obj.userData && obj.userData.isHalo) {
       if (obj.userData.animationTime !== undefined) {
         obj.userData.animationTime += 0.02;
         
-        if (obj.userData.animationTime > 2.0) { // Animation complete after 2 seconds
-          // Remove the halo object
-          obj.parent.remove(obj);
+        if (obj.userData.animationTime > 1.5) { // Reduced animation time for quicker removal
+          // Mark for removal
+          objectsToRemove.push(obj);
         } else if (obj.userData.isBeam) {
-          // Fade out sunbeam
-          if (obj.userData.animationTime > 1.0) {
-            const fadeOutPhase = Math.min((obj.userData.animationTime - 1.0) / 1.0, 1.0); 
-            obj.material.opacity = 1.0 - fadeOutPhase;
-          }
+          // Find children with material
+          obj.traverse(child => {
+            if (child.material && child.material.opacity !== undefined) {
+              // Fade out sunbeam more quickly
+              if (obj.userData.animationTime > 0.7) {
+                const fadeOutPhase = Math.min((obj.userData.animationTime - 0.7) / 0.8, 1.0); 
+                child.material.opacity = Math.max(0, 1.0 - fadeOutPhase);
+              }
+            }
+          });
           
           // Slight up/down oscillation for beam
-          const oscPhase = Math.sin(obj.userData.animationTime * 2) * 0.3;
-          obj.position.y += oscPhase - obj.userData.lastOscPhase;
-          obj.userData.lastOscPhase = oscPhase;
+          if (obj.userData.lastOscPhase !== undefined) {
+            const oscPhase = Math.sin(obj.userData.animationTime * 2) * 0.3;
+            obj.position.y += oscPhase - obj.userData.lastOscPhase;
+            obj.userData.lastOscPhase = oscPhase;
+          }
         } else if (obj.userData.isParticle) {
           // Move particles outward and upward
           const radius = 0.3 + obj.userData.animationTime * 1.0; 
           const angle = obj.userData.angle + (0.2 * obj.userData.animationTime);
           obj.position.x = Math.cos(angle) * radius;
           obj.position.z = Math.sin(angle) * radius;
-          obj.position.y = obj.userData.initialHeight + obj.userData.animationTime * 1.5;
           
-          // Fade out particles
-          if (obj.userData.animationTime > 0.6) {
-            obj.material.opacity = Math.max(0, 1.0 - (obj.userData.animationTime - 0.6) / 0.5);
+          if (obj.userData.initialHeight !== undefined) {
+            obj.position.y = obj.userData.initialHeight + obj.userData.animationTime * 1.5;
+          }
+          
+          // Fade out particles more aggressively
+          if (obj.userData.animationTime > 0.4) {
+            obj.material.opacity = Math.max(0, 1.0 - (obj.userData.animationTime - 0.4) / 0.5);
           }
         }
       }
+    }
+  });
+  
+  // Now remove all objects marked for removal
+  objectsToRemove.forEach(obj => {
+    if (obj.parent) {
+      obj.parent.remove(obj);
     }
   });
 }
@@ -200,30 +221,41 @@ function setupHighlightEventListener() {
       const halosToRemove = [];
       scene.traverse(obj => {
         if (obj.userData && obj.userData.isHalo) {
-          halosToRemove.push(obj);
+          // Find the parent that's directly attached to the scene
+          let targetObj = obj;
+          while (targetObj.parent && targetObj.parent !== scene) {
+            targetObj = targetObj.parent;
+          }
+          if (targetObj.parent === scene && !halosToRemove.includes(targetObj)) {
+            halosToRemove.push(targetObj);
+          }
         }
       });
       
       // Then remove them and properly dispose resources
       halosToRemove.forEach(obj => {
-        scene.remove(obj);
-        
-        // Dispose geometries and materials
-        if (obj.children) {
-          obj.children.forEach(child => {
-            if (child instanceof THREE.Mesh) {
-              if (child.geometry) child.geometry.dispose();
-              if (child.material) child.material.dispose();
-            } else if (child instanceof THREE.Group) {
-              child.children.forEach(grandChild => {
-                if (grandChild instanceof THREE.Mesh) {
-                  if (grandChild.geometry) grandChild.geometry.dispose();
-                  if (grandChild.material) grandChild.material.dispose();
-                }
-              });
+        // Recursively dispose of all materials and geometries
+        function disposeRecursively(object) {
+          if (object.children) {
+            object.children.forEach(child => {
+              disposeRecursively(child);
+            });
+          }
+          
+          if (object.geometry) object.geometry.dispose();
+          
+          if (object.material) {
+            // Material might be an array
+            if (Array.isArray(object.material)) {
+              object.material.forEach(material => material.dispose());
+            } else {
+              object.material.dispose();
             }
-          });
+          }
         }
+        
+        disposeRecursively(obj);
+        scene.remove(obj);
       });
     }
     
