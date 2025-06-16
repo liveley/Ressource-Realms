@@ -64,7 +64,7 @@ export function createInfoOverlayToggle() {
     tileInfoContainer = document.createElement('div');
     tileInfoContainer.id = 'tileinfo-ui';
     tileInfoContainer.style.position = 'absolute';
-    tileInfoContainer.style.top = '2em';
+    tileInfoContainer.style.top = '6em';
     tileInfoContainer.style.left = '2em';
     tileInfoContainer.style.zIndex = '15';
     document.body.appendChild(tileInfoContainer);
