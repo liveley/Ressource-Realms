@@ -48,7 +48,7 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     popup.style.fontSize = '1.3em';
     popup.style.fontFamily = "'Montserrat', Arial, sans-serif";
     popup.style.textAlign = 'center';
-    popup.style.zIndex = '1000';
+    popup.style.zIndex = '5'; // niedriger als das Main-Menü
     popup.style.display = 'none';
     document.body.appendChild(popup);
   }

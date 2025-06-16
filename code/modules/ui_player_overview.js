@@ -15,7 +15,7 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     container.style.transform = 'translateX(-50%)';
     container.style.display = 'flex';
     container.style.gap = '2.5em';
-    container.style.zIndex = '1000';
+    container.style.zIndex = '5'; // niedriger als das Main-Menü
     document.body.appendChild(container);
   }
 
