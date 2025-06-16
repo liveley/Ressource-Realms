@@ -2,21 +2,31 @@
 // Erstellt und verwaltet die Build-UI (Siedlung/Stadt bauen, Spielerwahl, Feedback)
 // Übergibt buildMode- und activePlayerIdx-Setter als Callback-Parameter
 
+import { showPlayerSwitchButton } from './change_player.js';
+
 let buildEnabled = false;
 let buildMenu = null;
 
 export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePlayerIdx, setActivePlayerIdx }) {
+  // Build-UI (wie bisher)
   const ui = document.createElement('div');
   ui.id = 'build-ui';
 
   // Bau-Button (immer sichtbar)
   const buildToggleBtn = document.createElement('button');
   buildToggleBtn.id = 'build-toggle-btn';
-  buildToggleBtn.textContent = '🏗️: AUS';
+  buildToggleBtn.textContent = '🏗️';
+  buildToggleBtn.style.fontSize = '2.5em'; // Emoji so groß wie beim Würfeln-Button
   buildToggleBtn.onclick = () => {
     buildEnabled = !buildEnabled;
-    buildToggleBtn.textContent = buildEnabled ? '🏗️: AN' : '🏗️: AUS';
+    buildToggleBtn.textContent = buildEnabled ? '🏗️ AUS' : '🏗️';
     if (buildMenu) buildMenu.style.display = buildEnabled ? 'flex' : 'none';
+    // Hintergrund und Rand nur anzeigen, wenn Menü offen ist
+    if (buildEnabled) {
+      ui.classList.add('menu-open');
+    } else {
+      ui.classList.remove('menu-open');
+    }
   };
   ui.appendChild(buildToggleBtn);
 
@@ -28,21 +38,6 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildMenu.style.gap = '0.5em';
   buildMenu.style.marginTop = '0.7em';
   buildMenu.style.alignItems = 'stretch';
-
-  // Spielerwahl
-  const playerSelectSpan = document.createElement('span');
-  const sel = document.createElement('select');
-  sel.id = 'player-select';
-  players.forEach((p, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = p.name;
-    sel.appendChild(opt);
-  });
-  sel.value = getActivePlayerIdx();
-  sel.onchange = e => setActivePlayerIdx(parseInt(e.target.value));
-  playerSelectSpan.appendChild(sel);
-  buildMenu.appendChild(playerSelectSpan);
 
   // Straße bauen
   const roadBtn = document.createElement('button');
@@ -65,9 +60,11 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   cityBtn.onclick = () => setBuildMode('city');
   buildMenu.appendChild(cityBtn);
 
+  // Build-UI direkt an body anhängen
+  document.body.appendChild(ui);
   ui.appendChild(buildMenu);
 
-  document.body.appendChild(ui);
+  // Spielerwechsel-Button wird nicht mehr im Build-Menü platziert
 
   // Pop-up-Feedback-Element global anlegen, falls nicht vorhanden
   if (!document.getElementById('build-popup-feedback')) {
