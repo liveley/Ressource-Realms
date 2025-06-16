@@ -176,8 +176,7 @@ function createNumberTokenSprite(number) {
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    // Background (circle)
+    const ctx = canvas.getContext('2d');    // Background (circle)
     ctx.beginPath();
     ctx.arc(size/2, size/2, size/2 - 8, 0, 2 * Math.PI);
     ctx.fillStyle = '#fff8dc';
@@ -188,8 +187,7 @@ function createNumberTokenSprite(number) {
     // Border for better visibility
     ctx.lineWidth = 6;
     ctx.strokeStyle = '#222';
-    ctx.stroke();
-    // === Dynamic size and color for the number ===
+    ctx.stroke();    // === Dynamic size and color for the number ===
     let fontSize, fontColor;
     if (number === 6 || number === 8) {
         fontSize = 90;
@@ -208,19 +206,17 @@ function createNumberTokenSprite(number) {
         fontColor = '#222';
     } else { // fallback
         fontSize = 60;
-        fontColor = '#222';
-    }
-    ctx.font = `bold ${fontSize}px Arial`;
+        fontColor = '#222';}
+      ctx.font = `bold ${fontSize}px Arial`;
     ctx.fillStyle = fontColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(number, size/2, size/2);
-    // Create texture and sprite
+    ctx.fillText(number, size/2, size/2);    // Create texture and sprite
     const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.95 });
-    const sprite = new THREE.Sprite(material);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.95 });    const sprite = new THREE.Sprite(material);
     sprite.scale.set(0.9, 0.9, 1); // slightly larger
-    sprite.position.set(0, HEX_RADIUS * 0.35, 0);
+    // Default position - will be overridden when added to tile
+    sprite.position.set(0, 4.0, 0); // Y-Achse für die Höhe verwenden (moderat über dem Räuber)
     sprite.userData.number = number;
     return sprite;
 }
@@ -230,10 +226,8 @@ export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
     Object.entries(tileMeshes).forEach(([key, mesh]) => {
         const number = tileNumbers[key];
         if (number) {
-            const sprite = createNumberTokenSprite(number);
-            
-            // Position the sprite above the tile
-            sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Just above the surface (Y axis)
+            const sprite = createNumberTokenSprite(number);            // Position the sprite at a moderate height above the tile so it's visible when the robber is present
+            sprite.position.set(0, 4.0, 0); // Y-Achse für die Höhe verwenden - etwas höher als der Räuber (3.2)
             
             // Store useful data for robber placement
             sprite.userData.number = number;
@@ -243,9 +237,7 @@ export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
             sprite.userData.tileR = r;
             
             // Give the token a descriptive name for easier identification
-            sprite.name = `token_${number}_tile_${key}`;
-            
-            // Make the token larger and more clickable for robber placement
+            sprite.name = `token_${number}_tile_${key}`;            // Make the token larger and more clickable for robber placement
             sprite.scale.set(1.2, 1.2, 1.2);
             
             // Add the sprite to the tile mesh
@@ -341,10 +333,11 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
             scene.add(hexGroup);
             tileMeshes[`${q},${r}`] = tile;
             // Number token for this tile (if present)
-            const number = tileNumbers[`${q},${r}`];
+            const number = tileNumbers[`${q},${r}`];            
             if (number) {
                 const sprite = createNumberTokenSprite(number);
-                sprite.position.set(0, HEX_RADIUS * 0.35, 0);
+                // Position the number token at a moderate height above the tile
+                sprite.position.set(0, 1.75, 0); // Reduzierte Höhe, aber immer noch über dem Räuber (3.2)
                 tile.add(sprite);
             }
         });
