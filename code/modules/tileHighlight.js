@@ -12,6 +12,14 @@ let hexGroup = null;
 // Constant needed for highlight sizes
 const HEX_RADIUS = 3;
 
+// Animation timing constants
+const ANIMATION = {
+  TOTAL_DURATION: 1.5,    // Total animation duration in seconds
+  FADE_START: 0.7,        // When fade out begins (seconds)
+  FADE_DURATION: 0.8,     // How long fade out lasts (seconds)
+  STEP_SIZE: 0.02         // Animation step size per frame
+};
+
 // Convert axial coordinates to world position
 export function getTileWorldPosition(q, r) {
   const x = HEX_RADIUS * Math.sqrt(3) * (q + r/2);
@@ -131,9 +139,9 @@ export function animateHalos() {
   scene.traverse(obj => {
     if (obj.userData && obj.userData.isHalo) {
       if (obj.userData.animationTime !== undefined) {
-        obj.userData.animationTime += 0.02;
+        obj.userData.animationTime += ANIMATION.STEP_SIZE;
         
-        if (obj.userData.animationTime > 1.5) { // Reduced animation time for quicker removal
+        if (obj.userData.animationTime > ANIMATION.TOTAL_DURATION) { // Reduced animation time for quicker removal
           // Mark for removal
           objectsToRemove.push(obj);
         } else if (obj.userData.isBeam) {
@@ -141,8 +149,8 @@ export function animateHalos() {
           obj.traverse(child => {
             if (child.material && child.material.opacity !== undefined) {
               // Fade out sunbeam more quickly
-              if (obj.userData.animationTime > 0.7) {
-                const fadeOutPhase = Math.min((obj.userData.animationTime - 0.7) / 0.8, 1.0); 
+              if (obj.userData.animationTime > ANIMATION.FADE_START) {
+                const fadeOutPhase = Math.min((obj.userData.animationTime - ANIMATION.FADE_START) / ANIMATION.FADE_DURATION, 1.0); 
                 child.material.opacity = Math.max(0, 1.0 - fadeOutPhase);
               }
             }
@@ -164,10 +172,10 @@ export function animateHalos() {
           if (obj.userData.initialHeight !== undefined) {
             obj.position.y = obj.userData.initialHeight + obj.userData.animationTime * 1.5;
           }
-          
-          // Fade out particles more aggressively
-          if (obj.userData.animationTime > 0.4) {
-            obj.material.opacity = Math.max(0, 1.0 - (obj.userData.animationTime - 0.4) / 0.5);
+            // Fade out particles more aggressively (start even earlier than beams)
+          const particleFadeStart = ANIMATION.FADE_START * 0.6;  // Earlier fade for particles
+          if (obj.userData.animationTime > particleFadeStart) {
+            obj.material.opacity = Math.max(0, 1.0 - (obj.userData.animationTime - particleFadeStart) / ANIMATION.FADE_DURATION);
           }
         }
       }

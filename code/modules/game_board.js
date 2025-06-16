@@ -246,22 +246,6 @@ export function updateNumberTokensFacingCamera(scene, camera) {
     });
 }
 
-// Highlight logic for number tokens (e.g. after dice roll)
-export function highlightNumberTokens(scene, tileMeshes, tileNumbers, rolledNumber) {
-    Object.entries(tileMeshes).forEach(([key, mesh]) => {
-        const number = tileNumbers[key];
-        mesh.traverse(child => {
-            if (child.type === 'Sprite' && child.userData.number) {
-                if (number === rolledNumber) {
-                    child.material.color.set('#ffe066'); // highlight yellow
-                } else {
-                    child.material.color.set('#ffffff'); // normal
-                }
-            }
-        });
-    });
-}
-
 // === Draws a beige outline around all land tiles (including desert) ===
 function drawLandTileOutline(scene) {
   const outlineColor = 0xffe066; // nice beige color
