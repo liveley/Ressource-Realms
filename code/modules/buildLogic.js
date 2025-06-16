@@ -56,16 +56,22 @@ export function buildCity(player, q, r, corner) {
 
 // Stadt bauen (Upgrade, mit Validierung)
 export function tryBuildCity(player, q, r, corner) {
-  // Ressourcen prüfen
-  if (!canBuildCity(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
-  // Muss bereits eigene Siedlung an dieser Stelle haben
-  const idx = player.settlements.findIndex(s => s.q === q && s.r === r && s.corner === corner);
-  if (idx === -1) return { success: false, reason: 'Keine eigene Siedlung an dieser Stelle' };
-  // Bauen & Ressourcen abziehen
-  player.resources.wheat -= 2;
-  player.resources.ore -= 3;
-  buildCity(player, q, r, corner);
-  return { success: true };
+  // Prüfe alle äquivalenten Ecken auf bestehende Siedlung/Stadt
+  const equivalents = getEquivalentCorners(q, r, corner);
+  for (const eq of equivalents) {
+    if (!player.settlements.some(s => s.q === eq.q && s.r === eq.r && s.corner === eq.corner)) {
+      // Keine eigene Siedlung an dieser physischen Ecke
+      continue;
+    }
+    // Ressourcen prüfen
+    if (!canBuildCity(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
+    // Bauen & Ressourcen abziehen
+    player.resources.wheat -= 2;
+    player.resources.ore -= 3;
+    buildCity(player, eq.q, eq.r, eq.corner);
+    return { success: true };
+  }
+  return { success: false, reason: 'Keine eigene Siedlung an dieser Stelle' };
 }
 
 // === Platzierungsregel: Siedlungen müssen mindestens 2 Ecken Abstand haben ===
@@ -155,11 +161,32 @@ function isLandTile(q, r) {
   return true;
 }
 
+// Gibt alle äquivalenten Ecken für eine physische Ecke zurück
+function getEquivalentCorners(q, r, corner) {
+  const eq = [{ q, r, corner }];
+  const n1 = getNeighborCorner(q, r, corner);
+  eq.push({ q: n1.q, r: n1.r, corner: n1.corner });
+  const n2 = getNeighborCorner(n1.q, n1.r, n1.corner);
+  eq.push({ q: n2.q, r: n2.r, corner: n2.corner });
+  return eq;
+}
+
 // Siedlung bauen (mit Platzierungslogik)
 export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoad = true, ignoreDistanceRule = false, ignoreResourceRule = false} = {}) {
-  // Verhindere Bau auf Wasser- oder Wüsten-Tiles
   if (!isLandTile(q, r)) {
     return { success: false, reason: 'Hier kann nicht gebaut werden (kein Landfeld)' };
+  }
+  // Prüfe alle äquivalenten Ecken auf bestehende Siedlung/Stadt
+  const equivalents = getEquivalentCorners(q, r, corner);
+  for (const other of allPlayers) {
+    for (const eq of equivalents) {
+      if (
+        other.settlements.some(s => s.q === eq.q && s.r === eq.r && s.corner === eq.corner) ||
+        other.cities.some(c => c.q === eq.q && c.r === eq.r && c.corner === eq.corner)
+      ) {
+        return { success: false, reason: 'Hier steht bereits eine Siedlung/Stadt (egal von welchem Feld)' };
+      }
+    }
   }
   // Bereits eigene Siedlung/Stadt an dieser Ecke?
   if (player.settlements.some(s => s.q === q && s.r === r && s.corner === corner) ||
@@ -193,16 +220,16 @@ export function canPlaceSettlement(player, q, r, corner, allPlayers, {requireRoa
   if (!isLandTile(q, r)) {
     return { success: false, reason: 'Hier kann nicht gebaut werden (kein Landfeld)' };
   }
-  // Bereits eigene Siedlung/Stadt an dieser Ecke?
-  if (player.settlements.some(s => s.q === q && s.r === r && s.corner === corner) ||
-      player.cities.some(c => c.q === q && c.r === r && c.corner === corner)) {
-    return { success: false, reason: 'Hier steht bereits deine Siedlung/Stadt' };
-  }
-  // Irgendein Spieler hat an dieser Ecke schon gebaut?
+  // Prüfe alle äquivalenten Ecken auf bestehende Siedlung/Stadt
+  const equivalents = getEquivalentCorners(q, r, corner);
   for (const other of allPlayers) {
-    if (other !== player && (other.settlements.some(s => s.q === q && s.r === r && s.corner === corner) ||
-      other.cities.some(c => c.q === q && c.r === r && c.corner === corner))) {
-      return { success: false, reason: 'Hier steht bereits eine Siedlung/Stadt' };
+    for (const eq of equivalents) {
+      if (
+        other.settlements.some(s => s.q === eq.q && s.r === eq.r && s.corner === eq.corner) ||
+        other.cities.some(c => c.q === eq.q && c.r === eq.r && c.corner === eq.corner)
+      ) {
+        return { success: false, reason: 'Hier steht bereits eine Siedlung/Stadt (egal von welchem Feld)' };
+      }
     }
   }
   if (!ignoreResourceRule && !canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
@@ -212,10 +239,15 @@ export function canPlaceSettlement(player, q, r, corner, allPlayers, {requireRoa
 }
 
 export function canPlaceCity(player, q, r, corner) {
-  if (!canBuildCity(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
-  const idx = player.settlements.findIndex(s => s.q === q && s.r === r && s.corner === corner);
-  if (idx === -1) return { success: false, reason: 'Keine eigene Siedlung an dieser Stelle' };
-  return { success: true };
+  // Prüfe alle äquivalenten Ecken auf eigene Siedlung
+  const equivalents = getEquivalentCorners(q, r, corner);
+  for (const eq of equivalents) {
+    if (player.settlements.some(s => s.q === eq.q && s.r === eq.r && s.corner === eq.corner)) {
+      if (!canBuildCity(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
+      return { success: true };
+    }
+  }
+  return { success: false, reason: 'Keine eigene Siedlung an dieser Stelle' };
 }
 
 // Prüft, ob an dieser Kante schon eine Straße liegt (egal von wem)

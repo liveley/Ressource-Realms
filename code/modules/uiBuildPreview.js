@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { getCornerWorldPosition } from './game_board.js';
 import { canPlaceSettlement, canPlaceCity, canPlaceRoad } from './buildLogic.js';
 import { placeRoadMesh } from './gamePieces.js';
+import { isBuildEnabled } from './uiBuild.js';
 
 let previewMesh = null;
 
@@ -11,6 +12,11 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
   renderer.domElement.addEventListener('mousemove', (event) => {
     const menu = document.getElementById('main-menu');
     if (menu && menu.style.display !== 'none') {
+      removePreviewMesh(scene, renderer, camera);
+      return;
+    }
+    // Vorschau nur anzeigen, wenn Bauen aktiviert ist
+    if (!isBuildEnabled()) {
       removePreviewMesh(scene, renderer, camera);
       return;
     }
