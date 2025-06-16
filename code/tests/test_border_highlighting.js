@@ -26,7 +26,8 @@ import { testBorderHighlighting } from '../modules/tileHighlight.js';
 setTimeout(() => {
   console.log("%c===== BORDER HIGHLIGHTING TEST =====", "font-size: 16px; font-weight: bold; color: blue;");
   
-  // Test for all possible dice numbers  const diceNumbers = [2, 3, 4, 5, 6, 8, 9, 10, 11, 12];
+  // Test for all possible dice numbers
+  const diceNumbers = [2, 3, 4, 5, 6, 8, 9, 10, 11, 12];
   
   let allTestsPassed = true;
   
