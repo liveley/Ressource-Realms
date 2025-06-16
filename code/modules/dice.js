@@ -2,10 +2,10 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { getDebugDiceValue } from './debugTools.js';
+import { getDebugDiceValue } from './debugging/diceDebug.js';
 
 // Re-export debug functions for backward compatibility
-export { setDebugDiceValue, toggleDebugDiceMode } from './debugTools.js';
+export { setDebugDiceValue, toggleDebugDiceMode } from './debugging/diceDebug.js';
 
 export function rollDice() {
   // Check if we're forcing a specific value for debugging

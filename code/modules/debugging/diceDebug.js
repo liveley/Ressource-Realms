@@ -1,4 +1,5 @@
-// debugTools.js - Collection of debugging utilities for development
+// diceDebug.js - Debug utilities specific to dice functionality
+import { logDebug, LOG_LEVELS } from './debugTools.js';
 
 // Debug flag to force certain dice values
 let debugForceValue = null;
@@ -10,7 +11,7 @@ let debugForceValue = null;
  */
 export function setDebugDiceValue(value) {
   debugForceValue = value;
-  console.log(`Debug mode: Dice will roll ${value || 'randomly'}`);
+  logDebug(`Dice will roll ${value || 'randomly'}`, LOG_LEVELS.INFO);
   return debugForceValue;
 }
 
@@ -22,11 +23,11 @@ export function setDebugDiceValue(value) {
 export function toggleDebugDiceMode(value = 7) {
   if (debugForceValue === null) {
     debugForceValue = value;
-    console.log(`%c🎲 DEBUG MODE ENABLED: Dice will always roll ${value}`, 'background: #d42; color: white; font-weight: bold; padding: 3px 5px; border-radius: 3px;');
+    logDebug(`🎲 DEBUG MODE ENABLED: Dice will always roll ${value}`, LOG_LEVELS.INFO);
     return true;
   } else {
     debugForceValue = null;
-    console.log('%c🎲 DEBUG MODE DISABLED: Dice will roll randomly', 'background: #333; color: white; font-weight: bold; padding: 3px 5px; border-radius: 3px;');
+    logDebug('🎲 DEBUG MODE DISABLED: Dice will roll randomly', LOG_LEVELS.INFO);
     return false;
   }
 }
@@ -73,33 +74,4 @@ export function createDebugDiceIndicator(enabled, value = 7) {
   
   document.body.appendChild(indicator);
   return indicator;
-}
-
-/**
- * Display a temporary debug message
- * @param {string} message - The message to display
- * @param {number} duration - How long to show the message in ms
- */
-export function showDebugMessage(message, duration = 3000) {
-  const messageEl = document.createElement('div');
-  messageEl.className = 'debug-message';
-  messageEl.textContent = message;
-  messageEl.style.position = 'fixed';
-  messageEl.style.bottom = '20px';
-  messageEl.style.left = '20px';
-  messageEl.style.padding = '10px';
-  messageEl.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-  messageEl.style.color = 'white';
-  messageEl.style.borderRadius = '5px';
-  messageEl.style.zIndex = '1000';
-  messageEl.style.fontFamily = "'Montserrat', Arial, sans-serif";
-  document.body.appendChild(messageEl);
-  
-  setTimeout(() => {
-    if (messageEl.parentNode) {
-      messageEl.parentNode.removeChild(messageEl);
-    }
-  }, duration);
-  
-  return messageEl;
 }

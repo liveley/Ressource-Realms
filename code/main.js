@@ -20,7 +20,8 @@ import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
 import CardManager from './modules/cards.js';
-import { showDebugMessage, createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugTools.js';
+import { showDebugMessage } from './modules/debugging/debugTools.js';
+import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();

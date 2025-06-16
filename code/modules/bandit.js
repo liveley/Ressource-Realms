@@ -1,6 +1,12 @@
 // Handles loading, showing, and positioning the bandit (Räuber) model on the board
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { 
+  createRobberSelectionIndicator, 
+  removeRobberSelectionIndicator,
+  logRobberPosition,
+  showBanditActionMessage
+} from './debugging/banditDebug.js';
 
 let bandit = null;
 let banditLoaded = false;
@@ -29,15 +35,17 @@ export function getTileCenter(q, r, tileMeshes) {
         const boundingBoxCenter = new THREE.Vector3();
         const boundingBox = new THREE.Box3().setFromObject(tileMesh);
         boundingBox.getCenter(boundingBoxCenter);
-        
-        console.log(`Tile ${q},${r} world position:`, worldPosition);
-        console.log(`Tile ${q},${r} bounding box center:`, boundingBoxCenter);        // Use the world position, but ensure fixed height
+          // Use the world position, but ensure fixed height
         const center = new THREE.Vector3(
             worldPosition.x,
             worldPosition.y,
             2.2 // Adjusted height to sit properly on the tile with 1.0 scale
         );
-        console.log(`Final center position for tile ${q},${r}:`, center);
+        logRobberPosition(`Tile ${q},${r} position details`, {
+            worldPosition,
+            boundingBoxCenter,
+            finalCenter: center
+        });
         return center;
     } else {
         console.warn(`No mesh found for tile ${q},${r}, falling back to calculation`);
@@ -282,26 +290,10 @@ export function startRobberPlacement(tileMeshes, tileNumbers) {
             // No highlighting - removed
         }
     });
-    
-    console.log(`Robber selection started. ${validRobberTiles.length} valid tiles available.`);
+      console.log(`Robber selection started. ${validRobberTiles.length} valid tiles available.`);
     
     // Show debug indicator for robber selection mode
-    const debugIndicator = document.createElement('div');
-    debugIndicator.id = 'robber-selection-indicator';
-    debugIndicator.textContent = '🔴 RÄUBERAUSWAHL AKTIV';
-    debugIndicator.style.position = 'fixed';
-    debugIndicator.style.top = '10em';
-    debugIndicator.style.right = '20px';
-    debugIndicator.style.padding = '5px 10px';
-    debugIndicator.style.backgroundColor = 'rgba(255, 100, 0, 0.85)';
-    debugIndicator.style.color = 'white';
-    debugIndicator.style.borderRadius = '5px';
-    debugIndicator.style.zIndex = '1000';
-    debugIndicator.style.fontFamily = "'Montserrat', Arial, sans-serif";
-    debugIndicator.style.fontSize = '0.85em';
-    debugIndicator.style.fontWeight = 'bold';
-    debugIndicator.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-    document.body.appendChild(debugIndicator);
+    createRobberSelectionIndicator();
     
     // Display message
     showRobberSelectionMessage();
@@ -466,12 +458,8 @@ export function handleTileSelection(intersection, tileMeshes, getTilePosition) {
             // Hide selection message
             let msg = document.getElementById('bandit-message');
             if (msg) msg.style.display = 'none';
-            
-            // Remove the robber selection indicator
-            let indicator = document.getElementById('robber-selection-indicator');
-            if (indicator && indicator.parentNode) {
-                indicator.parentNode.removeChild(indicator);
-            }
+              // Remove the robber selection indicator
+            removeRobberSelectionIndicator();
             
             // Show confirmation message
             showBanditMessage();
@@ -483,22 +471,11 @@ export function handleTileSelection(intersection, tileMeshes, getTilePosition) {
             
             return true;        } else {
             console.log(`Tile ${selectedTileKey} is not valid for robber placement (desert or current position)`);
-            
-            // Show specific error message for invalid tiles
-            const errorMsg = document.createElement('div');
-            errorMsg.textContent = `Der Räuber kann nicht auf diesem Feld platziert werden${(q === 0 && r === 0) ? ' (Wüste)' : ' (aktuell blockiert)'}`;
-            errorMsg.style.position = 'fixed';
-            errorMsg.style.left = '50%';
-            errorMsg.style.top = '10%';
-            errorMsg.style.transform = 'translateX(-50%)';
-            errorMsg.style.background = 'rgba(255,50,50,0.9)';
-            errorMsg.style.color = 'white';
-            errorMsg.style.padding = '10px 20px';
-            errorMsg.style.borderRadius = '5px';
-            errorMsg.style.fontFamily = "'Montserrat', Arial, sans-serif";
-            errorMsg.style.zIndex = '1000';
-            document.body.appendChild(errorMsg);
-            setTimeout(() => document.body.removeChild(errorMsg), 3000);
+              // Show specific error message for invalid tiles
+            showBanditActionMessage(
+                `Der Räuber kann nicht auf diesem Feld platziert werden${(q === 0 && r === 0) ? ' (Wüste)' : ' (aktuell blockiert)'}`,
+                3000
+            );
         }
     } else {
         console.log("No tile found for the clicked object");
@@ -543,12 +520,8 @@ export function cancelRobberPlacement() {
     // Hide message
     let msg = document.getElementById('bandit-message');
     if (msg) msg.style.display = 'none';
-    
-    // Remove the robber selection indicator
-    let indicator = document.getElementById('robber-selection-indicator');
-    if (indicator && indicator.parentNode) {
-        indicator.parentNode.removeChild(indicator);
-    }
+      // Remove the robber selection indicator
+    removeRobberSelectionIndicator();
     
     // Show simple cancellation message
     const cancelMsg = document.createElement('div');
