@@ -9,6 +9,32 @@
     #main-menu h1 { font-family: 'Montserrat', Arial, sans-serif; }
     #main-menu button { font-family: 'Montserrat', Arial, sans-serif; }
 
+    /* --- Main Action Bar Styles --- */
+    #main-action-bar {
+      position: absolute;
+      right: 2em;
+      bottom: 2em;
+      z-index: 30;
+      display: flex;
+      flex-direction: row;
+      gap: 1.2em;
+      align-items: flex-end;
+      justify-content: flex-end;
+    }
+    #main-action-bar > * {
+      /* Buttons im Action-Bar-Layout */
+      margin: 0;
+      position: static !important;
+      box-sizing: border-box;
+    }
+    @media (max-width: 800px) {
+      #main-action-bar {
+        right: 0.5em;
+        bottom: 0.5em;
+        gap: 0.5em;
+      }
+    }
+
     /* --- Build UI Modern Styles --- */
     #build-ui {
       position: absolute;
@@ -34,14 +60,14 @@
     }
     #build-ui.menu-open {
       background: rgba(255,255,255,0.97);
-      border-radius: 0.8em;
+      border-radius: 0.5em; /* wie die Buttons */
       box-shadow: 0 4px 24px #0003, 0 1.5px 0 #ffe066;
       border: 2px solid #ffe066;
     }
     #build-ui button {
       background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
       border: none;
-      border-radius: 0.35em;
+      border-radius: 0.15em;
       padding: clamp(0.18em, 0.7vw, 0.4em) clamp(0.5em, 1vw, 1em);
       font-size: 0.95em;
       font-family: inherit;
@@ -58,7 +84,7 @@
       transform: translateY(-2px) scale(1.04);
     }
     #build-ui select {
-      border-radius: 0.3em;
+      border-radius: 0.5em;
       border: 1.5px solid #ffe066;
       padding: 0.2em 0.7em;
       font-size: 0.95em;
@@ -75,7 +101,7 @@
     #build-feedback {
       color: #d7263d;
       background: #fff0f3;
-      border-radius: 0.3em;
+      border-radius: 0.5em;
       margin-left: 1em;
       min-width: 5em;
       min-height: 1.2em;
@@ -148,12 +174,10 @@
       transform: translateY(-2px) scale(1.04);
     }
     #build-toggle-btn {
-      font-size: 2.5em; /* Wie Würfeln-Button */
-      padding: 0.4em;
-      /*margin-bottom: 0.5em;*/
-      cursor: pointer;
-      border-radius: 6px;
-      aspect-ratio: auto;
+      font-size: 2.5em; /* Wie Würfeln- und Spielerwechsel-Button */
+      padding: clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em);
+      border-radius: 0.5em;
+      /*aspect-ratio: auto;*/
       background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
       border: none;
       font-family: 'Montserrat', Arial, sans-serif;
@@ -163,11 +187,17 @@
       transition: background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s;
       outline: none;
       display: block;
+      min-width: 4.5em;
+      min-height: 2.5em;
       width: auto;
+      height: auto;
+      aspect-ratio: auto;
     }
     #build-ui.menu-open #build-toggle-btn {
       font-size: 1.3em;
       padding: 0.2em 0.5em;
+      min-width: 4.5em;
+      min-height: 2.5em;
     }
     @media (max-width: 1200px) {
       #build-ui {

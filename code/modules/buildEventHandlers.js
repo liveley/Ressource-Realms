@@ -21,6 +21,7 @@ export function setupBuildEventHandler({
   updateResourceUI // now expects no arguments, closure from main.js
 }) {
   function onBoardClick(event) {
+    console.log('BuildEventHandler: click event');
     // Only if menu is hidden
     const menu = document.getElementById('main-menu');
     if (menu && menu.style.display !== 'none') return;
