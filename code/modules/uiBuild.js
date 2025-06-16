@@ -9,29 +9,64 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   const ui = document.createElement('div');
   ui.id = 'build-ui';
 
-  // Bau-Button
+  // Bau-Button (immer sichtbar)
   const buildToggleBtn = document.createElement('button');
   buildToggleBtn.id = 'build-toggle-btn';
-  buildToggleBtn.textContent = 'Bauen: AN';
+  buildToggleBtn.textContent = '🏗️: AUS';
   buildToggleBtn.onclick = () => {
     buildEnabled = !buildEnabled;
-    buildToggleBtn.textContent = buildEnabled ? 'Bauen: AN' : 'Bauen: AUS';
-    if (buildMenu) buildMenu.style.display = buildEnabled ? '' : 'none';
+    buildToggleBtn.textContent = buildEnabled ? '🏗️: AN' : '🏗️: AUS';
+    if (buildMenu) buildMenu.style.display = buildEnabled ? 'flex' : 'none';
   };
   ui.appendChild(buildToggleBtn);
 
-  // Das eigentliche Baumenü (Buttons für Siedlung, Stadt, Straße, Spielerwahl, Feedback)
+  // Das eigentliche Baumenü (Buttons für Spielerwahl, Straße, Siedlung, Stadt)
   buildMenu = document.createElement('div');
   buildMenu.id = 'build-menu';
   buildMenu.style.display = 'none'; // Anfangs ausgeblendet
-  buildMenu.innerHTML = `
-    <button id="build-settlement">Siedlung bauen</button>
-    <button id="build-city">Stadt bauen</button>
-    <button id="build-road">Straße bauen</button>
-    <span><select id="player-select"></select></span>
-    <!-- build-feedback entfernt, Pop-up ist jetzt global -->
-  `;
+  buildMenu.style.flexDirection = 'column';
+  buildMenu.style.gap = '0.5em';
+  buildMenu.style.marginTop = '0.7em';
+  buildMenu.style.alignItems = 'stretch';
+
+  // Spielerwahl
+  const playerSelectSpan = document.createElement('span');
+  const sel = document.createElement('select');
+  sel.id = 'player-select';
+  players.forEach((p, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = p.name;
+    sel.appendChild(opt);
+  });
+  sel.value = getActivePlayerIdx();
+  sel.onchange = e => setActivePlayerIdx(parseInt(e.target.value));
+  playerSelectSpan.appendChild(sel);
+  buildMenu.appendChild(playerSelectSpan);
+
+  // Straße bauen
+  const roadBtn = document.createElement('button');
+  roadBtn.id = 'build-road';
+  roadBtn.textContent = 'Straße bauen';
+  roadBtn.onclick = () => setBuildMode('road');
+  buildMenu.appendChild(roadBtn);
+
+  // Siedlung bauen
+  const settlementBtn = document.createElement('button');
+  settlementBtn.id = 'build-settlement';
+  settlementBtn.textContent = 'Siedlung bauen';
+  settlementBtn.onclick = () => setBuildMode('settlement');
+  buildMenu.appendChild(settlementBtn);
+
+  // Stadt bauen
+  const cityBtn = document.createElement('button');
+  cityBtn.id = 'build-city';
+  cityBtn.textContent = 'Stadt bauen';
+  cityBtn.onclick = () => setBuildMode('city');
+  buildMenu.appendChild(cityBtn);
+
   ui.appendChild(buildMenu);
+
   document.body.appendChild(ui);
 
   // Pop-up-Feedback-Element global anlegen, falls nicht vorhanden
@@ -52,18 +87,6 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     popup.style.display = 'none';
     document.body.appendChild(popup);
   }
-  document.getElementById('build-settlement').onclick = () => setBuildMode('settlement');
-  document.getElementById('build-city').onclick = () => setBuildMode('city');
-  document.getElementById('build-road').onclick = () => setBuildMode('road');
-  const sel = document.getElementById('player-select');
-  players.forEach((p, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = p.name;
-    sel.appendChild(opt);
-  });
-  sel.value = getActivePlayerIdx();
-  sel.onchange = e => setActivePlayerIdx(parseInt(e.target.value));
 }
 
 export function isBuildEnabled() {
