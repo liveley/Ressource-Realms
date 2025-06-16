@@ -216,7 +216,7 @@ function createNumberTokenSprite(number) {
     const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.95 });    const sprite = new THREE.Sprite(material);
     sprite.scale.set(0.9, 0.9, 1); // slightly larger
     // Default position - will be overridden when added to tile
-    sprite.position.set(0, 4.0, 0); // Y-Achse für die Höhe verwenden (moderat über dem Räuber)
+    sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden (moderat über dem Räuber)
     sprite.userData.number = number;
     return sprite;
 }
@@ -227,7 +227,7 @@ export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
         const number = tileNumbers[key];
         if (number) {
             const sprite = createNumberTokenSprite(number);            // Position the sprite at a moderate height above the tile so it's visible when the robber is present
-            sprite.position.set(0, 4.0, 0); // Y-Achse für die Höhe verwenden - etwas höher als der Räuber (3.2)
+            sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden - etwas höher als der Räuber (3.2)
             
             // Store useful data for robber placement
             sprite.userData.number = number;
@@ -337,7 +337,7 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
             if (number) {
                 const sprite = createNumberTokenSprite(number);
                 // Position the number token at a moderate height above the tile
-                sprite.position.set(0, 1.75, 0); // Reduzierte Höhe, aber immer noch über dem Räuber (3.2)
+                sprite.position.set(0, 1.6, 0); // Reduzierte Höhe, aber immer noch über dem Räuber (3.2)
                 tile.add(sprite);
             }
         });

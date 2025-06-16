@@ -31,25 +31,21 @@ export function getTileCenter(q, r, tileMeshes) {
         boundingBox.getCenter(boundingBoxCenter);
         
         console.log(`Tile ${q},${r} world position:`, worldPosition);
-        console.log(`Tile ${q},${r} bounding box center:`, boundingBoxCenter);
-        
-        // Use the world position, but ensure fixed height
+        console.log(`Tile ${q},${r} bounding box center:`, boundingBoxCenter);        // Use the world position, but ensure fixed height
         const center = new THREE.Vector3(
             worldPosition.x,
             worldPosition.y,
-            3.2 // Fixed height above tile
+            2.2 // Adjusted height to sit properly on the tile with 1.0 scale
         );
-        
         console.log(`Final center position for tile ${q},${r}:`, center);
         return center;
     } else {
         console.warn(`No mesh found for tile ${q},${r}, falling back to calculation`);
-        
-        // Fallback: Calculate position using the game board's coordinate system (most reliable)
+          // Fallback: Calculate position using the game board's coordinate system (most reliable)
         const x = HEX_RADIUS * 3/2 * q;
         const y = HEX_RADIUS * Math.sqrt(3) * (r + q/2);
         
-        const center = new THREE.Vector3(x, y, 3.2);
+        const center = new THREE.Vector3(x, y, 2.2); // Adjusted height to sit properly on the tile with 1.0 scale
         console.log(`Calculated position for tile ${q},${r} (fallback):`, center);
         return center;
     }
@@ -63,8 +59,7 @@ export function loadBanditModel(gameScene, onLoaded) {
     }
     const loader = new GLTFLoader();
     loader.load('./models/bandit.glb', (gltf) => {
-        bandit = gltf.scene;
-        bandit.traverse((child) => {
+        bandit = gltf.scene;        bandit.traverse((child) => {
             if (child.isMesh) {
                 child.castShadow = true;
                 child.receiveShadow = true;
@@ -72,7 +67,7 @@ export function loadBanditModel(gameScene, onLoaded) {
                 child.material.emissive = new THREE.Color(0x222222);
             }
         });
-        bandit.scale.set(1.5, 1.5, 1.5); // Make bandit larger for visibility
+        bandit.scale.set(1.0, 1.0, 1.0); // Reduced size to original scale (was 1.5)
         banditGroup.add(bandit);
         banditLoaded = true;
         if (onLoaded) onLoaded(banditGroup);
@@ -193,17 +188,22 @@ function placeBandit(tilePosition) {
         // Using our accurate tile center calculation
         x = tilePosition.x;
         y = tilePosition.y; 
-        z = tilePosition.z; // Already set to our desired height (3.2)
+        z = tilePosition.z; // Already set to our desired height
         console.log("Using accurate Vector3 coordinates from getTileCenter");
     } else {
         // Fallback for backward compatibility
         console.warn("Unexpected position object type, trying to adapt");
         x = tilePosition.x || 0;
         y = tilePosition.y || 0;
-        z = 3.2; // Fixed height
+        z = 2.2; // Fixed height for 1.0 scale robber
     }
     
-    console.log(`Exact placement coordinates: x=${x}, y=${y}, z=${z}`);
+    // Apply the position to the bandit group
+    banditGroup.position.set(x, y, z);
+    
+    // DEBUG: Log final bandit position after placement
+    console.log("Final bandit position:", banditGroup.position);
+    console.log("Bandit scale:", bandit ? bandit.scale : "Model not loaded");
     
     // Print position to log to help with debugging
     console.log(`Placing bandit at final position: x=${x}, y=${y}, z=${z}`);
