@@ -14,7 +14,7 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     container.style.left = '17%';
     container.style.transform = 'translateX(-50%)';
     container.style.display = 'flex';
-    container.style.gap = '1.5em';
+    container.style.gap = '2.5em';
     container.style.zIndex = '1000';
     document.body.appendChild(container);
   }
@@ -30,13 +30,12 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     box.className = 'player-overview-box';
 
     // Box-Styling: kompakt, mit Rahmen und Schatten
-    //box.style.width = '180px';
-    box.style.minHeight = '80px';
+    box.style.minHeight = '20px';
     box.style.background = isActive ? '#fff' : '#f4f4f4';
     box.style.border = `3px solid ${isActive ? '#ffd700' : '#ccc'}`;
     box.style.borderRadius = '12px';
     box.style.boxShadow = isActive ? '0 0 12px 4px #ffd70088' : '0 2px 6px #0002';
-    box.style.padding = '0.6em 0.6em';
+    box.style.padding = '0.3em 0.6em 0.3em 0.6em' ; // weniger Padding oben/unten
     box.style.display = 'flex';
     box.style.flexDirection = 'column';
     box.style.justifyContent = 'center';
@@ -47,16 +46,19 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     header.style.display = 'flex';
     header.style.alignItems = 'center';
     header.style.justifyContent = 'flex-start';
-    header.style.gap = '0.6em';
+    header.style.gap = '0.4em'; // enger
     header.style.width = '100%';
 
-    // Avatar-Kreis in Spielerfarbe
+    // Avatar-Kreis in Spielerfarbe (halb außerhalb der Box)
     const avatar = document.createElement('div');
-    avatar.style.width = '36px';
-    avatar.style.height = '36px';
+    avatar.style.width = '57px';
+    avatar.style.height = '57px';
     avatar.style.borderRadius = '50%';
     avatar.style.background = player.color ? `#${player.color.toString(16).padStart(6, '0')}` : '#888';
     avatar.style.border = '2px solid #333';
+    avatar.style.position = 'relative';
+    avatar.style.left = '-42px'; // Hälfte des Kreises nach links außerhalb
+    avatar.style.boxShadow = '0 2px 8px #0002';
     header.appendChild(avatar);
 
     // Name + Wertezeile in einer Spalte
@@ -64,13 +66,15 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     infoBlock.style.display = 'flex';
     infoBlock.style.flexDirection = 'column';
     infoBlock.style.justifyContent = 'center';
+    infoBlock.style.marginLeft = '-36px'; // rückt Name und Werte näher an den Avatar ran
 
     // Spielername
     const nameDiv = document.createElement('div');
     nameDiv.textContent = player.name;
     nameDiv.style.fontWeight = 'bold';
-    nameDiv.style.fontSize = '1em';
-    nameDiv.style.marginBottom = '0.2em';
+    nameDiv.style.fontSize = '1.25em'; // größer
+    nameDiv.style.fontFamily = 'Montserrat, Arial, sans-serif'; // modernere Schrift
+    nameDiv.style.marginBottom = '0.05em'; // weniger Abstand
     infoBlock.appendChild(nameDiv);
 
     // Kompakte Wertezeile mit Symbolen
