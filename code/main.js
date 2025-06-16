@@ -21,6 +21,7 @@ import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
 import CardManager from './modules/cards.js';
 import { createPlayerOverviews, updatePlayerOverviews } from './modules/ui_player_overview.js';
+import { placePlayerSwitchButton } from './modules/change_player.js';
 import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 
@@ -282,6 +283,12 @@ createBuildUI({
     updatePlayerOverviews(players, () => activePlayerIdx);
     updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
   }
+});
+// === Spielerwechsel-Button UI ===
+placePlayerSwitchButton(players, () => activePlayerIdx, (idx) => {
+  activePlayerIdx = idx;
+  updateResourceUI(players[activePlayerIdx]);
+  updatePlayerOverviews(players, () => activePlayerIdx);
 });
 
 // === Build Event Handler Setup ===
