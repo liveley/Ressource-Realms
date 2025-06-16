@@ -13,7 +13,7 @@ import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
 import { initTileInfoOverlay, createInfoOverlayToggle } from './modules/uiTileInfo.js';
-import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, handleTileSelection, isInRobberPlacementMode, cancelRobberPlacement, getTileCenter } from './modules/bandit.js';
+import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, handleTileSelection, isInRobberPlacementMode, getTileCenter } from './modules/bandit.js';
 import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
@@ -185,13 +185,7 @@ window.addEventListener('robberPlacementCanceled', () => {
     unblockDiceRolls();
 });
 
-// Add keyboard shortcut to cancel robber placement with Escape key
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isInRobberPlacementMode()) {
-        console.log("Canceling robber placement via Escape key");
-        cancelRobberPlacement();
-    }
-});
+
 
 // Animation
 function animate() {

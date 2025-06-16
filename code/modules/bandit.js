@@ -293,9 +293,8 @@ export function startRobberPlacement(tileMeshes, tileNumbers) {
     
     // Show debug indicator for robber selection mode
     createRobberSelectionIndicator();
-    
-    // Display message
-    showRobberSelectionMessage('Wähle ein Feld für den Räuber (ESC zum Abbrechen)');
+      // Display message
+    showRobberSelectionMessage('Wähle ein Feld für den Räuber');
     
     // Return true to indicate we're in selection mode
     return true;
