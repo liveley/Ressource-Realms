@@ -11,7 +11,7 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     container.id = 'player-overview-container';
     container.style.position = 'fixed';
     container.style.top = '2%';
-    container.style.left = '50%';
+    container.style.left = '17%';
     container.style.transform = 'translateX(-50%)';
     container.style.display = 'flex';
     container.style.gap = '1.5em';
@@ -30,7 +30,7 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     box.className = 'player-overview-box';
 
     // Box-Styling: kompakt, mit Rahmen und Schatten
-    box.style.width = '180px';
+    //box.style.width = '180px';
     box.style.minHeight = '80px';
     box.style.background = isActive ? '#fff' : '#f4f4f4';
     box.style.border = `3px solid ${isActive ? '#ffd700' : '#ccc'}`;
@@ -87,11 +87,9 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
 
     stats.innerHTML = `
       <span title="Siegpunkte">🏆 ${vpValue}</span>
-      <span title="Straßen">🛤️ ${player.roads?.length ?? 0}</span>
-      <span title="Siedlungen">🏠 ${player.settlements?.length ?? 0}</span>
-      <span title="Städte">🏛️ ${player.cities?.length ?? 0}</span>
+      <span title="Straßen">🛣️ ${player.roads?.length ?? 0}</span>
       <span title="Ressourcenkarten">📦 ${player.resources ? Object.values(player.resources).reduce((a,b)=>a+b,0) : 0}</span>
-      <span title="Entwicklungskarten">🧪 ${player.developmentCards?.length ?? 0}</span>
+      <span title="Entwicklungskarten">🎴 ${player.developmentCards?.length ?? 0}</span>
     `;
 
     infoBlock.appendChild(stats);
