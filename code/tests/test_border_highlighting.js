@@ -20,7 +20,7 @@
  */
 
 // Test script for border highlighting
-import { testBorderHighlighting } from '../modules/game_board.js';
+import { testBorderHighlighting } from '../modules/tileHighlight.js';
 
 // Wait for the game to initialize fully
 setTimeout(() => {
