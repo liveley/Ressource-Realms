@@ -167,8 +167,8 @@ const tileNumbers = {};
   tileNumbers['0,0'] = null;
 })();
 
-// Store references to the tile meshes
-const tileMeshes = {}
+// Store references to the tile meshes (exported for use with robber placement)
+export const tileMeshes = {}
 
 // Helper: Create a sprite with a number and background
 function createNumberTokenSprite(number) {
@@ -231,7 +231,24 @@ export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
         const number = tileNumbers[key];
         if (number) {
             const sprite = createNumberTokenSprite(number);
+            
+            // Position the sprite above the tile
             sprite.position.set(0, HEX_RADIUS * 0.35, 0); // Just above the surface (Y axis)
+            
+            // Store useful data for robber placement
+            sprite.userData.number = number;
+            sprite.userData.tileKey = key;
+            const [q, r] = key.split(',').map(Number);
+            sprite.userData.tileQ = q;
+            sprite.userData.tileR = r;
+            
+            // Give the token a descriptive name for easier identification
+            sprite.name = `token_${number}_tile_${key}`;
+            
+            // Make the token larger and more clickable for robber placement
+            sprite.scale.set(1.2, 1.2, 1.2);
+            
+            // Add the sprite to the tile mesh
             mesh.add(sprite);
         }
     });
@@ -282,12 +299,19 @@ function getShuffledResourceTiles() {
 }
 
 // Add the game board with tiles to the scene
-export function createGameBoard(scene) {
-    // --- Place the center desert tile ---
+export function createGameBoard(scene) {    // --- Place the center desert tile ---
     loadTile('center.glb', (centerTile) => {
         const centerPos = axialToWorld(0, 0);
         centerTile.position.set(...centerPos);
-        centerTile.name = 'center.glb';
+        centerTile.name = '0,0';
+        
+        // Add userData to help with robber placement
+        centerTile.userData.tileKey = '0,0';
+        centerTile.userData.tileQ = 0;
+        centerTile.userData.tileR = 0;
+        centerTile.userData.type = 'desert';
+        centerTile.userData.isDesert = true;
+        
         hexGroup.add(centerTile);
         scene.add(hexGroup);
         tileMeshes[`0,0`] = centerTile;
@@ -301,6 +325,15 @@ export function createGameBoard(scene) {
     landAxials.forEach(([q, r], idx) => {
         const resource = shuffledResources[idx];
         loadTile(`${resource}.glb`, (tile) => {
+            // Set a proper name and userData for robber placement
+            const tileKey = `${q},${r}`;
+            tile.name = tileKey;
+            
+            // Add userData to help with robber placement
+            tile.userData.tileKey = tileKey;
+            tile.userData.tileQ = q;
+            tile.userData.tileR = r;
+            tile.userData.type = resource;
             const pos = axialToWorld(q, r);
             tile.position.set(...pos);
             tile.name = `${resource}.glb`;
