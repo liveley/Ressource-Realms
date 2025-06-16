@@ -102,9 +102,9 @@ export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePl
   const btn = document.createElement('button');
   btn.id = 'player-switch-btn';
   btn.style.position = 'absolute';
-  btn.style.right = '1em';
-  btn.style.bottom = '2em'; // vorher 7em, jetzt weiter unten
-  btn.style.zIndex = '20'; // Button immer sichtbar über anderem UI
+  btn.style.right = '0.5em';
+  btn.style.bottom = '0em';
+  btn.style.zIndex = '20';
   btn.style.width = 'auto';
   btn.style.height = 'auto';
   btn.style.display = 'flex';
