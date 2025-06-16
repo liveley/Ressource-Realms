@@ -17,7 +17,7 @@ export function createResourceUI() {
   resUI = document.createElement('div');
   resUI.id = 'ressource-ui';
   resUI.style.position = 'absolute';
-  resUI.style.zIndex = '10';
+  resUI.style.zIndex = '5';
   document.body.appendChild(resUI);
 }
 
