@@ -37,3 +37,40 @@ export function setDiceResult(sum) {
     diceResult.style.color = '#fff';
   }
 }
+
+/**
+ * Block the dice button with a reason message
+ * @param {string} reason - The reason to show why dice are blocked
+ */
+export function blockDiceRolls(reason = "Aktion erforderlich") {
+  if (!diceBtn) return;
+  
+  // Store the original click handler
+  diceBtn._origOnClick = diceBtn.onclick;
+  diceBtn.onclick = () => {}; // Empty handler
+  
+  // Add visual indication
+  diceBtn.style.opacity = "0.5";
+  diceBtn.style.cursor = "not-allowed";
+  diceBtn.disabled = true;
+    // Show reason only as tooltip
+  diceBtn.title = `Würfeln blockiert: ${reason}`;
+}
+
+/**
+ * Unblock the dice button
+ */
+export function unblockDiceRolls() {
+  if (!diceBtn) return;
+  
+  // Restore original click handler
+  if (diceBtn._origOnClick) {
+    diceBtn.onclick = diceBtn._origOnClick;
+    diceBtn._origOnClick = null;
+  }
+    // Remove visual indication
+  diceBtn.style.opacity = "1";
+  diceBtn.style.cursor = "pointer";
+  diceBtn.disabled = false;
+  diceBtn.title = "";
+}

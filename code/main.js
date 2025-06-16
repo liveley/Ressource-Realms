@@ -11,7 +11,7 @@ import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modul
 import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
-import { createDiceUI, setDiceResult } from './modules/uiDice.js';
+import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
 import { initTileInfoOverlay, createInfoOverlayToggle } from './modules/uiTileInfo.js';
 import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, handleTileSelection, isInRobberPlacementMode, cancelRobberPlacement, getTileCenter } from './modules/bandit.js';
 import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
@@ -178,9 +178,17 @@ window.addEventListener('click', (event) => {
     }
 });
 
-// Handle escape key to cancel robber placement
-window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && isInRobberPlacementMode()) {
+// Listen for robber placement canceled event
+window.addEventListener('robberPlacementCanceled', () => {
+    console.log("Robber placement was canceled");
+    // Unblock dice rolls
+    unblockDiceRolls();
+});
+
+// Add keyboard shortcut to cancel robber placement with Escape key
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isInRobberPlacementMode()) {
+        console.log("Canceling robber placement via Escape key");
         cancelRobberPlacement();
     }
 });
@@ -235,6 +243,9 @@ window.addEventListener('robberMoved', (e) => {
         console.log("Updating token colors for robber moved to", blockedTileKey);
         updateNumberTokensForRobber(blockedTileKey);
     }, 100);
+    
+    // Unblock dice rolls once the robber has been placed
+    unblockDiceRolls();
 });
 
 // Handle 7 being rolled
@@ -242,6 +253,9 @@ window.addEventListener('diceRolled', (e) => {
     if (e.detail === 7) {
         // Start robber placement mode
         startRobberPlacement(tileMeshes, tileNumbers);
+        
+        // Block dice rolls until robber is placed
+        blockDiceRolls("Platziere zuerst den Räuber");
     }
 });
 

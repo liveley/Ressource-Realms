@@ -128,7 +128,7 @@ export function showBanditOnTile(gameScene, q, r, tileMeshes) {
 }
 
 // Display message that a 7 was rolled and robber needs to be moved
-export function showRobberSelectionMessage() {
+export function showRobberSelectionMessage(customMessage) {
     let msg = document.getElementById('bandit-message');
     if (!msg) {
         msg = document.createElement('div');
@@ -148,9 +148,8 @@ export function showRobberSelectionMessage() {
         msg.style.textAlign = 'center';
         document.body.appendChild(msg);
     }
-    
-    // Simple message without extras
-    msg.textContent = 'Eine 7 wurde gewürfelt! Wähle ein Feld für den Räuber.';
+      // Display message - use custom message or default
+    msg.textContent = customMessage || 'Eine 7 wurde gewürfelt! Wähle ein Feld für den Räuber.';
     msg.style.display = 'block';
 }
 
@@ -296,7 +295,7 @@ export function startRobberPlacement(tileMeshes, tileNumbers) {
     createRobberSelectionIndicator();
     
     // Display message
-    showRobberSelectionMessage();
+    showRobberSelectionMessage('Wähle ein Feld für den Räuber (ESC zum Abbrechen)');
     
     // Return true to indicate we're in selection mode
     return true;
@@ -538,6 +537,9 @@ export function cancelRobberPlacement() {
     cancelMsg.style.borderRadius = '8px';
     cancelMsg.style.zIndex = '100';
     document.body.appendChild(cancelMsg);
+    
+    // Dispatch event that robber placement was canceled
+    window.dispatchEvent(new CustomEvent('robberPlacementCanceled'));
     
     // Remove after 2 seconds
     setTimeout(() => {
