@@ -2,9 +2,31 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { getDebugDiceValue } from './debugging/diceDebug.js';
+
+// Re-export debug functions for backward compatibility
+export { setDebugDiceValue, toggleDebugDiceMode } from './debugging/diceDebug.js';
 
 export function rollDice() {
-  // Simuliere zwei Würfel (2-12)
+  // Check if we're forcing a specific value for debugging
+  const debugValue = getDebugDiceValue();
+  if (debugValue !== null) {
+    // For a forced 7, use 1+6 or 2+5 or 3+4 randomly
+    if (debugValue === 7) {
+      const options = [[1,6], [2,5], [3,4]];
+      const choice = options[Math.floor(Math.random() * options.length)];
+      window.lastDice = { left: choice[0], right: choice[1], sum: 7 };
+      return 7;
+    }
+    
+    // For other values, just split somewhat randomly
+    const left = Math.min(6, Math.max(1, Math.floor(debugValue / 2)));
+    const right = debugValue - left;
+    window.lastDice = { left, right, sum: debugValue };
+    return debugValue;
+  }
+  
+  // Normal random dice roll
   const left = Math.floor(Math.random() * 6 + 1);
   const right = Math.floor(Math.random() * 6 + 1);
   window.lastDice = { left, right, sum: left + right };
@@ -229,12 +251,36 @@ export function updateDicePhysics() {
     const allResting = diceBodies.every(b =>
       b.velocity.length() < threshold && b.angularVelocity.length() < threshold
     );
+    
     if (allResting) {
-      const left = getDiceTopNumber(diceMeshes[0]);
-      const right = getDiceTopNumber(diceMeshes[1]);
-      const sum = left + right;
-      window.setDiceResultFromPhysics({ left, right, sum });
-      window.setDiceResultFromPhysics = null; // Nur einmal pro Wurf
+      // Use a short timeout to allow the dice to settle fully
+      setTimeout(() => {
+        if (!window.setDiceResultFromPhysics) return; // Another call already handled it
+        
+        // Check if we're in debug mode - if so, force result to the debug value
+        const debugValue = getDebugDiceValue();
+        if (debugValue !== null) {
+          console.log(`🎲 Debug mode activated: forcing dice to show ${debugValue}`);
+          // For a forced 7, use 1+6 or 2+5 or 3+4 randomly
+          if (debugValue === 7) {
+            const options = [[1,6], [2,5], [3,4]];
+            const choice = options[Math.floor(Math.random() * options.length)];
+            window.setDiceResultFromPhysics({ left: choice[0], right: choice[1], sum: 7 });
+          } else {
+            // For other values, just split somewhat randomly
+            const left = Math.min(6, Math.max(1, Math.floor(debugValue / 2)));
+            const right = debugValue - left;
+            window.setDiceResultFromPhysics({ left, right, sum: debugValue });
+          }
+        } else {
+          // Normal dice roll result from physics
+          const left = getDiceTopNumber(diceMeshes[0]);
+          const right = getDiceTopNumber(diceMeshes[1]);
+          const sum = left + right;
+          window.setDiceResultFromPhysics({ left, right, sum });
+        }
+        window.setDiceResultFromPhysics = null; // Nur einmal pro Wurf
+      }, 300); // Short delay to ensure dice have settled
     }
   }
 }
