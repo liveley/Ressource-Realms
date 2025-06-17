@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { loadTile } from '../loader.js'; // Import the function to load a single tile
+import { initializeHighlighting, animateHalos, testBorderHighlighting } from './tileHighlight.js';
 
 const HEX_RADIUS = 3;
 const hexGroup = new THREE.Group();
@@ -80,59 +81,63 @@ function neighborAxial(q, r, edge) {
   return [q + directions[edge][0], r + directions[edge][1]];
 }
 
-// Draws all road meshes (as box geometries) between adjacent land tiles
+// Store all road meshes for later highlighting
+const roadMeshes = {};
 function drawRoadMeshes(scene) {
   const landAxials = getLandTileAxials();
   const landSet = new Set(landAxials.map(([q, r]) => `${q},${r}`));
   const drawnEdges = new Set();
-
+  
+  // Clear previous road meshes
+  Object.keys(roadMeshes).forEach(key => delete roadMeshes[key]);
+  
   landAxials.forEach(([q, r]) => {
     const corners = getHexCorners(q, r);
+    
+    // Process all 6 edges of the tile
     for (let edge = 0; edge < 6; edge++) {
       const [nq, nr] = neighborAxial(q, r, edge);
       const isNeighborLand = landSet.has(`${nq},${nr}`);
-      // Edge between two land tiles: draw only once to avoid duplicates
-      if (isNeighborLand) {
-        const key = [[q, r, edge], [nq, nr, (edge + 3) % 6]]
-          .map(([a, b, e]) => `${a},${b},${e}`)
-          .sort()
-          .join('|');
-        if (!drawnEdges.has(key)) {
-          drawnEdges.add(key);
-          const start = corners[edge];
-          const end = corners[(edge + 1) % 6];
-          // Create box geometry for the road
-          const roadLength = start.distanceTo(end);
-          const roadWidth = HEX_RADIUS * 0.20; // Road thickness
-          const roadHeight = HEX_RADIUS * 0.40; // Road height
-          const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
-          const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 }); // Light brown
-          const mesh = new THREE.Mesh(geometry, material);
-          // Position: center of the edge
-          mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
-          // Rotate the box to align with the edge direction
-          const direction = end.clone().sub(start).normalize();
-          const axis = new THREE.Vector3(1, 0, 0); // BoxGeometry is along X axis
-          const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
-          mesh.setRotationFromQuaternion(quaternion);
-          scene.add(mesh);
-        }
-      } else {
-        // Outer edge: always draw a box (e.g., for the border)
+      
+      // Create a unique key for this edge (tile1|tile2|edge1|edge2)
+      const edgeKey = [[q, r, edge], [nq, nr, (edge + 3) % 6]]
+        .sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1])
+        .map(([a, b, e]) => `${a},${b},${e}`)
+        .join('|');
+      
+      // Check if we've already drawn this edge
+      if (!drawnEdges.has(edgeKey)) {
+        drawnEdges.add(edgeKey);
+        
+        // Get the start and end points of this edge
         const start = corners[edge];
         const end = corners[(edge + 1) % 6];
+        
+        // Create road mesh
         const roadLength = start.distanceTo(end);
         const roadWidth = HEX_RADIUS * 0.20;
         const roadHeight = HEX_RADIUS * 0.40;
         const geometry = new THREE.BoxGeometry(roadLength, roadWidth, roadHeight);
-        const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 }); // Light color for border
+        const material = new THREE.MeshStandardMaterial({ color: 0xf5deb3 });
         const mesh = new THREE.Mesh(geometry, material);
+        
+        // Position and orient the mesh
         mesh.position.copy(start.clone().add(end).multiplyScalar(0.5));
         const direction = end.clone().sub(start).normalize();
         const axis = new THREE.Vector3(1, 0, 0);
         const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
         mesh.setRotationFromQuaternion(quaternion);
+        
+        // Add to scene
         scene.add(mesh);
+        
+        // Store in roadMeshes for both the current tile and neighbor tile (if land)
+        roadMeshes[`${q},${r},${edge}`] = mesh;
+        
+        // If neighbor is land, also store reference from its perspective
+        if (isNeighborLand) {
+          roadMeshes[`${nq},${nr},${(edge + 3) % 6}`] = mesh;
+        }
       }
     }
   });
@@ -241,22 +246,6 @@ export function updateNumberTokensFacingCamera(scene, camera) {
     });
 }
 
-// Highlight logic for number tokens (e.g. after dice roll)
-export function highlightNumberTokens(scene, tileMeshes, tileNumbers, rolledNumber) {
-    Object.entries(tileMeshes).forEach(([key, mesh]) => {
-        const number = tileNumbers[key];
-        mesh.traverse(child => {
-            if (child.type === 'Sprite' && child.userData.number) {
-                if (number === rolledNumber) {
-                    child.material.color.set('#ffe066'); // highlight yellow
-                } else {
-                    child.material.color.set('#ffffff'); // normal
-                }
-            }
-        });
-    });
-}
-
 // === Draws a beige outline around all land tiles (including desert) ===
 function drawLandTileOutline(scene) {
   const outlineColor = 0xffe066; // nice beige color
@@ -292,7 +281,7 @@ function getShuffledResourceTiles() {
     return resourceTiles;
 }
 
-// Add number tokens directly when loading a tile
+// Add the game board with tiles to the scene
 export function createGameBoard(scene) {
     // --- Place the center desert tile ---
     loadTile('center.glb', (centerTile) => {
@@ -345,33 +334,19 @@ export function createGameBoard(scene) {
         });
     });
     
-  // Nach dem Platzieren der Tiles: Outline um Land-Tiles zeichnen
-  drawLandTileOutline(scene);
+    // After placing the tiles: draw outline around land tiles
+    drawLandTileOutline(scene);
 
     // After placing the tiles: draw road meshes
     drawRoadMeshes(scene);
     hexGroup.name = 'HexGroup'; // Name HexGroup for raycaster
+    
+    // Initialize the tile highlighting system
+    initializeHighlighting(hexGroup, tileNumbers, roadMeshes, tileMeshes);
+    
     // Return for main.js
     return { tileMeshes, tileNumbers };
 }
 
-// Highlight logic for tiles (e.g. after dice roll)
-window.addEventListener('diceRolled', (e) => {
-  const number = e.detail;
-  Object.entries(tileMeshes).forEach(([key, mesh]) => {
-    // Remove old highlight
-    mesh.traverse(child => {
-      if (child.material && child.material.emissive) {
-        child.material.emissive.setHex(0x000000);
-      }
-    });
-    // Highlight if number matches
-    if (tileNumbers[key] === number) {
-      mesh.traverse(child => {
-        if (child.material && child.material.emissive) {
-          child.material.emissive.setHex(0xffff00);
-        }
-      });
-    }
-  });
-});
+// Re-export the highlight functions from tileHighlight module
+export { animateHalos, testBorderHighlighting };
