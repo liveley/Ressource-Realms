@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {getEquivalentCorners} from './buildLogic.js';
 
 // modules/gamePieces.js
 // Platzhalter-Spielsteine für Prototyp
@@ -20,8 +21,14 @@ export function placeBuildingMesh(scene, getCornerWorldPosition, q, r, corner, t
   // Remove settlement if upgrading to city
   if (type === 'city') {
     // Remove existing settlement mesh at this corner (if any)
+    const equivalents = getEquivalentCorners(q, r, corner);
     scene.children.slice().forEach(obj => {
-      if (obj.userData && obj.userData.type === 'settlement' && obj.userData.q === q && obj.userData.r === r && obj.userData.corner === corner) {
+      if (
+        obj.userData &&
+        obj.userData.type === 'settlement' &&
+        equivalents.some(eq => eq.q === obj.userData.q && eq.r === obj.userData.r && eq.corner === obj.userData.corner)
+      ) {
+        // Remove all equivalent settlements (if any
         scene.remove(obj);
       }
     });
