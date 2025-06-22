@@ -20,7 +20,7 @@ export function placeBuildingMesh(scene, getCornerWorldPosition, q, r, corner, t
   // Remove settlement if upgrading to city
   if (type === 'city') {
     // Remove existing settlement mesh at this corner (if any)
-    const equivalent = getEquivalentCorners(q, r, corner);
+    const equivalents = getEquivalentCorners(q, r, corner);
     scene.children.slice().forEach(obj => {
       if (
         obj.userData &&
