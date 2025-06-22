@@ -219,11 +219,6 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-// Highlight-Logik bei Würfelergebnis
-window.addEventListener('diceRolled', (e) => {
-    highlightNumberTokens(scene, tileMeshes, tileNumbers, e.detail);
-});
-
 // Resize
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;

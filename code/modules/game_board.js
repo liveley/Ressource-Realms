@@ -440,41 +440,35 @@ window.addEventListener('diceRolled', (e) => {
         }
       });
       // === Ressourcenverteilung (fix: alle angrenzenden Hexes/Corners prüfen) ===
-      // Ermittle Rohstofftyp aus mesh.name (z.B. 'wood.glb' -> 'wood')
-      let resourceType = null;
-      if (mesh.name && mesh.name.endsWith('.glb')) {
-        resourceType = mesh.name.replace('.glb', '');
-      }
-      if (resourceType && resourceType !== 'center' && resourceType !== 'water') {
+      // Ermittle Rohstofftyp aus userData.type (sicher und eindeutig)
+      let resourceType = mesh.userData && mesh.userData.type ? mesh.userData.type : null;
+      // Debug: Log resourceType und userData
+      // console.log('DEBUG resourceType:', resourceType, mesh.userData);
+      if (resourceType && resourceType !== 'center' && resourceType !== 'water' && resourceType !== 'desert') {
         for (let corner = 0; corner < 6; corner++) {
-          // Ermittle alle angrenzenden Hexes/Corners für diese physische Ecke
-          // (das aktuelle Hex + 2 Nachbarhexes)
           const adjacent = [
-            { q: mesh.userData.q, r: mesh.userData.r, corner },
-            (() => { // Nachbar 1
+            { q: mesh.userData.tileQ ?? mesh.userData.q, r: mesh.userData.tileR ?? mesh.userData.r, corner },
+            (() => {
               const directions = [
                 [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
               ];
               const prev = (corner + 5) % 6;
               const [dq, dr] = directions[prev];
-              return { q: mesh.userData.q + dq, r: mesh.userData.r + dr, corner: (corner + 2) % 6 };
+              return { q: (mesh.userData.tileQ ?? mesh.userData.q) + dq, r: (mesh.userData.tileR ?? mesh.userData.r) + dr, corner: (corner + 2) % 6 };
             })(),
-            (() => { // Nachbar 2
+            (() => {
               const directions = [
                 [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
               ];
               const [dq, dr] = directions[corner];
-              return { q: mesh.userData.q + dq, r: mesh.userData.r + dr, corner: (corner + 4) % 6 };
+              return { q: (mesh.userData.tileQ ?? mesh.userData.q) + dq, r: (mesh.userData.tileR ?? mesh.userData.r) + dr, corner: (corner + 4) % 6 };
             })()
           ];
           for (const player of window.players || []) {
             for (const pos of adjacent) {
-              // Debug: Zeige alle Siedlungen und die geprüften Koordinaten
-              // Siedlung?
               if (player.settlements && player.settlements.some(s => s.q === pos.q && s.r === pos.r && s.corner === pos.corner)) {
                 player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
               }
-              // Stadt?
               if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
                 player.resources[resourceType] = (player.resources[resourceType] || 0) + 2;
               }
