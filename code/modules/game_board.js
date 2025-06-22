@@ -391,6 +391,8 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
     // --- Place water tiles (fixed positions) ---
     tilePositions.water.forEach(([q, r]) => {
         loadTile('water.glb', (tile) => {
+          tile.userData.q = q;
+          tile.userData.r = r;
             const pos = axialToWorld(q, r);
             tile.position.set(...pos);
             tile.name = 'water.glb';
@@ -419,36 +421,78 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
     return { tileMeshes, tileNumbers };
 }
 
-// Re-export the highlight functions from tileHighlight module
-export { animateHalos, testBorderHighlighting };
-
-// Function to update number token colors when the robber is moved
-// Function to update number token colors based on robber position
-export function updateNumberTokensForRobber(robberTileKey) {
-    const ROBBER_BLOCKED_COLOR = '#FF4D00'; // Vibrant orange color for blocked tile
-    
-    console.log(`Updating number token colors, robber on tile ${robberTileKey}`);
-    
-    // Reset all number tokens to default color first
-    Object.values(tileMeshes).forEach(mesh => {
-        mesh.traverse(child => {
-            if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
-                child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null); // Reset to default background with original text color
-                console.log(`Reset token color on tile ${child.userData.tileKey || 'unknown'}`);
-            }
-        });
+// Highlight logic for tiles (e.g. after dice roll)
+window.addEventListener('diceRolled', (e) => {
+  // --- Entferne asynchrone window.players/updateResourceUI-Initialisierung (Fehlerquelle) ---
+  const number = e.detail;
+  Object.entries(tileMeshes).forEach(([key, mesh]) => {
+    // Remove old highlight
+    mesh.traverse(child => {
+      if (child.material && child.material.emissive) {
+        child.material.emissive.setHex(0x000000);
+      }
     });
-    
-    // If we have a blocked tile, change its token color
-    if (robberTileKey && tileMeshes[robberTileKey]) {
-        const blockedTileMesh = tileMeshes[robberTileKey];
-        
-        // Find the number token in this tile and change its color
-        blockedTileMesh.traverse(child => {
-            if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
-                console.log(`Changing token color on blocked tile ${robberTileKey} to #FF4D00`);
-                child.userData.updateBackgroundColor(ROBBER_BLOCKED_COLOR, '#000000'); // Orange background with black text
+    // Highlight if number matches
+    if (tileNumbers[key] === number) {
+      mesh.traverse(child => {
+        if (child.material && child.material.emissive) {
+          child.material.emissive.setHex(0xffff00);
+        }
+      });
+      // === Ressourcenverteilung (fix: alle angrenzenden Hexes/Corners prüfen) ===
+      // Ermittle Rohstofftyp aus mesh.name (z.B. 'wood.glb' -> 'wood')
+      let resourceType = null;
+      if (mesh.name && mesh.name.endsWith('.glb')) {
+        resourceType = mesh.name.replace('.glb', '');
+      }
+      if (resourceType && resourceType !== 'center' && resourceType !== 'water') {
+        for (let corner = 0; corner < 6; corner++) {
+          // Ermittle alle angrenzenden Hexes/Corners für diese physische Ecke
+          // (das aktuelle Hex + 2 Nachbarhexes)
+          const adjacent = [
+            { q: mesh.userData.q, r: mesh.userData.r, corner },
+            (() => { // Nachbar 1
+              const directions = [
+                [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+              ];
+              const prev = (corner + 5) % 6;
+              const [dq, dr] = directions[prev];
+              return { q: mesh.userData.q + dq, r: mesh.userData.r + dr, corner: (corner + 2) % 6 };
+            })(),
+            (() => { // Nachbar 2
+              const directions = [
+                [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+              ];
+              const [dq, dr] = directions[corner];
+              return { q: mesh.userData.q + dq, r: mesh.userData.r + dr, corner: (corner + 4) % 6 };
+            })()
+          ];
+          for (const player of window.players || []) {
+            for (const pos of adjacent) {
+              // Debug: Zeige alle Siedlungen und die geprüften Koordinaten
+              // Siedlung?
+              if (player.settlements && player.settlements.some(s => s.q === pos.q && s.r === pos.r && s.corner === pos.corner)) {
+                player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
+              }
+              // Stadt?
+              if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
+                player.resources[resourceType] = (player.resources[resourceType] || 0) + 2;
+              }
             }
-        });
+          }
+        }
+      }
     }
-}
+  });
+  // UI-Update für alle Spieler
+  if (window.updateResourceUI && window.players) {
+    // Debug: Log Ressourcen nach Verteilung
+    window.players.forEach(p => console.log(`[Ressourcen nach Verteilung] ${p.name}:`, p.resources));
+    // UI-Update für aktiven Spieler mit Index
+    if (window.getActivePlayerIdx) {
+      window.updateResourceUI(window.players[window.getActivePlayerIdx()], window.getActivePlayerIdx());
+    } else {
+      window.updateResourceUI(window.players[0], 0);
+    }
+  }
+});

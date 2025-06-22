@@ -19,9 +19,29 @@ import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
+import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import CardManager from './modules/cards.js';
 import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
+
+window.players = window.players || [
+  {
+    name: 'Spieler 1',
+    color: 0xd7263d,
+    settlements: [],
+    cities: [],
+    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
+  },
+  {
+    name: 'Spieler 2',
+    color: 0x277da1,
+    settlements: [],
+    cities: [],
+    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
+  }
+];
+
+window.updateResourceUI = updateResourceUI;
 
 // Renderer
 const renderer = new THREE.WebGLRenderer();
@@ -78,7 +98,7 @@ createResourceUI();
 let buildMode = 'settlement'; // 'settlement' or 'city'
 let activePlayerIdx = 0;
 
-updateResourceUI(players[activePlayerIdx]); // Show initial player resources
+updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Show initial player resources
 
 // UI-Elemente für Würfeln
 createDiceUI(() => {
@@ -248,13 +268,13 @@ window.addEventListener('diceRolled', (e) => {
 
 // === Build Mode UI ===
 createBuildUI({
-  players,
+  players: window.players,
   getBuildMode: () => buildMode,
   setBuildMode: (mode) => { buildMode = mode; },
   getActivePlayerIdx: () => activePlayerIdx,
   setActivePlayerIdx: (idx) => {
     activePlayerIdx = idx;
-    updateResourceUI(players[activePlayerIdx]); // Update resource UI on player switch
+    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
   }
 });
 
@@ -264,14 +284,14 @@ setupBuildEventHandler({
   scene,
   camera,
   tileMeshes,
-  players,
+  players: window.players,
   getBuildMode: () => buildMode,
   getActivePlayerIdx: () => activePlayerIdx,
   tryBuildSettlement,
   tryBuildCity,
   tryBuildRoad, // <--- HINZUGEFÜGT
   getCornerWorldPosition,
-  updateResourceUI: () => updateResourceUI(players[activePlayerIdx]) // Always update for current player
+  updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx) // Always update for current player
 });
 
 // === Build Preview Setup ===
@@ -280,7 +300,7 @@ setupBuildPreview(
   scene,
   camera,
   tileMeshes,
-  players,
+  window.players,
   () => buildMode,
   () => activePlayerIdx,
   tryBuildSettlement,

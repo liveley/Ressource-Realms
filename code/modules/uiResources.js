@@ -11,6 +11,7 @@ const resources = [
 
 let resUI = null;
 let currentPlayer = null; // Track the player whose resources are shown
+let currentPlayerIdx = 0;
 
 export function createResourceUI() {
   resUI = document.createElement('div');
@@ -21,9 +22,12 @@ export function createResourceUI() {
 }
 
 // Update the UI to show the resources of the given player
-export function updateResourceUI(player) {
+export function updateResourceUI(player, idx) {
+  if (typeof idx === 'number') currentPlayerIdx = idx;
   currentPlayer = player;
-  if (!resUI || !player) return;
+  if (!resUI || !player) {
+    return;
+  }
   resUI.innerHTML = resources.map(r => `
     <span style="display:inline-flex;align-items:center;gap:0.3em;min-width:3.5em;">
       <span style="font-size:1.5em;">${r.symbol}</span>
@@ -34,13 +38,15 @@ export function updateResourceUI(player) {
 
 // Debug/cheat: allow adding resources to the current player
 export function handleResourceKeydown(e) {
-  if (!currentPlayer) return;
-  if (e.key === '1') currentPlayer.resources.wheat++;
-  if (e.key === '2') currentPlayer.resources.sheep++;
-  if (e.key === '3') currentPlayer.resources.wood++;
-  if (e.key === '4') currentPlayer.resources.clay++;
-  if (e.key === '5') currentPlayer.resources.ore++;
-  updateResourceUI(currentPlayer);
+  if (typeof currentPlayerIdx !== 'number') return;
+  const player = window.players ? window.players[currentPlayerIdx] : currentPlayer;
+  if (!player) return;
+  if (e.key === '1') player.resources.wheat++;
+  if (e.key === '2') player.resources.sheep++;
+  if (e.key === '3') player.resources.wood++;
+  if (e.key === '4') player.resources.clay++;
+  if (e.key === '5') player.resources.ore++;
+  updateResourceUI(player, currentPlayerIdx);
 }
 
 export { resources };
