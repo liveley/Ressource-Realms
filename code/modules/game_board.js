@@ -440,41 +440,35 @@ window.addEventListener('diceRolled', (e) => {
         }
       });
       // === Ressourcenverteilung (fix: alle angrenzenden Hexes/Corners prüfen) ===
-      // Ermittle Rohstofftyp aus mesh.name (z.B. 'wood.glb' -> 'wood')
-      let resourceType = null;
-      if (mesh.name && mesh.name.endsWith('.glb')) {
-        resourceType = mesh.name.replace('.glb', '');
-      }
-      if (resourceType && resourceType !== 'center' && resourceType !== 'water') {
+      // Ermittle Rohstofftyp aus userData.type (sicher und eindeutig)
+      let resourceType = mesh.userData && mesh.userData.type ? mesh.userData.type : null;
+      // Debug: Log resourceType und userData
+      // console.log('DEBUG resourceType:', resourceType, mesh.userData);
+      if (resourceType && resourceType !== 'center' && resourceType !== 'water' && resourceType !== 'desert') {
         for (let corner = 0; corner < 6; corner++) {
-          // Ermittle alle angrenzenden Hexes/Corners für diese physische Ecke
-          // (das aktuelle Hex + 2 Nachbarhexes)
           const adjacent = [
-            { q: mesh.userData.q, r: mesh.userData.r, corner },
-            (() => { // Nachbar 1
+            { q: mesh.userData.tileQ ?? mesh.userData.q, r: mesh.userData.tileR ?? mesh.userData.r, corner },
+            (() => {
               const directions = [
                 [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
               ];
               const prev = (corner + 5) % 6;
               const [dq, dr] = directions[prev];
-              return { q: mesh.userData.q + dq, r: mesh.userData.r + dr, corner: (corner + 2) % 6 };
+              return { q: (mesh.userData.tileQ ?? mesh.userData.q) + dq, r: (mesh.userData.tileR ?? mesh.userData.r) + dr, corner: (corner + 2) % 6 };
             })(),
-            (() => { // Nachbar 2
+            (() => {
               const directions = [
                 [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
               ];
               const [dq, dr] = directions[corner];
-              return { q: mesh.userData.q + dq, r: mesh.userData.r + dr, corner: (corner + 4) % 6 };
+              return { q: (mesh.userData.tileQ ?? mesh.userData.q) + dq, r: (mesh.userData.tileR ?? mesh.userData.r) + dr, corner: (corner + 4) % 6 };
             })()
           ];
           for (const player of window.players || []) {
             for (const pos of adjacent) {
-              // Debug: Zeige alle Siedlungen und die geprüften Koordinaten
-              // Siedlung?
               if (player.settlements && player.settlements.some(s => s.q === pos.q && s.r === pos.r && s.corner === pos.corner)) {
                 player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
               }
-              // Stadt?
               if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
                 player.resources[resourceType] = (player.resources[resourceType] || 0) + 2;
               }
@@ -496,3 +490,37 @@ window.addEventListener('diceRolled', (e) => {
     }
   }
 });
+
+// Re-export the highlight functions from tileHighlight module
+export { animateHalos, testBorderHighlighting };
+
+// Function to update number token colors when the robber is moved
+// Function to update number token colors based on robber position
+export function updateNumberTokensForRobber(robberTileKey) {
+    const ROBBER_BLOCKED_COLOR = '#FF4D00'; // Vibrant orange color for blocked tile
+    
+    console.log(`Updating number token colors, robber on tile ${robberTileKey}`);
+    
+    // Reset all number tokens to default color first
+    Object.values(tileMeshes).forEach(mesh => {
+        mesh.traverse(child => {
+            if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
+                child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null); // Reset to default background with original text color
+                console.log(`Reset token color on tile ${child.userData.tileKey || 'unknown'}`);
+            }
+        });
+    });
+    
+    // If we have a blocked tile, change its token color
+    if (robberTileKey && tileMeshes[robberTileKey]) {
+        const blockedTileMesh = tileMeshes[robberTileKey];
+        
+        // Find the number token in this tile and change its color
+        blockedTileMesh.traverse(child => {
+            if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
+                console.log(`Changing token color on blocked tile ${robberTileKey} to #FF4D00`);
+                child.userData.updateBackgroundColor(ROBBER_BLOCKED_COLOR, '#000000'); // Orange background with black text
+            }
+        });
+    }
+}
