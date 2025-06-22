@@ -162,7 +162,7 @@ function isLandTile(q, r) {
 }
 
 // Gibt alle äquivalenten Ecken für eine physische Ecke zurück
-function getEquivalentCorners(q, r, corner) {
+export function getEquivalentCorners(q, r, corner) {
   const eq = [{ q, r, corner }];
   const n1 = getNeighborCorner(q, r, corner);
   eq.push({ q: n1.q, r: n1.r, corner: n1.corner });
