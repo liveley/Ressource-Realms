@@ -1,6 +1,0 @@
-Prototyp Guide:
-Square = Wood
-Circle = Ore
-Triangle = Sheep
-Diamond = Clay
-Hexagon = Wheat
