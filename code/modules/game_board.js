@@ -496,3 +496,37 @@ window.addEventListener('diceRolled', (e) => {
     }
   }
 });
+
+// Re-export the highlight functions from tileHighlight module
+export { animateHalos, testBorderHighlighting };
+
+// Function to update number token colors when the robber is moved
+// Function to update number token colors based on robber position
+export function updateNumberTokensForRobber(robberTileKey) {
+    const ROBBER_BLOCKED_COLOR = '#FF4D00'; // Vibrant orange color for blocked tile
+    
+    console.log(`Updating number token colors, robber on tile ${robberTileKey}`);
+    
+    // Reset all number tokens to default color first
+    Object.values(tileMeshes).forEach(mesh => {
+        mesh.traverse(child => {
+            if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
+                child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null); // Reset to default background with original text color
+                console.log(`Reset token color on tile ${child.userData.tileKey || 'unknown'}`);
+            }
+        });
+    });
+    
+    // If we have a blocked tile, change its token color
+    if (robberTileKey && tileMeshes[robberTileKey]) {
+        const blockedTileMesh = tileMeshes[robberTileKey];
+        
+        // Find the number token in this tile and change its color
+        blockedTileMesh.traverse(child => {
+            if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
+                console.log(`Changing token color on blocked tile ${robberTileKey} to #FF4D00`);
+                child.userData.updateBackgroundColor(ROBBER_BLOCKED_COLOR, '#000000'); // Orange background with black text
+            }
+        });
+    }
+}

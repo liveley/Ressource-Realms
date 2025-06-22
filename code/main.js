@@ -19,7 +19,6 @@ import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
-import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import CardManager from './modules/cards.js';
 import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
@@ -71,20 +70,25 @@ const { tileMeshes, tileNumbers } = createGameBoard(scene);
 // Nach dem Erstellen des Spielfelds: Number Tokens hinzufügen
 addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 
-// Initialize robber position and update number token colors
-// At start, the robber is on the desert tile at 0,0, which has no number token
-// Wait a bit for all tokens to load before applying the colors
+// === Robber erst initialisieren, wenn das Wüstenfeld-Mesh geladen ist ===
 const initialRobberTileKey = '0,0';
-// Use a slight delay to ensure all tokens are created
-setTimeout(() => {
-  console.log("Setting initial token colors for robber on desert");
-  updateNumberTokensForRobber(initialRobberTileKey);
-}, 500);
-
-// Initialize the robber on the desert tile (q=0, r=0)
-// We now pass tileMeshes to use the accurate center position calculation
-console.log("Initializing robber on the desert tile");
-initializeRobber(scene, null, tileMeshes);
+function waitForDesertTileAndInitRobber(retries = 20) {
+  if (tileMeshes[initialRobberTileKey]) {
+    // Number token colors setzen
+    setTimeout(() => {
+      console.log("Setting initial token colors for robber on desert");
+      updateNumberTokensForRobber(initialRobberTileKey);
+    }, 200);
+    // Robber initialisieren
+    console.log("Initializing robber on the desert tile");
+    initializeRobber(scene, null, tileMeshes);
+  } else if (retries > 0) {
+    setTimeout(() => waitForDesertTileAndInitRobber(retries - 1), 100);
+  } else {
+    console.warn("Desert tile mesh (0,0) not found after waiting. Robber not initialized.");
+  }
+}
+waitForDesertTileAndInitRobber();
 
 // Platzhalter-Spielkarten erstellen
 createPlaceholderCards(scene);
