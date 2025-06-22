@@ -2,6 +2,7 @@
 // Responsible for creating visual highlight effects for tiles and borders
 
 import * as THREE from 'three';
+import { getCornerWorldPosition as boardGetCornerWorldPosition } from './game_board.js';
 
 // Reference to tileNumbers, roadMeshes, and tileMeshes from game_board
 let tileNumbers = {};
@@ -28,14 +29,7 @@ export function getTileWorldPosition(q, r) {
 }
 
 // Get the world position of a tile's corner point
-export function getCornerWorldPosition(q, r, corner) {
-  // Corner values 0-5, starting at east (0) and moving counterclockwise
-  const center = getTileWorldPosition(q, r);
-  const angle = Math.PI / 3 * corner; // Each corner is 60 degrees apart
-  const x = center.x + HEX_RADIUS * Math.cos(angle);
-  const z = center.z + HEX_RADIUS * Math.sin(angle);
-  return new THREE.Vector3(x, 0, z);
-}
+export const getCornerWorldPosition = boardGetCornerWorldPosition;
 
 // Create a brief sunbeam effect that illuminates the tile and then fades away
 function createTileHalo(position, height = HEX_RADIUS * 1.5, color = 0xffdd66) {
