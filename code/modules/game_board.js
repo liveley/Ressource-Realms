@@ -426,19 +426,7 @@ window.addEventListener('diceRolled', (e) => {
   // --- Entferne asynchrone window.players/updateResourceUI-Initialisierung (Fehlerquelle) ---
   const number = e.detail;
   Object.entries(tileMeshes).forEach(([key, mesh]) => {
-    // Remove old highlight
-    mesh.traverse(child => {
-      if (child.material && child.material.emissive) {
-        child.material.emissive.setHex(0x000000);
-      }
-    });
-    // Highlight if number matches
     if (tileNumbers[key] === number) {
-      mesh.traverse(child => {
-        if (child.material && child.material.emissive) {
-          child.material.emissive.setHex(0xffff00);
-        }
-      });
       // === Ressourcenverteilung (fix: alle angrenzenden Hexes/Corners prüfen) ===
       // Ermittle Rohstofftyp aus userData.type (sicher und eindeutig)
       let resourceType = mesh.userData && mesh.userData.type ? mesh.userData.type : null;
