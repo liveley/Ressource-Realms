@@ -68,14 +68,14 @@ function startGame() {
   console.log('Starte Spiel: Initialisiere UI und Spielfeld...');
   try {
     createBuildUI({
-      players,
+      players: window.players, // GITHUB COPILOT: Vereinheitlicht auf window.players
       getBuildMode: () => buildMode,
       setBuildMode: (mode) => { buildMode = mode; },
       getActivePlayerIdx: () => activePlayerIdx,
       setActivePlayerIdx: (idx) => {
         activePlayerIdx = idx;
-        updateResourceUI(players[activePlayerIdx]);
-        updatePlayerOverviews(players, () => activePlayerIdx);
+        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+        updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
       },
       parent: actionBar
     });
@@ -98,10 +98,10 @@ function startGame() {
   }
 
   try {
-    placePlayerSwitchButton(players, () => activePlayerIdx, (idx) => {
+    placePlayerSwitchButton(window.players, () => activePlayerIdx, (idx) => {
       activePlayerIdx = idx;
-      updateResourceUI(players[activePlayerIdx]);
-      updatePlayerOverviews(players, () => activePlayerIdx);
+      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+      updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
     }, actionBar);
     console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
   } catch (e) {
@@ -110,15 +110,15 @@ function startGame() {
 
   try {
     createResourceUI();
-    updateResourceUI(players[activePlayerIdx]);
+    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
     console.log('Ressourcen-UI erstellt:', document.getElementById('ressource-ui'));
   } catch (e) {
     console.error('Fehler beim Erstellen der Ressourcen-UI:', e);
   }
 
   try {
-    createPlayerOverviews(players, () => activePlayerIdx);
-    updatePlayerOverviews(players, () => activePlayerIdx);
+    createPlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+    updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
     console.log('Player-Overviews erstellt:', document.getElementById('player-overview-container'));
   } catch (e) {
     console.error('Fehler beim Erstellen der Player-Overviews:', e);
