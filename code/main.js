@@ -393,12 +393,12 @@ window.addEventListener('diceRolled', (e) => {
 //    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
 //  }
 //});
-// === Spielerwechsel-Button UI ===
-placePlayerSwitchButton(players, () => activePlayerIdx, (idx) => {
-  activePlayerIdx = idx;
-  updateResourceUI(players[activePlayerIdx]);
-  updatePlayerOverviews(players, () => activePlayerIdx);
-});
+// === Spielerwechsel-Button UI === auskommentiert, da doppelte Initialisierung
+//placePlayerSwitchButton(players, () => activePlayerIdx, (idx) => {
+//  activePlayerIdx = idx;
+//  updateResourceUI(players[activePlayerIdx]);
+//  updatePlayerOverviews(players, () => activePlayerIdx);
+//});
 
 // === Build Event Handler Setup ===
 setupBuildEventHandler({
