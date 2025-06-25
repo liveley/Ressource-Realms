@@ -223,10 +223,10 @@ createDiceUI(() => {
     window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
   };
 });
-createInfoOverlayToggle();
+//createInfoOverlayToggle();  //auskommentiert wegen doppelter Initialisierung
 
 // Info-Overlay und Mousemove-Handling für Tile-Infos
-initTileInfoOverlay(scene, camera);
+//initTileInfoOverlay(scene, camera); //auskommentiert wegen doppelter Initialisierung
 
 // Create a raycaster for robber tile selection
 const raycaster = new THREE.Raycaster();
