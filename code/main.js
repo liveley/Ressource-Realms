@@ -376,19 +376,19 @@ window.addEventListener('diceRolled', (e) => {
     }
 });
 
-// === Build Mode UI ===
-createBuildUI({
-  players: window.players,
-  getBuildMode: () => buildMode,
-  setBuildMode: (mode) => { buildMode = mode; },
-  getActivePlayerIdx: () => activePlayerIdx,
-  setActivePlayerIdx: (idx) => {
-    activePlayerIdx = idx;
-    updateResourceUI(players[activePlayerIdx]); // Update resource UI on player switch
-    updatePlayerOverviews(players, () => activePlayerIdx);
-    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
-  }
-});
+// === Build Mode UI ===  auskommentiert, da doppelte Initialisierung
+//createBuildUI({
+//  players: window.players,
+//  getBuildMode: () => buildMode,
+//  setBuildMode: (mode) => { buildMode = mode; },
+//  getActivePlayerIdx: () => activePlayerIdx,
+//  setActivePlayerIdx: (idx) => {
+//    activePlayerIdx = idx;
+//    updateResourceUI(players[activePlayerIdx]); // Update resource UI on player switch
+//    updatePlayerOverviews(players, () => activePlayerIdx);
+//    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
+//  }
+//});
 // === Spielerwechsel-Button UI ===
 placePlayerSwitchButton(players, () => activePlayerIdx, (idx) => {
   activePlayerIdx = idx;
