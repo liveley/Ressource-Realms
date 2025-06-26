@@ -275,12 +275,9 @@ function neighborAxial(q, r, edge) {
 }
 
 export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
-  // Verhindere Bau auf Wasser-Tiles (beide Enden prüfen, Wüste ist erlaubt)
-  if (!isLandTile(q, r)) {
-    return { success: false, reason: 'Straßenbau auf Wasser nicht erlaubt' };
-  }
+  // Erlaube Straßenbau, wenn mindestens EIN angrenzendes Feld Land ist (Wüste ist erlaubt)
   const [nq, nr] = neighborAxial(q, r, edge);
-  if (!isLandTile(nq, nr)) {
+  if (!isLandTile(q, r) && !isLandTile(nq, nr)) {
     return { success: false, reason: 'Straßenbau auf Wasser nicht erlaubt' };
   }
   if (!ignoreResourceRule && !canBuildRoad(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
@@ -296,12 +293,9 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
 
 // Nur-Prüf-Funktion für Preview
 export function canPlaceRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
-  // Verhindere Bau auf Wasser-Tiles (beide Enden prüfen, Wüste ist erlaubt)
-  if (!isLandTile(q, r)) {
-    return { success: false, reason: 'Straßenbau auf Wasser nicht erlaubt' };
-  }
+  // Erlaube Straßenbau, wenn mindestens EIN angrenzendes Feld Land ist (Wüste ist erlaubt)
   const [nq, nr] = neighborAxial(q, r, edge);
-  if (!isLandTile(nq, nr)) {
+  if (!isLandTile(q, r) && !isLandTile(nq, nr)) {
     return { success: false, reason: 'Straßenbau auf Wasser nicht erlaubt' };
   }
   if (!ignoreResourceRule && !canBuildRoad(player)) return { success: false, reason: 'Nicht genug Ressourcen' };

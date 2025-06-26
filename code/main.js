@@ -254,8 +254,12 @@ window.addEventListener('robberMoved', (e) => {
     unblockDiceRolls();
 });
 
-// Handle 7 being rolled
+// Handle dice rolls
 window.addEventListener('diceRolled', (e) => {
+    // Highlight number tokens for the rolled number
+    highlightNumberTokens(scene, tileMeshes, tileNumbers, e.detail);
+    
+    // Special handling for rolling a 7
     if (e.detail === 7) {
         // Start robber placement mode
         startRobberPlacement(tileMeshes, tileNumbers);
