@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { placeBuildingMesh, placeRoadMesh } from './gamePieces.js';
 import { isBuildEnabled } from './uiBuild.js';
+import { showBuildPopupFeedback } from './uiBuild.js';
 
 // Build-Event-Handler für das Bauen von Siedlungen und Städten
 // Kapselt die Click-Logik für das Spielfeld
@@ -20,6 +21,7 @@ export function setupBuildEventHandler({
   updateResourceUI // now expects no arguments, closure from main.js
 }) {
   function onBoardClick(event) {
+    console.log('BuildEventHandler: click event');
     // Only if menu is hidden
     const menu = document.getElementById('main-menu');
     if (menu && menu.style.display !== 'none') return;
@@ -103,56 +105,16 @@ export function setupBuildEventHandler({
     } else {
       result = { success: false, reason: 'Unbekannter Build-Modus' };
     }
-    // === Feedback-Element holen (immer aus Build-UI!) ===
-    const feedback = document.getElementById('build-feedback');
     // === Feedback-Timeout robust machen ===
     if (window._buildFeedbackTimeout) {
       clearTimeout(window._buildFeedbackTimeout);
       window._buildFeedbackTimeout = null;
     }
     if (!result.success) {
-      if (feedback) {
-        console.log('[Build-Feedback]', result.reason || 'Bau nicht möglich');
-        feedback.textContent = result.reason || 'Bau nicht möglich';
-        feedback.style.display = 'inline';
-        feedback.style.visibility = 'visible';
-        feedback.style.opacity = '1';
-        feedback.style.background = '#ffe066';
-        feedback.style.color = '#d7263d';
-        feedback.style.fontWeight = 'bold';
-        window._buildFeedbackTimeout = setTimeout(() => {
-          feedback.textContent = '';
-          feedback.style.display = '';
-          feedback.style.visibility = '';
-          feedback.style.opacity = '';
-          feedback.style.background = '';
-          feedback.style.color = '';
-          feedback.style.fontWeight = '';
-          window._buildFeedbackTimeout = null;
-        }, 2200);
-      }
+      showBuildPopupFeedback(result.reason || 'Bau nicht möglich', false);
       return;
     }
-    if (feedback) {
-      console.log('[Build-Feedback] Gebaut!');
-      feedback.textContent = 'Gebaut!';
-      feedback.style.display = 'inline';
-      feedback.style.visibility = 'visible';
-      feedback.style.opacity = '1';
-      feedback.style.background = '#8fd19e';
-      feedback.style.color = '#222';
-      feedback.style.fontWeight = 'bold';
-      window._buildFeedbackTimeout = setTimeout(() => {
-        feedback.textContent = '';
-        feedback.style.display = '';
-        feedback.style.visibility = '';
-        feedback.style.opacity = '';
-        feedback.style.background = '';
-        feedback.style.color = '';
-        feedback.style.fontWeight = '';
-        window._buildFeedbackTimeout = null;
-      }, 1200);
-    }
+    showBuildPopupFeedback('Gebaut!', true);
     // Ressourcen-UI nur aktualisieren, wenn gebaut wurde
     if (meshPlaced) updateResourceUI();
   }

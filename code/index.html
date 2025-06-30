@@ -9,32 +9,65 @@
     #main-menu h1 { font-family: 'Montserrat', Arial, sans-serif; }
     #main-menu button { font-family: 'Montserrat', Arial, sans-serif; }
 
+    /* --- Main Action Bar Styles --- */
+    #main-action-bar {
+      position: absolute;
+      right: 2em;
+      bottom: 2em;
+      z-index: 30;
+      display: flex;
+      flex-direction: row;
+      gap: 1.2em;
+      align-items: flex-end;
+      justify-content: flex-end;
+    }
+    #main-action-bar > * {
+      /* Buttons im Action-Bar-Layout */
+      margin: 0;
+      position: static !important;
+      box-sizing: border-box;
+    }
+    @media (max-width: 800px) {
+      #main-action-bar {
+        right: 0.5em;
+        bottom: 0.5em;
+        gap: 0.5em;
+      }
+    }
+
     /* --- Build UI Modern Styles --- */
     #build-ui {
       position: absolute;
-      bottom: clamp(1em, 2.5vh, 2.5em);
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255,255,255,0.97);
-      border-radius: 0.8em;
-      padding: clamp(0.5em, 1vw, 1em) clamp(0.8em, 2vw, 1.2em);
-      box-shadow: 0 4px 24px #0003, 0 1.5px 0 #ffe066;
+      bottom: clamp(1em, 3vh, 2.5em);
+      right: 12em;  /*Position build-ui Button*/
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      /* Standard: kein Hintergrund, kein Rand, kein Schatten */
+      background: none;
+      border: none;
+      box-shadow: none;
       gap: clamp(0.4em, 1vw, 1em);
       font-family: 'Montserrat', Arial, sans-serif;
       font-size: clamp(0.85em, 1vw, 1.05em);
       align-items: center;
+      text-align: center;
       z-index: 20;
-      border: 2px solid #ffe066;
-      min-width: clamp(180px, 28vw, 320px);
-      max-width: 90vw;
+      min-width: clamp(100px, 14vw, 180px);
+      max-width: 80vw;
       justify-content: center;
       transition: box-shadow 0.2s;
+    }
+    #build-ui.menu-open {
+      background: rgba(255,255,255,0.97);
+      border-radius: 0.5em; /* wie die Buttons */
+      box-shadow: 0 4px 24px #0003, 0 1.5px 0 #ffe066;
+      border: 2px solid #ffe066;
     }
     #build-ui button {
       background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
       border: none;
-      border-radius: 0.35em;
+      border-radius: 0.15em;
       padding: clamp(0.18em, 0.7vw, 0.4em) clamp(0.5em, 1vw, 1em);
       font-size: 0.95em;
       font-family: inherit;
@@ -51,7 +84,7 @@
       transform: translateY(-2px) scale(1.04);
     }
     #build-ui select {
-      border-radius: 0.3em;
+      border-radius: 0.5em;
       border: 1.5px solid #ffe066;
       padding: 0.2em 0.7em;
       font-size: 0.95em;
@@ -68,7 +101,7 @@
     #build-feedback {
       color: #d7263d;
       background: #fff0f3;
-      border-radius: 0.3em;
+      border-radius: 0.5em;
       margin-left: 1em;
       min-width: 5em;
       min-height: 1.2em;
@@ -140,6 +173,61 @@
       box-shadow: 0 4px 16px #ffe06655, 0 2px 8px #0002;
       transform: translateY(-2px) scale(1.04);
     }
+    #build-toggle-btn {
+      font-size: 2.5em; /* Wie Würfeln- und Spielerwechsel-Button */
+      padding: clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em);
+      border-radius: 0.5em;
+      /*aspect-ratio: auto;*/
+      background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+      border: none;
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-weight: 700;
+      color: #222;
+      box-shadow: 0 2px 8px #0001;
+      transition: background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s;
+      outline: none;
+      display: block;
+      min-width: 4.5em;
+      min-height: 2.5em;
+      width: auto;
+      height: auto;
+      aspect-ratio: auto;
+    }
+    #build-ui.menu-open #build-toggle-btn {
+      font-size: 1.3em;
+      padding: 0.2em 0.5em;
+      min-width: 4.5em;
+      min-height: 2.5em;
+    }
+    /* Quadratische Hauptbuttons im Action Bar */
+    #main-action-bar > button, #main-action-bar > div > button, #main-action-bar > div#build-ui > button, #roll-dice, #player-switch-btn, #build-toggle-btn {
+      aspect-ratio: 1 / 1 !important;
+      min-width: 3.2em !important;
+      min-height: 3.2em !important;
+      width: 3.2em !important;
+      height: 3.2em !important;
+      padding: 0 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5em !important;
+      border-radius: 0.5em !important;
+      box-shadow: 0 2px 8px #0001;
+      background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+      border: none;
+      transition: background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s;
+    }
+    #main-action-bar > button:hover, #main-action-bar > div > button:hover, #main-action-bar > div#build-ui > button:hover, #roll-dice:hover, #player-switch-btn:hover, #build-toggle-btn:hover {
+      background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+      box-shadow: 0 4px 16px #ffe06655, 0 2px 8px #0002;
+      transform: translateY(-2px) scale(1.04);
+    }
+    /* Text unter dem Spielerwechsel-Button kleiner und mittig */
+    #player-switch-btn span {
+      font-size: 0.32em !important;
+      margin-top: 0.1em;
+      text-align: center;
+    }
     @media (max-width: 1200px) {
       #build-ui {
         font-size: clamp(0.8em, 1.5vw, 0.95em);
@@ -207,7 +295,7 @@
   </style>
 </head>
 <body>
-  <div id="main-menu" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: #222c; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+  <div id="main-menu" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: #222c; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;">
     <h1 id="main-title" style="color: #fff; font-size: 4.5em; margin-bottom: 2em; letter-spacing: 0.05em; text-shadow: 0 4px 16px #000, 0 2px 0 #ffe066, 0 6px 20px #222; filter: drop-shadow(0 0 12px #ffe066);">Catan 3D</h1>
     <button id="start-game" style="font-size: 2em; padding: 0.5em 2em; margin-bottom: 1em; cursor: pointer;">Spiel starten</button>
     <button id="quit-game" style="font-size: 2em; padding: 0.5em 2em; cursor: pointer;">Spiel beenden</button>

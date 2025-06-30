@@ -17,9 +17,11 @@ import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, h
 import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
+import CardManager from './modules/cards.js';
+import { createPlayerOverviews, updatePlayerOverviews } from './modules/ui_player_overview.js';
+import { placePlayerSwitchButton } from './modules/change_player.js';
 import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
-import CardManager from './modules/cards.js';
 import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 
@@ -48,6 +50,115 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setAnimationLoop(animate);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
+
+// === Haupt-Button-Leiste (Action Bar) ===
+let actionBar = document.getElementById('main-action-bar');
+if (!actionBar) {
+  actionBar = document.createElement('div');
+  actionBar.id = 'main-action-bar';
+  document.body.appendChild(actionBar);
+}
+
+// === Initialisiere Spielfeld und UI erst nach Spielstart ===
+function startGame() {
+  console.log('startGame() wurde aufgerufen!');
+  let actionBar = document.getElementById('main-action-bar');
+  console.log('actionBar:', actionBar);
+
+  console.log('Starte Spiel: Initialisiere UI und Spielfeld...');
+  try {
+    createBuildUI({
+      players: window.players, // GITHUB COPILOT: Vereinheitlicht auf window.players
+      getBuildMode: () => buildMode,
+      setBuildMode: (mode) => { buildMode = mode; },
+      getActivePlayerIdx: () => activePlayerIdx,
+      setActivePlayerIdx: (idx) => {
+        activePlayerIdx = idx;
+        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+        updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+      },
+      parent: actionBar
+    });
+    console.log('Build-UI erstellt:', document.getElementById('build-ui'));
+  } catch (e) {
+    console.error('Fehler beim Erstellen des Build-UI:', e);
+  }
+
+  try {
+    createDiceUI(() => {
+      throwPhysicsDice(scene);
+      window.setDiceResultFromPhysics = (result) => {
+        setDiceResult(result.sum);
+        window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
+      };
+    }, actionBar);
+    console.log('Dice-UI erstellt:', document.getElementById('dice-ui'));
+  } catch (e) {
+    console.error('Fehler beim Erstellen des Dice-UI:', e);
+  }
+
+  try {
+    placePlayerSwitchButton(window.players, () => activePlayerIdx, (idx) => {
+      activePlayerIdx = idx;
+      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+      updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+    }, actionBar);
+    console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
+  } catch (e) {
+    console.error('Fehler beim Erstellen des Player-Switch-Buttons:', e);
+  }
+
+  try {
+    createResourceUI();
+    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+    console.log('Ressourcen-UI erstellt:', document.getElementById('ressource-ui'));
+  } catch (e) {
+    console.error('Fehler beim Erstellen der Ressourcen-UI:', e);
+  }
+
+  try {
+    createPlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+    updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+    console.log('Player-Overviews erstellt:', document.getElementById('player-overview-container'));
+  } catch (e) {
+    console.error('Fehler beim Erstellen der Player-Overviews:', e);
+  }
+
+  try {
+    createInfoOverlayToggle();
+    initTileInfoOverlay(scene, camera);
+    console.log('Info-Overlay erstellt:', document.getElementById('infoOverlay'));
+  } catch (e) {
+    console.error('Fehler beim Erstellen des Info-Overlays:', e);
+  }
+
+  try {
+    createPlaceholderCards(scene);
+    const cardManager = new CardManager();
+    cardManager.loadAllCards().then(() => {
+      console.log('Karten geladen:', cardManager.getCards());
+    }).catch(error => console.error("Fehler beim Laden der Karten:", error));
+  } catch (e) {
+    console.error('Fehler beim Erstellen der Karten:', e);
+  }
+}
+
+// === Main-Menu-Start-Button-Handler ===
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM geladen, versuche Start-Button-Handler zu setzen...');
+  const menu = document.getElementById('main-menu');
+  const startBtn = document.getElementById('start-game');
+  if (startBtn) {
+    console.log('Start-Button gefunden und Handler gesetzt.');
+    startBtn.onclick = () => {
+      console.log('Start-Button wurde geklickt!');
+      if (menu) menu.style.display = 'none';
+      startGame();
+    };
+  } else {
+    console.error('Start-Button NICHT gefunden!');
+  }
+});
 
 // Debug flags
 window.debugDiceEnabled = false; // Initialize debug mode as disabled
@@ -112,10 +223,10 @@ createDiceUI(() => {
     window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
   };
 });
-createInfoOverlayToggle();
+//createInfoOverlayToggle();  //auskommentiert wegen doppelter Initialisierung
 
 // Info-Overlay und Mousemove-Handling für Tile-Infos
-initTileInfoOverlay(scene, camera);
+//initTileInfoOverlay(scene, camera); //auskommentiert wegen doppelter Initialisierung
 
 // Create a raycaster for robber tile selection
 const raycaster = new THREE.Raycaster();
@@ -269,17 +380,25 @@ window.addEventListener('diceRolled', (e) => {
     }
 });
 
-// === Build Mode UI ===
-createBuildUI({
-  players: window.players,
-  getBuildMode: () => buildMode,
-  setBuildMode: (mode) => { buildMode = mode; },
-  getActivePlayerIdx: () => activePlayerIdx,
-  setActivePlayerIdx: (idx) => {
-    activePlayerIdx = idx;
-    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
-  }
-});
+// === Build Mode UI ===  auskommentiert, da doppelte Initialisierung
+//createBuildUI({
+//  players: window.players,
+//  getBuildMode: () => buildMode,
+//  setBuildMode: (mode) => { buildMode = mode; },
+//  getActivePlayerIdx: () => activePlayerIdx,
+//  setActivePlayerIdx: (idx) => {
+//    activePlayerIdx = idx;
+//    updateResourceUI(players[activePlayerIdx]); // Update resource UI on player switch
+//    updatePlayerOverviews(players, () => activePlayerIdx);
+//    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
+//  }
+//});
+// === Spielerwechsel-Button UI === auskommentiert, da doppelte Initialisierung
+//placePlayerSwitchButton(players, () => activePlayerIdx, (idx) => {
+//  activePlayerIdx = idx;
+//  updateResourceUI(players[activePlayerIdx]);
+//  updatePlayerOverviews(players, () => activePlayerIdx);
+//});
 
 // === Build Event Handler Setup ===
 setupBuildEventHandler({

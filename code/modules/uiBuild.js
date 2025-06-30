@@ -2,52 +2,122 @@
 // Erstellt und verwaltet die Build-UI (Siedlung/Stadt bauen, Spielerwahl, Feedback)
 // Übergibt buildMode- und activePlayerIdx-Setter als Callback-Parameter
 
+import { showPlayerSwitchButton } from './change_player.js';
+
 let buildEnabled = false;
 let buildMenu = null;
 
-export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePlayerIdx, setActivePlayerIdx }) {
+export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePlayerIdx, setActivePlayerIdx, parent }) {
+  // Build-UI (wie bisher)
   const ui = document.createElement('div');
   ui.id = 'build-ui';
+  ui.style.display = 'flex';
+  ui.style.flexDirection = 'column';
+  ui.style.alignItems = 'center';
+  // Keine absolute Positionierung mehr!
 
-  // Bau-Button
+  // Bau-Button (immer sichtbar)
   const buildToggleBtn = document.createElement('button');
   buildToggleBtn.id = 'build-toggle-btn';
-  buildToggleBtn.textContent = 'Bauen: AN';
+  buildToggleBtn.textContent = '🏗️';
+  buildToggleBtn.style.fontSize = '2.5em'; // Emoji so groß wie beim Würfeln-Button
   buildToggleBtn.onclick = () => {
     buildEnabled = !buildEnabled;
-    buildToggleBtn.textContent = buildEnabled ? 'Bauen: AN' : 'Bauen: AUS';
-    if (buildMenu) buildMenu.style.display = buildEnabled ? '' : 'none';
+    console.log('Build-UI: buildEnabled =', buildEnabled);
+    buildToggleBtn.textContent = buildEnabled ? '\ud83c\udfd7\ufe0f AUS' : '\ud83c\udfd7\ufe0f';
+    if (buildMenu) buildMenu.style.display = buildEnabled ? 'flex' : 'none';
+    // Hintergrund und Rand nur anzeigen, wenn Menü offen ist
+    if (buildEnabled) {
+      ui.classList.add('menu-open');
+      console.log('Build-UI: Menü geöffnet');
+    } else {
+      ui.classList.remove('menu-open');
+      console.log('Build-UI: Menü geschlossen');
+    }
   };
   ui.appendChild(buildToggleBtn);
 
-  // Das eigentliche Baumenü (Buttons für Siedlung, Stadt, Straße, Spielerwahl, Feedback)
+  // Das eigentliche Baumenü (Buttons für Spielerwahl, Straße, Siedlung, Stadt)
   buildMenu = document.createElement('div');
   buildMenu.id = 'build-menu';
   buildMenu.style.display = 'none'; // Anfangs ausgeblendet
-  buildMenu.innerHTML = `
-    <button id="build-settlement">Siedlung bauen</button>
-    <button id="build-city">Stadt bauen</button>
-    <button id="build-road">Straße bauen</button>
-    <span>Aktiver Spieler: <select id="player-select"></select></span>
-    <span id="build-feedback"></span>
-  `;
-  ui.appendChild(buildMenu);
-  document.body.appendChild(ui);
+  buildMenu.style.flexDirection = 'column';
+  buildMenu.style.gap = '0.5em';
+  buildMenu.style.marginTop = '0.7em';
+  buildMenu.style.alignItems = 'stretch';
+  buildMenu.style.bottom = '2em'; // Abstand zum unteren Rand
+  buildMenu.style.right = '6em'; // Abstand zum rechten Rand
 
-  document.getElementById('build-settlement').onclick = () => setBuildMode('settlement');
-  document.getElementById('build-city').onclick = () => setBuildMode('city');
-  document.getElementById('build-road').onclick = () => setBuildMode('road');
-  const sel = document.getElementById('player-select');
-  players.forEach((p, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = p.name;
-    sel.appendChild(opt);
-  });
-  sel.value = getActivePlayerIdx();
-  sel.onchange = e => setActivePlayerIdx(parseInt(e.target.value));
+  // Straße bauen
+  const roadBtn = document.createElement('button');
+  roadBtn.id = 'build-road';
+  roadBtn.textContent = 'Straße bauen';
+  roadBtn.onclick = () => setBuildMode('road');
+  buildMenu.appendChild(roadBtn);
+
+  // Siedlung bauen
+  const settlementBtn = document.createElement('button');
+  settlementBtn.id = 'build-settlement';
+  settlementBtn.textContent = 'Siedlung bauen';
+  settlementBtn.onclick = () => setBuildMode('settlement');
+  buildMenu.appendChild(settlementBtn);
+
+  // Stadt bauen
+  const cityBtn = document.createElement('button');
+  cityBtn.id = 'build-city';
+  cityBtn.textContent = 'Stadt bauen';
+  cityBtn.onclick = () => setBuildMode('city');
+  buildMenu.appendChild(cityBtn);
+
+  ui.appendChild(buildMenu);
+
+  // In gewünschtes Parent-Element einfügen
+  if (parent) {
+    parent.appendChild(ui);
+  } else {
+    document.body.appendChild(ui);
+  }
+
+  // Pop-up-Feedback-Element global anlegen, falls nicht vorhanden
+  if (!document.getElementById('build-popup-feedback')) {
+    const popup = document.createElement('div');
+    popup.id = 'build-popup-feedback';
+    popup.style.position = 'fixed';
+    popup.style.left = '50%';
+    popup.style.top = '12%';
+    popup.style.transform = 'translateX(-50%)';
+    popup.style.minWidth = '200px';
+    popup.style.padding = '1em 2em';
+    popup.style.borderRadius = '12px';
+    popup.style.fontSize = '1.3em';
+    popup.style.fontFamily = "'Montserrat', Arial, sans-serif";
+    popup.style.textAlign = 'center';
+    popup.style.zIndex = '5'; // niedriger als das Main-Menü
+    popup.style.display = 'none';
+    document.body.appendChild(popup);
+  }
 }
 
 export function isBuildEnabled() {
-  return buildEnabled;
+  // Prüfe, ob das Build-Menü offen ist (über die Klasse am UI-Element)
+  const ui = document.getElementById('build-ui');
+  return !!(ui && ui.classList.contains('menu-open'));
+}
+
+// Pop-up Feedback-Funktion
+export function showBuildPopupFeedback(message, success = true) {
+  const popup = document.getElementById('build-popup-feedback');
+  if (!popup) return;
+  popup.textContent = message;
+  popup.style.display = 'block';
+  popup.style.background = success ? '#8fd19e' : '#ffe066';
+  popup.style.color = success ? '#222' : '#d7263d';
+  popup.style.boxShadow = '0 2px 12px #0006';
+  popup.style.opacity = '1';
+  popup.style.transition = 'opacity 0.3s';
+  clearTimeout(window._buildPopupTimeout);
+  window._buildPopupTimeout = setTimeout(() => {
+    popup.style.opacity = '0';
+    setTimeout(() => { popup.style.display = 'none'; }, 350);
+  }, success ? 1200 : 2200);
 }

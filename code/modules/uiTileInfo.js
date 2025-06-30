@@ -58,12 +58,16 @@ export function initTileInfoOverlay(scene, camera) {
 }
 
 export function createInfoOverlayToggle() {
-  // Füge den Button neben dem Würfel-Button ein (oben links, unter dem Würfeln-Button)
-  let diceUI = document.getElementById('dice-ui');
-  if (!diceUI) {
-    // Falls dice-ui noch nicht existiert, warte kurz und versuche es erneut
-    setTimeout(createInfoOverlayToggle, 300);
-    return;
+  // Erstelle einen eigenen Container für den TileInfo-Button oben links
+  let tileInfoContainer = document.getElementById('tileinfo-ui');
+  if (!tileInfoContainer) {
+    tileInfoContainer = document.createElement('div');
+    tileInfoContainer.id = 'tileinfo-ui';
+    tileInfoContainer.style.position = 'absolute';
+    tileInfoContainer.style.top = '6em';
+    tileInfoContainer.style.left = '2em';
+    tileInfoContainer.style.zIndex = '15';
+    document.body.appendChild(tileInfoContainer);
   }
   infoToggleBtn = document.createElement('button');
   infoToggleBtn.id = 'toggle-info-overlay';
@@ -87,7 +91,7 @@ export function createInfoOverlayToggle() {
       if (overlay) overlay.style.display = 'none';
     }
   };
-  diceUI.appendChild(infoToggleBtn);
+  tileInfoContainer.appendChild(infoToggleBtn);
 }
 
 export function isInfoOverlayEnabled() {
