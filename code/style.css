@@ -1,0 +1,184 @@
+/* Loading Screen Styles */
+#loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  font-family: 'Montserrat', Arial, sans-serif;
+  color: #fff;
+}
+
+#loading-screen h2 {
+  font-size: 2.5em;
+  margin-bottom: 1em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  letter-spacing: 0.05em;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 224, 102, 0.3);
+  border-top: 4px solid #ffe066;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 2em;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-progress {
+  width: 300px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1em;
+}
+
+.loading-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ffe066 0%, #ffed4e 100%);
+  width: 0%;
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.loading-text {
+  font-size: 1.2em;
+  margin-bottom: 0.5em;
+  min-height: 1.5em;
+  text-align: center;
+}
+
+.loading-details {
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+/* Game Board Hidden During Loading */
+.board-hidden {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Start Button Disabled State */
+#start-game:disabled {
+  background: #666 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+#start-game:disabled:hover {
+  background: #666 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Fade transition for menu */
+.fade-out {
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+/* Enhanced main menu styles */
+#main-menu {
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 50%, rgba(15, 52, 96, 0.95) 100%);
+  backdrop-filter: blur(10px);
+}
+
+#main-menu button {
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  border: none;
+  border-radius: 0.5em;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 700;
+  color: #222;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+#main-menu button:hover:not(:disabled) {
+  background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+  box-shadow: 0 6px 20px rgba(255, 224, 102, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Loading animation for the title */
+@keyframes titleGlow {
+  0%, 100% { 
+    text-shadow: 0 4px 16px #000, 0 2px 0 #ffe066, 0 6px 20px #222;
+    filter: drop-shadow(0 0 12px #ffe066);
+  }
+  50% { 
+    text-shadow: 0 4px 20px #000, 0 2px 0 #ffe066, 0 8px 25px #222;
+    filter: drop-shadow(0 0 18px #ffe066);
+  }
+}
+
+#main-title.loading {
+  animation: titleGlow 2s ease-in-out infinite;
+}
+
+/* Actual Game Loading Overlay - shown during real game loading */
+#game-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 15000; /* Higher than menu */
+  font-family: 'Montserrat', Arial, sans-serif;
+  color: #fff;
+  backdrop-filter: blur(5px);
+}
+
+#game-loading-overlay h3 {
+  font-size: 2em;
+  margin-bottom: 1em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  letter-spacing: 0.05em;
+}
+
+.game-loading-spinner {
+  width: 80px;
+  height: 80px;
+  border: 6px solid rgba(255, 224, 102, 0.3);
+  border-top: 6px solid #ffe066;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 2em;
+}
+
+.game-loading-text {
+  font-size: 1.3em;
+  margin-bottom: 0.5em;
+  min-height: 1.5em;
+  text-align: center;
+  color: #ffe066;
+}
+
+.game-loading-details {
+  font-size: 1em;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  max-width: 400px;
+  line-height: 1.4;
+}

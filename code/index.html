@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Hexagon 3D</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
   <style>
     body { margin: 0; overflow: hidden; }
     #main-menu h1 { font-family: 'Montserrat', Arial, sans-serif; }
@@ -295,6 +296,25 @@
   </style>
 </head>
 <body>
+  <!-- Loading Screen -->
+  <div id="loading-screen" style="display: none;">
+    <h2>Catan 3D wird geladen...</h2>
+    <div class="loading-spinner"></div>
+    <div class="loading-progress">
+      <div class="loading-progress-bar" id="loading-progress-bar"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Initialisierung...</div>
+    <div class="loading-details" id="loading-details">Bitte warten Sie einen Moment</div>
+  </div>
+
+  <!-- Actual Game Loading Overlay -->
+  <div id="game-loading-overlay">
+    <h3>Spielfeld wird generiert...</h3>
+    <div class="game-loading-spinner"></div>
+    <div class="game-loading-text" id="game-loading-text">Terrain wird geladen...</div>
+    <div class="game-loading-details" id="game-loading-details">Das Spielfeld wird im Hintergrund aufgebaut. Dies kann einen Moment dauern.</div>
+  </div>
+
   <div id="main-menu" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: #222c; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;">
     <h1 id="main-title" style="color: #fff; font-size: 4.5em; margin-bottom: 2em; letter-spacing: 0.05em; text-shadow: 0 4px 16px #000, 0 2px 0 #ffe066, 0 6px 20px #222; filter: drop-shadow(0 0 12px #ffe066);">Catan 3D</h1>
     <button id="start-game" style="font-size: 2em; padding: 0.5em 2em; margin-bottom: 1em; cursor: pointer;">Spiel starten</button>
@@ -307,15 +327,120 @@
   </div>
   <script type="module" src="./main.js"></script>
   <script>
-    const menu = document.getElementById('main-menu');
-    const startBtn = document.getElementById('start-game');
-    const quitBtn = document.getElementById('quit-game');
-    startBtn.onclick = () => {
-      menu.style.display = 'none';
-    };
-    quitBtn.onclick = () => {
-      window.close();
-    };
+    // Simple game loading management
+    let gameConfig = null;
+    let isGameInitialized = false;
+
+    // Load configuration
+    async function loadGameConfig() {
+      try {
+        const response = await fetch('./index.json');
+        gameConfig = await response.json();
+        return gameConfig;
+      } catch (error) {
+        console.error('Failed to load game configuration:', error);
+        return null;
+      }
+    }
+
+    // Show the actual game loading overlay
+    function showGameLoadingOverlay() {
+      const overlay = document.getElementById('game-loading-overlay');
+      const loadingText = document.getElementById('game-loading-text');
+      const loadingDetails = document.getElementById('game-loading-details');
+      
+      overlay.style.display = 'flex';
+      
+      // Update loading text periodically to show progress
+      const loadingSteps = [
+        { text: 'Terrain wird geladen...', details: 'Hexagon-Felder werden generiert...' },
+        { text: 'Ressourcen werden platziert...', details: 'Holz, Lehm, Weizen, Wolle und Erz werden verteilt...' },
+        { text: 'Nummern-Token werden hinzugefügt...', details: 'Würfelzahlen werden auf die Felder gesetzt...' },
+        { text: 'Räuber wird initialisiert...', details: 'Der Räuber wird auf dem Wüstenfeld platziert...' },
+        { text: 'Benutzeroberfläche wird vorbereitet...', details: 'Buttons und Menüs werden erstellt...' },
+        { text: 'Spiel wird finalisiert...', details: 'Letzte Vorbereitungen werden getroffen...' }
+      ];
+      
+      let currentStep = 0;
+      const stepInterval = setInterval(() => {
+        if (currentStep < loadingSteps.length) {
+          loadingText.textContent = loadingSteps[currentStep].text;
+          loadingDetails.textContent = loadingSteps[currentStep].details;
+          currentStep++;
+        } else {
+          clearInterval(stepInterval);
+        }
+      }, 800);
+      
+      return stepInterval;
+    }
+
+    // Hide the game loading overlay
+    function hideGameLoadingOverlay() {
+      const overlay = document.getElementById('game-loading-overlay');
+      overlay.style.display = 'none';
+    }
+
+    // Initialize everything when DOM is loaded
+    window.addEventListener('DOMContentLoaded', async () => {
+      console.log('DOM geladen, initialisiere Spiel...');
+      
+      const menu = document.getElementById('main-menu');
+      const startBtn = document.getElementById('start-game');
+      const quitBtn = document.getElementById('quit-game');
+      
+      // Set up quit button
+      quitBtn.onclick = () => {
+        window.close();
+      };
+      
+      // Load configuration
+      gameConfig = await loadGameConfig();
+      
+      // Set up start button
+      startBtn.onclick = async () => {
+        if (isGameInitialized) return;
+        
+        console.log('Start-Button wurde geklickt!');
+        
+        // Hide menu and show loading overlay
+        menu.style.display = 'none';
+        const loadingInterval = showGameLoadingOverlay();
+        
+        try {
+          // Wait for main.js to be ready and trigger game initialization
+          await new Promise((resolve) => {
+            // Listen for game ready event
+            window.addEventListener('gameReady', resolve, { once: true });
+            
+            // Trigger game initialization
+            window.dispatchEvent(new CustomEvent('initializeGame'));
+            
+            // Fallback timeout in case something goes wrong
+            setTimeout(resolve, 10000); // 10 second fallback
+          });
+          
+          isGameInitialized = true;
+          clearInterval(loadingInterval);
+          
+          // Small delay to ensure everything is ready
+          setTimeout(() => {
+            hideGameLoadingOverlay();
+            console.log('Game loading complete!');
+          }, 500);
+          
+        } catch (error) {
+          console.error('Error during game initialization:', error);
+          clearInterval(loadingInterval);
+          hideGameLoadingOverlay();
+          
+          // Show error and return to menu
+          alert('Fehler beim Laden des Spiels. Bitte versuchen Sie es erneut.');
+          menu.style.display = 'flex';
+        }
+      };
+    });
+
     // 3D-Look für Überschrift animieren (leichtes Schimmern)
     const title = document.getElementById('main-title');
     let titleAnimT = 0;
