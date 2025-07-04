@@ -23,13 +23,79 @@
 }
 
 .loading-spinner {
-  width: 60px;
-  height: 60px;
-  border: 4px solid rgba(255, 224, 102, 0.3);
-  border-top: 4px solid #ffe066;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  width: 80px;
+  height: 80px;
+  position: relative;
   margin-bottom: 2em;
+}
+
+.loading-spinner .hex {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 224, 102, 0.3);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  animation: hexSpin 1.6s linear infinite;
+}
+
+/* 8 hexagons positioned on a perfect circle using precise trigonometry - clockwise from top */
+.loading-spinner .hex:nth-child(1) { 
+  top: 8px; /* center(40px) - radius(28px) - hexSize/2(6px) */
+  left: 34px; /* center(40px) - hexSize/2(6px) */
+  animation-delay: 0s;
+}
+
+.loading-spinner .hex:nth-child(2) { 
+  top: 14.2px; /* center - radius*cos(45°) - hexSize/2 */
+  left: 54.2px; /* center + radius*sin(45°) - hexSize/2 */
+  animation-delay: 0.2s;
+}
+
+.loading-spinner .hex:nth-child(3) { 
+  top: 34px; /* center - hexSize/2 */
+  left: 62px; /* center + radius - hexSize/2 */
+  animation-delay: 0.4s;
+}
+
+.loading-spinner .hex:nth-child(4) { 
+  top: 54.2px; /* center + radius*cos(45°) - hexSize/2 */
+  left: 54.2px; /* center + radius*sin(45°) - hexSize/2 */
+  animation-delay: 0.6s;
+}
+
+.loading-spinner .hex:nth-child(5) { 
+  top: 62px; /* center + radius - hexSize/2 */
+  left: 34px; /* center - hexSize/2 */
+  animation-delay: 0.8s;
+}
+
+.loading-spinner .hex:nth-child(6) { 
+  top: 54.2px; /* center + radius*cos(45°) - hexSize/2 */
+  left: 14.2px; /* center - radius*sin(45°) - hexSize/2 */
+  animation-delay: 1s;
+}
+
+.loading-spinner .hex:nth-child(7) { 
+  top: 34px; /* center - hexSize/2 */
+  left: 8px; /* center - radius - hexSize/2 */
+  animation-delay: 1.2s;
+}
+
+.loading-spinner .hex:nth-child(8) { 
+  top: 14.2px; /* center - radius*cos(45°) - hexSize/2 */
+  left: 14.2px; /* center - radius*sin(45°) - hexSize/2 */
+  animation-delay: 1.4s;
+}
+
+@keyframes hexSpin {
+  0%, 12.5% { 
+    background: #ffe066; 
+    transform: scale(1);
+  }
+  12.51%, 100% { 
+    background: rgba(255, 224, 102, 0.3); 
+    transform: scale(1);
+  }
 }
 
 @keyframes spin {
@@ -166,13 +232,68 @@
 }
 
 .game-loading-spinner {
-  width: 80px;
-  height: 80px;
-  border: 6px solid rgba(255, 224, 102, 0.3);
-  border-top: 6px solid #ffe066;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  width: 100px;
+  height: 100px;
+  position: relative;
   margin-bottom: 2em;
+}
+
+.game-loading-spinner .hex {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: rgba(255, 224, 102, 0.3);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  animation: hexSpin 1.6s linear infinite;
+}
+
+/* 8 hexagons positioned on a perfect circle using precise trigonometry - clockwise from top */
+.game-loading-spinner .hex:nth-child(1) { 
+  top: 15px; /* center(50px) - radius(35px) - hexSize/2(7px) */
+  left: 43px; /* center(50px) - hexSize/2(7px) */
+  animation-delay: 0s;
+}
+
+.game-loading-spinner .hex:nth-child(2) { 
+  top: 22.3px; /* center - radius*cos(45°) - hexSize/2 */
+  left: 67.7px; /* center + radius*sin(45°) - hexSize/2 */
+  animation-delay: 0.2s;
+}
+
+.game-loading-spinner .hex:nth-child(3) { 
+  top: 43px; /* center - hexSize/2 */
+  left: 78px; /* center + radius - hexSize/2 */
+  animation-delay: 0.4s;
+}
+
+.game-loading-spinner .hex:nth-child(4) { 
+  top: 67.7px; /* center + radius*cos(45°) - hexSize/2 */
+  left: 67.7px; /* center + radius*sin(45°) - hexSize/2 */
+  animation-delay: 0.6s;
+}
+
+.game-loading-spinner .hex:nth-child(5) { 
+  top: 78px; /* center + radius - hexSize/2 */
+  left: 43px; /* center - hexSize/2 */
+  animation-delay: 0.8s;
+}
+
+.game-loading-spinner .hex:nth-child(6) { 
+  top: 67.7px; /* center + radius*cos(45°) - hexSize/2 */
+  left: 22.3px; /* center - radius*sin(45°) - hexSize/2 */
+  animation-delay: 1s;
+}
+
+.game-loading-spinner .hex:nth-child(7) { 
+  top: 43px; /* center - hexSize/2 */
+  left: 15px; /* center - radius - hexSize/2 */
+  animation-delay: 1.2s;
+}
+
+.game-loading-spinner .hex:nth-child(8) { 
+  top: 22.3px; /* center - radius*cos(45°) - hexSize/2 */
+  left: 22.3px; /* center - radius*sin(45°) - hexSize/2 */
+  animation-delay: 1.4s;
 }
 
 .game-loading-text {
