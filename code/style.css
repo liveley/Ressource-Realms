@@ -108,6 +108,10 @@
   color: #222;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
   transition: all 0.3s ease;
+  width: 370px;
+  padding: 0.5em 2em;
+  font-size: 2em;
+  text-align: center;
 }
 
 #main-menu button:hover:not(:disabled) {
