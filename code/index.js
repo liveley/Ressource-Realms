@@ -21,6 +21,7 @@ function showGameLoadingOverlay() {
   const loadingDetails = document.getElementById('game-loading-details');
   
   overlay.style.display = 'flex';
+  startHexSpinner(); // Ensure spinner always starts
   
   // Update loading text periodically to show progress
   const loadingSteps = [
@@ -50,6 +51,7 @@ function showGameLoadingOverlay() {
 function hideGameLoadingOverlay() {
   const overlay = document.getElementById('game-loading-overlay');
   overlay.style.display = 'none';
+  stopHexSpinner(); // Ensure spinner always stops
 }
 
 // Initialize everything when DOM is loaded
@@ -131,3 +133,35 @@ function animateTitle() {
 
 // Start title animation when DOM is loaded
 window.addEventListener('DOMContentLoaded', animateTitle);
+
+// --- Robust Hexagon Spinner Animation (gap between highlights) ---
+let spinnerTimeout = null;
+let spinnerCurrent = 0;
+function startHexSpinner() {
+  const spinner = document.querySelector('.game-loading-spinner');
+  if (!spinner) return;
+  const hexes = spinner.querySelectorAll('.hex');
+  if (spinnerTimeout) clearTimeout(spinnerTimeout);
+  spinnerCurrent = 0;
+  hexes.forEach(h => h.classList.remove('highlight'));
+  function step() {
+    // Highlight current
+    hexes.forEach(h => h.classList.remove('highlight'));
+    hexes[spinnerCurrent].classList.add('highlight');
+    // After 150ms, remove highlight for 50ms gap
+    spinnerTimeout = setTimeout(() => {
+      hexes[spinnerCurrent].classList.remove('highlight');
+      spinnerCurrent = (spinnerCurrent + 1) % hexes.length;
+      spinnerTimeout = setTimeout(step, 5); // 50ms gap
+    }, 50);
+  }
+  step();
+}
+function stopHexSpinner() {
+  if (spinnerTimeout) clearTimeout(spinnerTimeout);
+  spinnerTimeout = null;
+  const spinner = document.querySelector('.game-loading-spinner');
+  if (!spinner) return;
+  const hexes = spinner.querySelectorAll('.hex');
+  hexes.forEach(h => h.classList.remove('highlight'));
+}
