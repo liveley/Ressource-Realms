@@ -79,46 +79,22 @@
 
 .game-loading-spinner .hex {
   position: absolute;
-  width: 14px;
-  height: 14px;
+  width: 24px;
+  height: 24px;
   background: rgba(255, 224, 102, 0.3);
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   transition: background 0.18s, transform 0.18s;
 }
 
-/* 8 hexagons positioned in a mathematically perfect circle */
-.game-loading-spinner .hex:nth-child(1) { /* top */
-  left: 43px;
-  top: 1px;
-}
-.game-loading-spinner .hex:nth-child(2) { /* top-right */
-  left: 73px;
-  top: 13px;
-}
-.game-loading-spinner .hex:nth-child(3) { /* right */
-  left: 85px;
-  top: 43px;
-}
-.game-loading-spinner .hex:nth-child(4) { /* bottom-right */
-  left: 73px;
-  top: 73px;
-}
-.game-loading-spinner .hex:nth-child(5) { /* bottom */
-  left: 43px;
-  top: 85px;
-}
-.game-loading-spinner .hex:nth-child(6) { /* bottom-left */
-  left: 13px;
-  top: 73px;
-}
-.game-loading-spinner .hex:nth-child(7) { /* left */
-  left: 1px;
-  top: 43px;
-}
-.game-loading-spinner .hex:nth-child(8) { /* top-left */
-  left: 13px;
-  top: 13px;
-}
+/* 8 hexagons positioned in a mathematically perfect circle, center-corrected for 24x24px */
+.game-loading-spinner .hex:nth-child(1) { left: 38px; top: -4px; }
+.game-loading-spinner .hex:nth-child(2) { left: 68px; top: 8px; }
+.game-loading-spinner .hex:nth-child(3) { left: 80px; top: 38px; }
+.game-loading-spinner .hex:nth-child(4) { left: 68px; top: 68px; }
+.game-loading-spinner .hex:nth-child(5) { left: 38px; top: 80px; }
+.game-loading-spinner .hex:nth-child(6) { left: 8px; top: 68px; }
+.game-loading-spinner .hex:nth-child(7) { left: -4px; top: 38px; }
+.game-loading-spinner .hex:nth-child(8) { left: 8px; top: 8px; }
 
 .game-loading-text {
   font-size: 1.3em;
