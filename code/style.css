@@ -99,6 +99,10 @@
   backdrop-filter: blur(10px);
 }
 
+#main-menu h1 { 
+  font-family: 'Montserrat', Arial, sans-serif; 
+}
+
 #main-menu button {
   background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
   border: none;
@@ -185,4 +189,315 @@
   text-align: center;
   max-width: 400px;
   line-height: 1.4;
+}
+
+/* Basic body styling */
+body { 
+  margin: 0; 
+  overflow: hidden; 
+}
+
+/* --- Main Action Bar Styles --- */
+#main-action-bar {
+  position: absolute;
+  right: 2em;
+  bottom: 2em;
+  z-index: 30;
+  display: flex;
+  flex-direction: row;
+  gap: 1.2em;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+#main-action-bar > * {
+  /* Buttons im Action-Bar-Layout */
+  margin: 0;
+  position: static !important;
+  box-sizing: border-box;
+}
+
+@media (max-width: 800px) {
+  #main-action-bar {
+    right: 0.5em;
+    bottom: 0.5em;
+    gap: 0.5em;
+  }
+}
+
+/* --- Build UI Modern Styles --- */
+#build-ui {
+  position: absolute;
+  bottom: clamp(1em, 3vh, 2.5em);
+  right: 12em;  /*Position build-ui Button*/
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Standard: kein Hintergrund, kein Rand, kein Schatten */
+  background: none;
+  border: none;
+  box-shadow: none;
+  gap: clamp(0.4em, 1vw, 1em);
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: clamp(0.85em, 1vw, 1.05em);
+  align-items: center;
+  text-align: center;
+  z-index: 20;
+  min-width: clamp(100px, 14vw, 180px);
+  max-width: 80vw;
+  justify-content: center;
+  transition: box-shadow 0.2s;
+}
+
+#build-ui.menu-open {
+  background: rgba(255,255,255,0.97);
+  border-radius: 0.5em; /* wie die Buttons */
+  box-shadow: 0 4px 24px #0003, 0 1.5px 0 #ffe066;
+  border: 2px solid #ffe066;
+}
+
+#build-ui button {
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  border: none;
+  border-radius: 0.15em;
+  padding: clamp(0.18em, 0.7vw, 0.4em) clamp(0.5em, 1vw, 1em);
+  font-size: 0.95em;
+  font-family: inherit;
+  font-weight: 700;
+  color: #222;
+  box-shadow: 0 2px 8px #0001;
+  cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  outline: none;
+}
+
+#build-ui button:hover, #build-ui button:focus {
+  background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+  box-shadow: 0 4px 16px #ffe06655, 0 2px 8px #0002;
+  transform: translateY(-2px) scale(1.04);
+}
+
+#build-ui select {
+  border-radius: 0.5em;
+  border: 1.5px solid #ffe066;
+  padding: 0.2em 0.7em;
+  font-size: 0.95em;
+  font-family: inherit;
+  background: #fffbe6;
+  color: #222;
+  margin-left: 0.3em;
+  outline: none;
+  transition: border 0.15s;
+}
+
+#build-ui select:focus {
+  border: 2px solid #d7263d;
+}
+
+#build-feedback {
+  color: #d7263d;
+  background: #fff0f3;
+  border-radius: 0.5em;
+  margin-left: 1em;
+  min-width: 5em;
+  min-height: 1.2em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 0.7em;
+  font-size: 0.95em;
+  border: 1.5px solid #ffe066;
+  box-shadow: 0 1px 4px #ffe06633;
+  transition: background 0.18s, color 0.18s;
+}
+
+#ressource-ui {
+  position: absolute;
+  top: clamp(0.7em, 1.5vh, 1.5em);
+  right: clamp(0.7em, 1.5vw, 1.5em);
+  z-index: 10;
+  background: rgba(255,255,255,0.92);
+  border-radius: 0.6em;
+  padding: clamp(0.2em, 0.7vw, 0.5em) clamp(0.5em, 1vw, 0.8em);
+  box-shadow: 0 2px 8px #0002;
+  display: flex;
+  gap: clamp(0.5em, 1.5vw, 1.2em);
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: clamp(0.95em, 1.2vw, 1.1em);
+  align-items: center;
+  min-width: clamp(160px, 16vw, 280px);
+  max-width: clamp(280px, 28vw, 400px);
+  transition: box-shadow 0.2s;
+}
+
+#ressource-ui span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  min-width: 0.2em;
+  flex-direction: row;
+}
+
+#ressource-ui span span:first-child {
+  /* Symbol */
+  font-size: clamp(1em, 1.5vw, 1.2em);
+  margin-right: 0.2em;
+  margin-left: 0.2em;
+}
+
+#ressource-ui span span:last-child {
+  /* Zahl */
+  min-width: 0.2em;
+  text-align: right;
+  font-weight: bold;
+  margin-left: 1.5em;
+  margin-right: 0;
+}
+
+#roll-dice {
+  font-size: clamp(1em, 2vw, 1.3em);
+  padding: clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em);
+  border-radius: 0.5em;
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  border: none;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 700;
+  color: #222;
+  box-shadow: 0 2px 8px #0001;
+  cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  outline: none;
+  margin-bottom: 0.5em;
+}
+
+#roll-dice:hover, #roll-dice:focus {
+  background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+  box-shadow: 0 4px 16px #ffe06655, 0 2px 8px #0002;
+  transform: translateY(-2px) scale(1.04);
+}
+
+#build-toggle-btn {
+  font-size: 2.5em; /* Wie Würfeln- und Spielerwechsel-Button */
+  padding: clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em);
+  border-radius: 0.5em;
+  /*aspect-ratio: auto;*/
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  border: none;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 700;
+  color: #222;
+  box-shadow: 0 2px 8px #0001;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s;
+  outline: none;
+  display: block;
+  min-width: 4.5em;
+  min-height: 2.5em;
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
+}
+
+#build-ui.menu-open #build-toggle-btn {
+  font-size: 1.3em;
+  padding: 0.2em 0.5em;
+  min-width: 4.5em;
+  min-height: 2.5em;
+}
+
+/* Quadratische Hauptbuttons im Action Bar */
+#main-action-bar > button, #main-action-bar > div > button, #main-action-bar > div#build-ui > button, #roll-dice, #player-switch-btn, #build-toggle-btn {
+  aspect-ratio: 1 / 1 !important;
+  min-width: 3.2em !important;
+  min-height: 3.2em !important;
+  width: 3.2em !important;
+  height: 3.2em !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5em !important;
+  border-radius: 0.5em !important;
+  box-shadow: 0 2px 8px #0001;
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  border: none;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s;
+}
+
+#main-action-bar > button:hover, #main-action-bar > div > button:hover, #main-action-bar > div#build-ui > button:hover, #roll-dice:hover, #player-switch-btn:hover, #build-toggle-btn:hover {
+  background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+  box-shadow: 0 4px 16px #ffe06655, 0 2px 8px #0002;
+  transform: translateY(-2px) scale(1.04);
+}
+
+/* Text unter dem Spielerwechsel-Button kleiner und mittig */
+#player-switch-btn span {
+  font-size: 0.32em !important;
+  margin-top: 0.1em;
+  text-align: center;
+}
+
+@media (max-width: 1200px) {
+  #build-ui {
+    font-size: clamp(0.8em, 1.5vw, 0.95em);
+    padding: clamp(0.3em, 0.7vw, 0.7em) clamp(0.5em, 1vw, 0.8em);
+    gap: clamp(0.3em, 0.7vw, 0.7em);
+    min-width: clamp(120px, 18vw, 200px);
+  }
+  #build-ui button {
+    padding: clamp(0.12em, 0.5vw, 0.3em) clamp(0.3em, 0.7vw, 0.7em);
+    font-size: 0.9em;
+  }
+  #ressource-ui {
+    min-width: clamp(90px, 10vw, 140px);
+    max-width: clamp(140px, 18vw, 220px);
+    font-size: clamp(0.85em, 1vw, 1em);
+  }
+  #ressource-ui span {
+    min-width: 2.7em;
+  }
+  #ressource-ui span span:last-child {
+    min-width: 1.3em;
+  }
+}
+
+@media (max-width: 800px) {
+  #build-ui {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7em;
+    min-width: 0;
+    max-width: 98vw;
+    padding: clamp(0.2em, 0.5vw, 0.4em) clamp(0.3em, 1vw, 0.5em);
+    font-size: clamp(0.7em, 1vw, 0.85em);
+  }
+  #build-ui button, #build-ui select {
+    width: 100%;
+    margin: 0.2em 0;
+    font-size: 0.9em;
+  }
+  #build-feedback {
+    margin-left: 0;
+    margin-top: 0.5em;
+    min-width: 0;
+    font-size: 0.9em;
+  }
+  #ressource-ui {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.3em;
+    min-width: 0;
+    max-width: 98vw;
+    padding: clamp(0.08em, 0.3vw, 0.15em) clamp(0.15em, 0.7vw, 0.3em);
+  }
+  #ressource-ui span {
+    min-width: 0;
+  }
+  #ressource-ui span span:first-child {
+    font-size: clamp(0.8em, 0.8vw, 0.95em);
+  }
+  #roll-dice {
+    width: 100%;
+    font-size: clamp(0.9em, 2vw, 1.1em);
+    padding: clamp(0.2em, 0.7vw, 0.4em) clamp(0.7em, 2vw, 1.2em);
+  }
 }
