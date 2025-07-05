@@ -51,6 +51,17 @@ renderer.setAnimationLoop(animate);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
+// Global game state
+let gameInitialized = false;
+let tileMeshes = {};
+let tileNumbers = {};
+let buildMode = 'settlement';
+let activePlayerIdx = 0;
+
+// Hide the renderer initially
+renderer.domElement.style.visibility = 'hidden';
+renderer.domElement.classList.add('board-hidden');
+
 // === Haupt-Button-Leiste (Action Bar) ===
 let actionBar = document.getElementById('main-action-bar');
 if (!actionBar) {
@@ -59,23 +70,111 @@ if (!actionBar) {
   document.body.appendChild(actionBar);
 }
 
+// === Preload Game Board ===
+async function preloadGameBoard() {
+  console.log('Preloading game board...');
+  
+  return new Promise((resolve) => {
+    // Set up scene components that don't require UI
+    scene.add(createHexGrid());
+    createDirectionArrows(scene);
+    setupLights(scene);
+
+    // Create the game board with all tiles
+    const result = createGameBoard(scene);
+    tileMeshes = result.tileMeshes;
+    tileNumbers = result.tileNumbers;
+    
+    // After creating the game board: Number Tokens hinzufügen
+    addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
+
+    // Initialize robber on desert tile
+    const initialRobberTileKey = '0,0';
+    function waitForDesertTileAndInitRobber(retries = 30) {
+      if (tileMeshes[initialRobberTileKey]) {
+        setTimeout(() => {
+          console.log("Setting initial token colors for robber on desert");
+          updateNumberTokensForRobber(initialRobberTileKey);
+        }, 200);
+        console.log("Initializing robber on the desert tile");
+        initializeRobber(scene, null, tileMeshes);
+        
+        // Robber initialized, continue with cards
+        setTimeout(() => {
+          createPlaceholderCards(scene);
+          const cardManager = new CardManager();
+          cardManager.loadAllCards().then(() => {
+            console.log('Game board preloaded successfully');
+            resolve(true);
+          }).catch(error => {
+            console.error("Fehler beim Laden der Karten:", error);
+            resolve(true); // Continue even if cards fail
+          });
+        }, 300);
+        
+      } else if (retries > 0) {
+        setTimeout(() => waitForDesertTileAndInitRobber(retries - 1), 100);
+      } else {
+        console.warn("Desert tile mesh (0,0) not found after waiting. Robber not initialized.");
+        resolve(true); // Continue anyway
+      }
+    }
+    waitForDesertTileAndInitRobber();
+  });
+}
+
+// === Event Listeners for Game Initialization ===
+window.addEventListener('initializeGame', async () => {
+  console.log('Game initialization requested...');
+  try {
+    // First preload the game board
+    await preloadGameBoard();
+    console.log('Game board preloaded, now starting UI...');
+    
+    // Then start the game UI
+    await startGame();
+  } catch (error) {
+    console.error('Error during game initialization:', error);
+    // Still notify that we're "ready" even if there was an error
+    window.dispatchEvent(new CustomEvent('gameReady'));
+  }
+});
+
+// === Event Listeners for Preloading and Game Start (Legacy) ===
+window.addEventListener('assetsPreloaded', () => {
+  console.log('Assets preloaded, preparing game board...');
+  preloadGameBoard();
+});
+
+window.addEventListener('startGame', () => {
+  console.log('Starting game from preloaded state...');
+  startGame();
+});
+
 // === Initialisiere Spielfeld und UI erst nach Spielstart ===
-function startGame() {
+async function startGame() {
+  if (gameInitialized) return;
+  
   console.log('startGame() wurde aufgerufen!');
   let actionBar = document.getElementById('main-action-bar');
   console.log('actionBar:', actionBar);
 
-  console.log('Starte Spiel: Initialisiere UI und Spielfeld...');
+  console.log('Starte Spiel: Initialisiere UI...');
+  
+  // Show the game board
+  renderer.domElement.style.visibility = 'visible';
+  renderer.domElement.classList.remove('board-hidden');
+  
   try {
     createBuildUI({
-      players: window.players, // GITHUB COPILOT: Vereinheitlicht auf window.players
+      players: window.players,
       getBuildMode: () => buildMode,
       setBuildMode: (mode) => { buildMode = mode; },
       getActivePlayerIdx: () => activePlayerIdx,
       setActivePlayerIdx: (idx) => {
         activePlayerIdx = idx;
-        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
-        updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+        updatePlayerOverviews(window.players, () => activePlayerIdx);
       },
       parent: actionBar
     });
@@ -132,15 +231,41 @@ function startGame() {
     console.error('Fehler beim Erstellen des Info-Overlays:', e);
   }
 
-  try {
-    createPlaceholderCards(scene);
-    const cardManager = new CardManager();
-    cardManager.loadAllCards().then(() => {
-      console.log('Karten geladen:', cardManager.getCards());
-    }).catch(error => console.error("Fehler beim Laden der Karten:", error));
-  } catch (e) {
-    console.error('Fehler beim Erstellen der Karten:', e);
-  }
+  // === Build Event Handler Setup ===
+  setupBuildEventHandler({
+    renderer,
+    scene,
+    camera,
+    tileMeshes,
+    players: window.players,
+    getBuildMode: () => buildMode,
+    getActivePlayerIdx: () => activePlayerIdx,
+    tryBuildSettlement,
+    tryBuildCity,
+    tryBuildRoad, // <--- HINZUGEFÜGT
+    getCornerWorldPosition,
+    updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx) // Always update for current player
+  });
+
+  // === Build Preview Setup ===
+  setupBuildPreview(
+    renderer,
+    scene,
+    camera,
+    tileMeshes,
+    window.players,
+    () => buildMode,
+    () => activePlayerIdx,
+    tryBuildSettlement,
+    tryBuildCity
+  );
+
+  // Mark game as initialized
+  gameInitialized = true;
+  console.log('Game initialization complete!');
+  
+  // Notify HTML that game is ready
+  window.dispatchEvent(new CustomEvent('gameReady'));
 }
 
 // === Main-Menu-Start-Button-Handler ===
@@ -170,18 +295,19 @@ controls.maxPolarAngle = Math.PI * 0.44; // ca. 79°, verhindert "unter das Feld
 controls.minDistance = 10;  // Näher ranzoomen von oben möglich
 controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
 
+// Game board initialization - now handled by preloading system
+/*
 scene.add(createHexGrid());
 createDirectionArrows(scene);
 
 setupLights(scene);
+*/
 
-// Erstelle das Spielfeld direkt in game_board.js
-// createGameBoard(scene); // loadTile() wird nun dort für jedes einzelne Tile genutzt!
-const { tileMeshes, tileNumbers } = createGameBoard(scene);
-// Nach dem Erstellen des Spielfelds: Number Tokens hinzufügen
-addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
+// Nach dem Erstellen des Spielfelds: Number Tokens hinzufügen - now handled by preloading
+// addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 
-// === Robber erst initialisieren, wenn das Wüstenfeld-Mesh geladen ist ===
+// === Robber erst initialisieren, wenn das Wüstenfeld-Mesh geladen ist === - now handled by preloading
+/*
 const initialRobberTileKey = '0,0';
 function waitForDesertTileAndInitRobber(retries = 20) {
   if (tileMeshes[initialRobberTileKey]) {
@@ -206,16 +332,20 @@ createPlaceholderCards(scene);
 // === JPEG-Karten laden und zur Szene hinzufügen ===
 const cardManager = new CardManager();
 cardManager.loadAllCards().catch(error => console.error("Fehler beim Laden der Karten:", error));
+*/
 
-// Ressourcen-UI anzeigen
-createResourceUI();
+// Ressourcen-UI anzeigen - now handled by startGame()
+// createResourceUI();
 
-let buildMode = 'settlement'; // 'settlement' or 'city'
-let activePlayerIdx = 0;
+// Game mode variables - now handled at the top of the file
+// let buildMode = 'settlement'; // 'settlement' or 'city'
+// let activePlayerIdx = 0;
 
-updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Show initial player resources
+// Initial resource UI update - now handled by startGame()
+// updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Show initial player resources
 
-// UI-Elemente für Würfeln
+// UI-Elemente für Würfeln - now handled by startGame()
+/*
 createDiceUI(() => {
   throwPhysicsDice(scene);
   window.setDiceResultFromPhysics = (result) => {
@@ -223,6 +353,7 @@ createDiceUI(() => {
     window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
   };
 });
+*/
 //createInfoOverlayToggle();  //auskommentiert wegen doppelter Initialisierung
 
 // Info-Overlay und Mousemove-Handling für Tile-Infos

@@ -1,0 +1,437 @@
+/* Enhanced main menu styles */
+#main-menu {
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 50%, rgba(15, 52, 96, 0.95) 100%);
+  backdrop-filter: blur(10px);
+}
+
+#main-menu h1 { 
+  font-family: 'Montserrat', Arial, sans-serif; 
+}
+
+#main-menu button {
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  border: none;
+  border-radius: 0.5em;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 700;
+  color: #222;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  width: 370px;
+  padding: 0.5em 2em;
+  font-size: 2em;
+  text-align: center;
+}
+
+#main-menu button:hover:not(:disabled) {
+  background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+  box-shadow: 0 6px 20px rgba(255, 224, 102, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Loading animation for the title */
+@keyframes titleGlow {
+  0%, 100% { 
+    text-shadow: 0 4px 16px #000, 0 2px 0 #ffe066, 0 6px 20px #222;
+    filter: drop-shadow(0 0 12px #ffe066);
+  }
+  50% { 
+    text-shadow: 0 4px 20px #000, 0 2px 0 #ffe066, 0 8px 25px #222;
+    filter: drop-shadow(0 0 18px #ffe066);
+  }
+}
+
+#main-title.loading {
+  animation: titleGlow 2s ease-in-out infinite;
+}
+
+/* Game Loading Overlay - shown during real game loading */
+#game-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 15000; /* Higher than menu */
+  font-family: 'Montserrat', Arial, sans-serif;
+  color: #fff;
+  backdrop-filter: blur(5px);
+}
+
+#game-loading-overlay h3 {
+  font-size: 2em;
+  margin-bottom: 1em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  letter-spacing: 0.05em;
+}
+
+.game-loading-spinner {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  margin-bottom: 2em;
+}
+
+.game-loading-spinner .hex {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 224, 102, 0.3);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  transition: background 0.18s;
+}
+
+/* 8 hexagons positioned in a mathematically perfect circle, center-corrected for 24x24px */
+.game-loading-spinner .hex:nth-child(1) { left: 38px; top: -4px; }
+.game-loading-spinner .hex:nth-child(2) { left: 68px; top: 8px; }
+.game-loading-spinner .hex:nth-child(3) { left: 80px; top: 38px; }
+.game-loading-spinner .hex:nth-child(4) { left: 68px; top: 68px; }
+.game-loading-spinner .hex:nth-child(5) { left: 38px; top: 80px; }
+.game-loading-spinner .hex:nth-child(6) { left: 8px; top: 68px; }
+.game-loading-spinner .hex:nth-child(7) { left: -4px; top: 38px; }
+.game-loading-spinner .hex:nth-child(8) { left: 8px; top: 8px; }
+
+.game-loading-text {
+  font-size: 1.3em;
+  margin-bottom: 0.5em;
+  min-height: 1.6em;
+  text-align: center;
+  color: #ffe066;
+  white-space: nowrap;   /* bleibt */
+  width: 400px;          /* NEU – fixe Breite */
+  max-width: 90vw;       /* falls Viewport kleiner */
+}
+
+.game-loading-details {
+  font-size: 1em;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  margin: 0 auto;          /* Box selbst wird zentriert */
+  /* Responsive Breite – bricht ab, statt überzustehen */
+  max-width: 420px;        /* Desktop-Limit */
+  width: 90vw;             /* Handy: füllt fast den Bildschirm */
+  /* Umbruch erlauben, damit max-width wirkt */
+  white-space: normal;     /* <— nowrap entfernen */
+  /* Höhe fix, damit der Overlay nicht springt */
+  min-height: 2.6em;       /* Platz für zwei Zeilen */
+  line-height: 1.4;
+  color: rgba(255,255,255,0.9);
+}
+
+/* Basic body styling */
+body { 
+  margin: 0; 
+  overflow: hidden; 
+}
+
+/* --- Main Action Bar Styles --- */
+#main-action-bar {
+  position: absolute;
+  right: 2em;
+  bottom: 2em;
+  z-index: 30;
+  display: flex;
+  flex-direction: row;
+  gap: 1.2em;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+#main-action-bar > * {
+  /* Buttons im Action-Bar-Layout */
+  margin: 0;
+  position: static !important;
+  box-sizing: border-box;
+}
+
+@media (max-width: 800px) {
+  #main-action-bar {
+    right: 0.5em;
+    bottom: 0.5em;
+    gap: 0.5em;
+  }
+}
+
+/* --- Build UI Modern Styles --- */
+#build-ui {
+  position: absolute;
+  bottom: clamp(1em, 3vh, 2.5em);
+  right: 12em;  /*Position build-ui Button*/
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Standard: kein Hintergrund, kein Rand, kein Schatten */
+  background: none;
+  border: none;
+  box-shadow: none;
+  gap: clamp(0.4em, 1vw, 1em);
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: clamp(0.85em, 1vw, 1.05em);
+  align-items: center;
+  text-align: center;
+  z-index: 20;
+  min-width: clamp(100px, 14vw, 180px);
+  max-width: 80vw;
+  justify-content: center;
+  transition: box-shadow 0.2s;
+}
+
+#build-ui.menu-open {
+  background: rgba(255,255,255,0.97);
+  border-radius: 0.5em; /* wie die Buttons */
+  box-shadow: 0 4px 24px #0003, 0 1.5px 0 #ffe066;
+  border: 2px solid #ffe066;
+}
+
+#build-ui button {
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  border: none;
+  border-radius: 0.15em;
+  padding: clamp(0.18em, 0.7vw, 0.4em) clamp(0.5em, 1vw, 1em);
+  font-size: 0.95em;
+  font-family: inherit;
+  font-weight: 700;
+  color: #222;
+  box-shadow: 0 2px 8px #0001;
+  cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  outline: none;
+}
+
+#build-ui button:hover, #build-ui button:focus {
+  background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+  box-shadow: 0 4px 16px #ffe06655, 0 2px 8px #0002;
+  transform: translateY(-2px) scale(1.04);
+}
+
+#build-ui select {
+  border-radius: 0.5em;
+  border: 1.5px solid #ffe066;
+  padding: 0.2em 0.7em;
+  font-size: 0.95em;
+  font-family: inherit;
+  background: #fffbe6;
+  color: #222;
+  margin-left: 0.3em;
+  outline: none;
+  transition: border 0.15s;
+}
+
+#build-ui select:focus {
+  border: 2px solid #d7263d;
+}
+
+#build-feedback {
+  color: #d7263d;
+  background: #fff0f3;
+  border-radius: 0.5em;
+  margin-left: 1em;
+  min-width: 5em;
+  min-height: 1.2em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 0.7em;
+  font-size: 0.95em;
+  border: 1.5px solid #ffe066;
+  box-shadow: 0 1px 4px #ffe06633;
+  transition: background 0.18s, color 0.18s;
+}
+
+#ressource-ui {
+  position: absolute;
+  top: clamp(0.7em, 1.5vh, 1.5em);
+  right: clamp(0.7em, 1.5vw, 1.5em);
+  z-index: 10;
+  background: rgba(255,255,255,0.92);
+  border-radius: 0.6em;
+  padding: clamp(0.2em, 0.7vw, 0.5em) clamp(0.5em, 1vw, 0.8em);
+  box-shadow: 0 2px 8px #0002;
+  display: flex;
+  gap: clamp(0.5em, 1.5vw, 1.2em);
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: clamp(0.95em, 1.2vw, 1.1em);
+  align-items: center;
+  min-width: clamp(160px, 16vw, 280px);
+  max-width: clamp(280px, 28vw, 400px);
+  transition: box-shadow 0.2s;
+}
+
+#ressource-ui span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  min-width: 0.2em;
+  flex-direction: row;
+}
+
+#ressource-ui span span:first-child {
+  /* Symbol */
+  font-size: clamp(1em, 1.5vw, 1.2em);
+  margin-right: 0.2em;
+  margin-left: 0.2em;
+}
+
+#ressource-ui span span:last-child {
+  /* Zahl */
+  min-width: 0.2em;
+  text-align: right;
+  font-weight: bold;
+  margin-left: 1.5em;
+  margin-right: 0;
+}
+
+#roll-dice {
+  font-size: clamp(1em, 2vw, 1.3em);
+  padding: clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em);
+  border-radius: 0.5em;
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  border: none;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 700;
+  color: #222;
+  box-shadow: 0 2px 8px #0001;
+  cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  outline: none;
+  margin-bottom: 0.5em;
+}
+
+#roll-dice:hover, #roll-dice:focus {
+  background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+  box-shadow: 0 4px 16px #ffe06655, 0 2px 8px #0002;
+  transform: translateY(-2px) scale(1.04);
+}
+
+#build-toggle-btn {
+  font-size: 2.5em; /* Wie Würfeln- und Spielerwechsel-Button */
+  padding: clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em);
+  border-radius: 0.5em;
+  /*aspect-ratio: auto;*/
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  border: none;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 700;
+  color: #222;
+  box-shadow: 0 2px 8px #0001;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s;
+  outline: none;
+  display: block;
+  min-width: 4.5em;
+  min-height: 2.5em;
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
+}
+
+#build-ui.menu-open #build-toggle-btn {
+  font-size: 1.3em;
+  padding: 0.2em 0.5em;
+  min-width: 4.5em;
+  min-height: 2.5em;
+}
+
+/* Quadratische Hauptbuttons im Action Bar */
+#main-action-bar > button, #main-action-bar > div > button, #main-action-bar > div#build-ui > button, #roll-dice, #player-switch-btn, #build-toggle-btn {
+  aspect-ratio: 1 / 1 !important;
+  min-width: 3.2em !important;
+  min-height: 3.2em !important;
+  width: 3.2em !important;
+  height: 3.2em !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5em !important;
+  border-radius: 0.5em !important;
+  box-shadow: 0 2px 8px #0001;
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  border: none;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s;
+}
+
+#main-action-bar > button:hover, #main-action-bar > div > button:hover, #main-action-bar > div#build-ui > button:hover, #roll-dice:hover, #player-switch-btn:hover, #build-toggle-btn:hover {
+  background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+  box-shadow: 0 4px 16px #ffe06655, 0 2px 8px #0002;
+  transform: translateY(-2px) scale(1.04);
+}
+
+/* Text unter dem Spielerwechsel-Button kleiner und mittig */
+#player-switch-btn span {
+  font-size: 0.32em !important;
+  margin-top: 0.1em;
+  text-align: center;
+}
+
+@media (max-width: 1200px) {
+  #build-ui {
+    font-size: clamp(0.8em, 1.5vw, 0.95em);
+    padding: clamp(0.3em, 0.7vw, 0.7em) clamp(0.5em, 1vw, 0.8em);
+    gap: clamp(0.3em, 0.7vw, 0.7em);
+    min-width: clamp(120px, 18vw, 200px);
+  }
+  #build-ui button {
+    padding: clamp(0.12em, 0.5vw, 0.3em) clamp(0.3em, 0.7vw, 0.7em);
+    font-size: 0.9em;
+  }
+  #ressource-ui {
+    min-width: clamp(90px, 10vw, 140px);
+    max-width: clamp(140px, 18vw, 220px);
+    font-size: clamp(0.85em, 1vw, 1em);
+  }
+  #ressource-ui span {
+    min-width: 2.7em;
+  }
+  #ressource-ui span span:last-child {
+    min-width: 1.3em;
+  }
+}
+
+@media (max-width: 800px) {
+  #build-ui {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7em;
+    min-width: 0;
+    max-width: 98vw;
+    padding: clamp(0.2em, 0.5vw, 0.4em) clamp(0.3em, 1vw, 0.5em);
+  }
+  #build-ui button, #build-ui select {
+    font-size: 0.8em;
+    padding: clamp(0.1em, 0.3vw, 0.2em) clamp(0.2em, 0.5vw, 0.4em);
+  }
+  #build-feedback {
+    margin-left: 0;
+    margin-top: 0.5em;
+    text-align: center;
+  }
+  #ressource-ui {
+    position: static;
+    order: -1;
+    align-self: flex-start;
+    margin-bottom: 0.5em;
+    min-width: 0;
+    max-width: 100%;
+    font-size: 0.8em;
+  }
+  #ressource-ui span {
+    min-width: 2.2em;
+    flex-direction: column;
+    gap: 0.1em;
+  }
+}
+
+/* JS-driven spinner highlight */
+.game-loading-spinner .hex {
+  transition: background 0.18s;
+  
+}
+.game-loading-spinner .hex.highlight {
+  background: #ffe066 !important;
+  z-index: 2;
+}
