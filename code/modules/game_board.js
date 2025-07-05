@@ -470,9 +470,9 @@ window.addEventListener('diceRolled', (e) => {
   if (window.updateResourceUI && window.players) {
     // Debug: Log Ressourcen nach Verteilung
     window.players.forEach(p => console.log(`[Ressourcen nach Verteilung] ${p.name}:`, p.resources));
-    // UI-Update für aktiven Spieler mit Index
-    if (window.getActivePlayerIdx) {
-      window.updateResourceUI(window.players[window.getActivePlayerIdx()], window.getActivePlayerIdx());
+    // UI-Update für aktiven Spieler mit globalem Index
+    if (typeof window.activePlayerIdx === 'number') {
+      window.updateResourceUI(window.players[window.activePlayerIdx], window.activePlayerIdx);
     } else {
       window.updateResourceUI(window.players[0], 0);
     }
