@@ -1,0 +1,163 @@
+{
+  "gameSettings": {
+    "playerCount": 4,
+    "boardSize": "standard",
+    "gameMode": "classic",
+    "turnTimeLimit": 120,
+    "enableTimer": false,
+    "enableExtensions": false
+  },
+  "boardConfiguration": {
+    "resourceDistribution": "random",
+    "numberTokenDistribution": "standard",
+    "enableDesert": true,
+    "enableWaterTiles": true,
+    "enablePorts": true,
+    "portCount": 9
+  },
+  "gameRules": {
+    "maxVictoryPoints": 10,
+    "enableLongestRoad": true,
+    "enableLargestArmy": true,
+    "enableRobber": true,
+    "enableTrading": true,
+    "enableDevCards": true,
+    "initialResourceCards": 0,
+    "initialSettlements": 2,
+    "initialRoads": 2
+  },
+  "resources": {
+    "wood": {
+      "name": "Holz",
+      "color": "#8B4513",
+      "icon": "🌲",
+      "tileCount": 4
+    },
+    "clay": {
+      "name": "Lehm",
+      "color": "#D2691E",
+      "icon": "🧱",
+      "tileCount": 3
+    },
+    "wheat": {
+      "name": "Weizen",
+      "color": "#FFD700",
+      "icon": "🌾",
+      "tileCount": 4
+    },
+    "wool": {
+      "name": "Wolle",
+      "color": "#F5F5DC",
+      "icon": "🐑",
+      "tileCount": 4
+    },
+    "ore": {
+      "name": "Erz",
+      "color": "#696969",
+      "icon": "⛏️",
+      "tileCount": 3
+    },
+    "desert": {
+      "name": "Wüste",
+      "color": "#F4A460",
+      "icon": "🏜️",
+      "tileCount": 1
+    }
+  },
+  "developmentCards": {
+    "knight": {
+      "name": "Ritter",
+      "count": 14,
+      "effect": "moveRobber"
+    },
+    "victoryPoint": {
+      "name": "Siegpunkt",
+      "count": 5,
+      "effect": "victoryPoint"
+    },
+    "roadBuilding": {
+      "name": "Straßenbau",
+      "count": 2,
+      "effect": "buildTwoRoads"
+    },
+    "yearOfPlenty": {
+      "name": "Erfindung",
+      "count": 2,
+      "effect": "chooseTwoResources"
+    },
+    "monopoly": {
+      "name": "Monopol",
+      "count": 2,
+      "effect": "collectAllOfOneResource"
+    }
+  },
+  "buildingCosts": {
+    "road": {
+      "wood": 1,
+      "clay": 1
+    },
+    "settlement": {
+      "wood": 1,
+      "clay": 1,
+      "wheat": 1,
+      "wool": 1
+    },
+    "city": {
+      "wheat": 2,
+      "ore": 3
+    },
+    "developmentCard": {
+      "wheat": 1,
+      "wool": 1,
+      "ore": 1
+    }
+  },
+  "uiSettings": {
+    "language": "de",
+    "theme": "classic",
+    "enableSounds": true,
+    "enableAnimations": true,
+    "showTileNumbers": true,
+    "highlightValidMoves": true,
+    "autoEndTurn": false,
+    "confirmActions": true
+  },
+  "loadingSettings": {
+    "loadingSteps": [
+      {
+        "text": "Terrain wird geladen...",
+        "details": "Hexagon-Felder werden generiert...",
+        "duration": 800
+      },
+      {
+        "text": "Ressourcen werden platziert...",
+        "details": "Holz, Lehm, Weizen, Wolle und Erz werden verteilt...",
+        "duration": 800
+      },
+      {
+        "text": "Nummern-Token werden hinzugefügt...",
+        "details": "Würfelzahlen werden auf die Felder gesetzt...",
+        "duration": 800
+      },
+      {
+        "text": "Räuber wird initialisiert...",
+        "details": "Der Räuber wird auf dem Wüstenfeld platziert...",
+        "duration": 800
+      },
+      {
+        "text": "Benutzeroberfläche wird vorbereitet...",
+        "details": "Buttons und Menüs werden erstellt...",
+        "duration": 800
+      },
+      {
+        "text": "Spiel wird finalisiert...",
+        "details": "Letzte Vorbereitungen werden getroffen...",
+        "duration": 800
+      }
+    ],
+    "spinnerSpeed": 240,
+    "minimumLoadingTime": 3000
+  },
+  "version": "1.0.0",
+  "lastModified": "2025-07-05"
+}
