@@ -454,11 +454,26 @@ window.addEventListener('diceRolled', (e) => {
           ];
           for (const player of window.players || []) {
             for (const pos of adjacent) {
+              // Siedlung: 1 Karte, Stadt: 2 Karten
               if (player.settlements && player.settlements.some(s => s.q === pos.q && s.r === pos.r && s.corner === pos.corner)) {
-                player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
+                if (window.bank && window.bank[resourceType] > 0) {
+                  player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
+                  window.bank[resourceType]--;
+                } else {
+                  // Optional: Hinweis, dass Bank leer ist
+                  // console.log(`Bank leer: ${resourceType}`);
+                }
               }
               if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
-                player.resources[resourceType] = (player.resources[resourceType] || 0) + 2;
+                let given = 0;
+                for (let i = 0; i < 2; i++) {
+                  if (window.bank && window.bank[resourceType] > 0) {
+                    player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
+                    window.bank[resourceType]--;
+                    given++;
+                  }
+                }
+                // if (given < 2) console.log(`Bank leer: ${resourceType} (nur ${given} von 2 Karten für Stadt)`);
               }
             }
           }
@@ -476,6 +491,10 @@ window.addEventListener('diceRolled', (e) => {
     } else {
       window.updateResourceUI(window.players[0], 0);
     }
+  }
+  // Debug: Log Bank-Bestand
+  if (window.bank) {
+    console.log('[Bank nach Verteilung]', JSON.stringify(window.bank));
   }
 });
 

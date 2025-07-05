@@ -271,6 +271,15 @@ async function startGame() {
   window.dispatchEvent(new CustomEvent('gameReady'));
 }
 
+// === Catan-Bank: Ressourcenlimitierung ===
+window.bank = {
+  wood: 19,
+  clay: 19,
+  wheat: 19,
+  sheep: 19,
+  ore: 19
+};
+
 // === Main-Menu-Start-Button-Handler ===
 window.addEventListener('DOMContentLoaded', () => {
   console.log('DOM geladen, versuche Start-Button-Handler zu setzen...');

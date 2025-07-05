@@ -68,6 +68,11 @@ export function tryBuildCity(player, q, r, corner) {
     // Bauen & Ressourcen abziehen
     player.resources.wheat -= 2;
     player.resources.ore -= 3;
+    // Ressourcen zurück an die Bank
+    if (window.bank) {
+      window.bank.wheat = (window.bank.wheat || 0) + 2;
+      window.bank.ore = (window.bank.ore || 0) + 3;
+    }
     buildCity(player, eq.q, eq.r, eq.corner);
     return { success: true };
   }
@@ -211,6 +216,13 @@ export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoa
   player.resources.clay--;
   player.resources.wheat--;
   player.resources.sheep--;
+  // Ressourcen zurück an die Bank
+  if (window.bank) {
+    window.bank.wood = (window.bank.wood || 0) + 1;
+    window.bank.clay = (window.bank.clay || 0) + 1;
+    window.bank.wheat = (window.bank.wheat || 0) + 1;
+    window.bank.sheep = (window.bank.sheep || 0) + 1;
+  }
   buildSettlement(player, q, r, corner);
   return { success: true };
 }
@@ -286,6 +298,11 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
   // Ressourcen abziehen
   player.resources.wood--;
   player.resources.clay--;
+  // Ressourcen zurück an die Bank
+  if (window.bank) {
+    window.bank.wood = (window.bank.wood || 0) + 1;
+    window.bank.clay = (window.bank.clay || 0) + 1;
+  }
   if (!player.roads) player.roads = [];
   player.roads.push({ q, r, edge });
   return { success: true };
