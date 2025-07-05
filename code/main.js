@@ -57,6 +57,7 @@ let tileMeshes = {};
 let tileNumbers = {};
 let buildMode = 'settlement';
 let activePlayerIdx = 0;
+window.activePlayerIdx = activePlayerIdx;
 
 // Hide the renderer initially
 renderer.domElement.style.visibility = 'hidden';
@@ -173,6 +174,7 @@ async function startGame() {
       getActivePlayerIdx: () => activePlayerIdx,
       setActivePlayerIdx: (idx) => {
         activePlayerIdx = idx;
+        window.activePlayerIdx = idx;
         updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
         updatePlayerOverviews(window.players, () => activePlayerIdx);
       },
@@ -199,6 +201,7 @@ async function startGame() {
   try {
     placePlayerSwitchButton(window.players, () => activePlayerIdx, (idx) => {
       activePlayerIdx = idx;
+      window.activePlayerIdx = idx;
       updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
       updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
     }, actionBar);
@@ -267,6 +270,15 @@ async function startGame() {
   // Notify HTML that game is ready
   window.dispatchEvent(new CustomEvent('gameReady'));
 }
+
+// === Catan-Bank: Ressourcenlimitierung ===
+window.bank = {
+  wood: 19,
+  clay: 19,
+  wheat: 19,
+  sheep: 19,
+  ore: 19
+};
 
 // === Main-Menu-Start-Button-Handler ===
 window.addEventListener('DOMContentLoaded', () => {
@@ -519,6 +531,7 @@ window.addEventListener('diceRolled', (e) => {
 //  getActivePlayerIdx: () => activePlayerIdx,
 //  setActivePlayerIdx: (idx) => {
 //    activePlayerIdx = idx;
+//    window.activePlayerIdx = idx;
 //    updateResourceUI(players[activePlayerIdx]); // Update resource UI on player switch
 //    updatePlayerOverviews(players, () => activePlayerIdx);
 //    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
@@ -527,8 +540,9 @@ window.addEventListener('diceRolled', (e) => {
 // === Spielerwechsel-Button UI === auskommentiert, da doppelte Initialisierung
 //placePlayerSwitchButton(players, () => activePlayerIdx, (idx) => {
 //  activePlayerIdx = idx;
-//  updateResourceUI(players[activePlayerIdx]);
-//  updatePlayerOverviews(players, () => activePlayerIdx);
+//  window.activePlayerIdx = idx;
+//  updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+//  updatePlayerOverviews(window.players, () => activePlayerIdx);
 //});
 
 // === Build Event Handler Setup ===
