@@ -36,15 +36,28 @@ export function createBankTradeUI() {
 
   // Button
   const tradeBtn = document.createElement('button');
-  tradeBtn.textContent = 'Mit Bank tauschen (4:1)';
+  tradeBtn.textContent = 'Mit Bank tauschen';
   tradeBtn.style.fontWeight = 'bold';
-  tradeBtn.style.padding = '0.2em 1.2em';
+  tradeBtn.style.fontSize = '1em';
+  tradeBtn.style.height = '2.4em';
+  tradeBtn.style.lineHeight = '2.4em';
+  tradeBtn.style.padding = '0 1.2em';
   tradeBtn.style.borderRadius = '0.4em';
   tradeBtn.style.border = 'none';
   tradeBtn.style.background = 'linear-gradient(90deg, #ffe066 80%, #fffbe6 100%)';
   tradeBtn.style.color = '#222';
   tradeBtn.style.cursor = 'pointer';
   tradeBtn.style.boxShadow = '0 2px 8px #ffe06644';
+  tradeBtn.style.display = 'inline-flex';
+  tradeBtn.style.alignItems = 'center';
+  tradeBtn.onmouseenter = function() {
+    this.style.background = 'linear-gradient(90deg, #ffd700 90%, #fffbe6 100%)';
+    this.style.boxShadow = '0 4px 16px #ffe06677';
+  };
+  tradeBtn.onmouseleave = function() {
+    this.style.background = 'linear-gradient(90deg, #ffe066 80%, #fffbe6 100%)';
+    this.style.boxShadow = '0 2px 8px #ffe06644';
+  };
 
   // Feedback
   const feedback = document.createElement('span');
