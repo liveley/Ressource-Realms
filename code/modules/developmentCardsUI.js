@@ -1,6 +1,10 @@
 // modules/developmentCardsUI.js
 // UI-Komponente für Entwicklungskarten-Kauf und Anzeige
 import { buyDevelopmentCard, canBuyDevelopmentCard } from './developmentCards.js';
+import { resources } from './uiResources.js';
+
+// Debug: Alle Entwicklungskarten immer spielbar machen
+window.ALLOW_ALL_DEV_CARDS_PLAY = true;
 
 export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy } = {}) {
   const devUI = document.createElement('div');
@@ -137,6 +141,254 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy } 
     }
   }
 
+  // Hilfsfunktion: Karte aus Hand entfernen
+  function removeDevCardFromHand(player, idx) {
+    if (idx < player.developmentCards.length) {
+      player.developmentCards.splice(idx, 1);
+    } else {
+      player.newDevelopmentCards.splice(idx - player.developmentCards.length, 1);
+    }
+  }
+
+  // Logik für Karteneffekte (Stub)
+  function playDevCard(card, idx, player) {
+    if (card.type === 'year_of_plenty') {
+      // Erfindung: 2 beliebige Ressourcen aus der Bank wählen
+      showYearOfPlentyDialog(player);
+      removeDevCardFromHand(player, idx);
+      if (typeof devUI.updateDevHand === 'function') devUI.updateDevHand();
+      popup.style.display = 'none';
+      if (onBuy) onBuy();
+      return;
+    }
+    if (card.type === 'monopoly') {
+      showMonopolyDialog(player);
+      removeDevCardFromHand(player, idx);
+      if (typeof devUI.updateDevHand === 'function') devUI.updateDevHand();
+      popup.style.display = 'none';
+      if (onBuy) onBuy();
+      return;
+    }
+    switch(card.type) {
+      case 'knight':
+        showGlobalFeedback('Ritter gespielt! Räuber darf versetzt werden (Logik noch zu implementieren).', '#2a8c2a', 3000);
+        break;
+      case 'road_building':
+        showGlobalFeedback('Straßenbau gespielt! Baue 2 Straßen (Logik noch zu implementieren).', '#2a8c2a', 3000);
+        break;
+      default:
+        showGlobalFeedback('Diese Karte kann nicht ausgespielt werden.', '#c00', 3000);
+        return;
+    }
+    removeDevCardFromHand(player, idx);
+    if (typeof devUI.updateDevHand === 'function') devUI.updateDevHand();
+    popup.style.display = 'none';
+    if (onBuy) onBuy();
+  }
+
+  // Erfindung: Dialog für Ressourcenauswahl
+  function showYearOfPlentyDialog(player) {
+    // Overlay
+    let overlay = document.getElementById('year-of-plenty-overlay');
+    if (overlay) overlay.remove();
+    overlay = document.createElement('div');
+    overlay.id = 'year-of-plenty-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.left = '0';
+    overlay.style.top = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0,0,0,0.25)';
+    overlay.style.zIndex = '100001';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+
+    // Dialog
+    const dialog = document.createElement('div');
+    dialog.style.background = 'rgba(255,255,255,0.98)';
+    dialog.style.borderRadius = '0.7em';
+    dialog.style.boxShadow = '0 8px 32px #0004';
+    dialog.style.padding = '2em 2.5em 1.5em 2.5em';
+    dialog.style.display = 'flex';
+    dialog.style.flexDirection = 'column';
+    dialog.style.alignItems = 'center';
+    dialog.style.gap = '1.2em';
+    dialog.style.fontFamily = 'Montserrat, Arial, sans-serif';
+    dialog.style.minWidth = '320px';
+    dialog.style.maxWidth = '90vw';
+
+    const title = document.createElement('div');
+    title.textContent = 'Erfindung: Wähle 2 Ressourcen aus der Bank';
+    title.style.fontWeight = 'bold';
+    title.style.fontSize = '1.2em';
+    title.style.marginBottom = '0.5em';
+    dialog.appendChild(title);
+
+    // Ressourcenauswahl
+    const selects = [];
+    for (let i = 0; i < 2; i++) {
+      const sel = document.createElement('select');
+      sel.style.fontSize = '1.1em';
+      sel.style.margin = '0 0.7em';
+      resources.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.key;
+        opt.textContent = `${r.symbol} ${r.name} (${window.bank[r.key] ?? 0})`;
+        sel.appendChild(opt);
+      });
+      selects.push(sel);
+      dialog.appendChild(sel);
+    }
+
+    // Bestätigen-Button
+    const okBtn = document.createElement('button');
+    okBtn.textContent = 'Nehmen';
+    okBtn.style.background = '#2a8c2a';
+    okBtn.style.color = '#fff';
+    okBtn.style.border = 'none';
+    okBtn.style.borderRadius = '0.3em';
+    okBtn.style.padding = '0.5em 2em';
+    okBtn.style.fontWeight = 'bold';
+    okBtn.style.fontSize = '1.1em';
+    okBtn.style.cursor = 'pointer';
+    okBtn.onclick = () => {
+      const res1 = selects[0].value;
+      const res2 = selects[1].value;
+      if (!window.bank[res1] || window.bank[res1] < 1 || !window.bank[res2] || window.bank[res2] < 1) {
+        showGlobalFeedback('Bank hat nicht genug Ressourcen!', '#c00', 3000);
+        return;
+      }
+      player.resources[res1]++;
+      player.resources[res2]++;
+      window.bank[res1]--;
+      window.bank[res2]--;
+      if (typeof window.updateResourceUI === 'function') window.updateResourceUI(player);
+      showGlobalFeedback(`Du hast ${resources.find(r=>r.key===res1).name} und ${resources.find(r=>r.key===res2).name} erhalten!`, '#2a8c2a', 3000);
+      overlay.remove();
+    };
+    dialog.appendChild(okBtn);
+
+    // Abbrechen-Button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Abbrechen';
+    cancelBtn.style.background = '#bbb';
+    cancelBtn.style.color = '#222';
+    cancelBtn.style.border = 'none';
+    cancelBtn.style.borderRadius = '0.3em';
+    cancelBtn.style.padding = '0.5em 2em';
+    cancelBtn.style.fontWeight = 'bold';
+    cancelBtn.style.fontSize = '1.1em';
+    cancelBtn.style.cursor = 'pointer';
+    cancelBtn.style.marginLeft = '1.2em';
+    cancelBtn.onclick = () => overlay.remove();
+    dialog.appendChild(cancelBtn);
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+  }
+
+  // Monopol: Dialog für Ressourcenauswahl
+  function showMonopolyDialog(player) {
+    let overlay = document.getElementById('monopoly-overlay');
+    if (overlay) overlay.remove();
+    overlay = document.createElement('div');
+    overlay.id = 'monopoly-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.left = '0';
+    overlay.style.top = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0,0,0,0.25)';
+    overlay.style.zIndex = '100001';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+
+    const dialog = document.createElement('div');
+    dialog.style.background = 'rgba(255,255,255,0.98)';
+    dialog.style.borderRadius = '0.7em';
+    dialog.style.boxShadow = '0 8px 32px #0004';
+    dialog.style.padding = '2em 2.5em 1.5em 2.5em';
+    dialog.style.display = 'flex';
+    dialog.style.flexDirection = 'column';
+    dialog.style.alignItems = 'center';
+    dialog.style.gap = '1.2em';
+    dialog.style.fontFamily = 'Montserrat, Arial, sans-serif';
+    dialog.style.minWidth = '320px';
+    dialog.style.maxWidth = '90vw';
+
+    const title = document.createElement('div');
+    title.textContent = 'Monopol: Wähle eine Ressource';
+    title.style.fontWeight = 'bold';
+    title.style.fontSize = '1.2em';
+    title.style.marginBottom = '0.5em';
+    dialog.appendChild(title);
+
+    const sel = document.createElement('select');
+    sel.style.fontSize = '1.1em';
+    sel.style.margin = '0 0.7em';
+    resources.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.key;
+      opt.textContent = `${r.symbol} ${r.name}`;
+      sel.appendChild(opt);
+    });
+    dialog.appendChild(sel);
+
+    // Bestätigen-Button
+    const okBtn = document.createElement('button');
+    okBtn.textContent = 'Monopol ausführen';
+    okBtn.style.background = '#2a8c2a';
+    okBtn.style.color = '#fff';
+    okBtn.style.border = 'none';
+    okBtn.style.borderRadius = '0.3em';
+    okBtn.style.padding = '0.5em 2em';
+    okBtn.style.fontWeight = 'bold';
+    okBtn.style.fontSize = '1.1em';
+    okBtn.style.cursor = 'pointer';
+    okBtn.onclick = () => {
+      const resKey = sel.value;
+      let totalTaken = 0;
+      let playerName = player.name || 'Du';
+      // Alle anderen Spieler durchsuchen
+      if (typeof window.getAllPlayers === 'function') {
+        const allPlayers = window.getAllPlayers();
+        allPlayers.forEach(p => {
+          if (p !== player && p.resources && typeof p.resources[resKey] === 'number') {
+            totalTaken += p.resources[resKey];
+            player.resources[resKey] += p.resources[resKey];
+            p.resources[resKey] = 0;
+          }
+        });
+        if (typeof window.updateResourceUI === 'function') window.updateResourceUI(player);
+        showGlobalFeedback(`${playerName} erhält ${totalTaken}x ${resources.find(r=>r.key===resKey).name} von allen Spielern!`, '#2a8c2a', 3500);
+      } else {
+        showGlobalFeedback('Spielerliste nicht verfügbar!', '#c00', 2500);
+      }
+      overlay.remove();
+    };
+    dialog.appendChild(okBtn);
+
+    // Abbrechen-Button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Abbrechen';
+    cancelBtn.style.background = '#bbb';
+    cancelBtn.style.color = '#222';
+    cancelBtn.style.border = 'none';
+    cancelBtn.style.borderRadius = '0.3em';
+    cancelBtn.style.padding = '0.5em 2em';
+    cancelBtn.style.fontWeight = 'bold';
+    cancelBtn.style.fontSize = '1.1em';
+    cancelBtn.style.cursor = 'pointer';
+    cancelBtn.style.marginLeft = '1.2em';
+    cancelBtn.onclick = () => overlay.remove();
+    dialog.appendChild(cancelBtn);
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+  }
+
   overviewBtn.onclick = () => {
     // Render die Kartenübersicht
     const player = getPlayer();
@@ -148,7 +400,9 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy } 
     } else {
       hand.forEach((card, idx) => {
         let label = '';
+        // Debug: Alle Karten als spielbar behandeln, wenn window.ALLOW_ALL_DEV_CARDS_PLAY gesetzt ist
         let isNew = idx >= (player.developmentCards?.length || 0);
+        if (window.ALLOW_ALL_DEV_CARDS_PLAY) isNew = false;
         switch(card.type) {
           case 'knight': label = 'Ritter'; break;
           case 'road_building': label = 'Straßenbau'; break;
@@ -187,6 +441,32 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy } 
         labelDiv.style.fontSize = '1em';
         labelDiv.style.color = isNew ? '#c00' : '#222';
         cardDiv.appendChild(labelDiv);
+        // Play-Button (immer anzeigen außer Siegpunkte)
+        if (card.type !== 'victory_point') {
+          const playBtn = document.createElement('button');
+          playBtn.textContent = 'Spielen';
+          playBtn.style.marginTop = '0.2em';
+          playBtn.style.background = isNew ? '#aaa' : '#2a8c2a';
+          playBtn.style.color = '#fff';
+          playBtn.style.border = 'none';
+          playBtn.style.borderRadius = '0.3em';
+          playBtn.style.padding = '0.3em 1.2em';
+          playBtn.style.fontWeight = 'bold';
+          playBtn.style.cursor = isNew ? 'not-allowed' : 'pointer';
+          playBtn.style.width = '90px';
+          playBtn.style.fontSize = '1em';
+          playBtn.style.boxShadow = '0 2px 8px #2a8c2a33';
+          playBtn.style.display = 'block';
+          playBtn.disabled = isNew;
+          playBtn.onclick = () => {
+            if (isNew) {
+              showGlobalFeedback('Diese Karte kann erst ab nächster Runde gespielt werden.', '#c00', 2500);
+              return;
+            }
+            playDevCard(card, idx, player);
+          };
+          cardDiv.appendChild(playBtn);
+        }
         popupList.appendChild(cardDiv);
       });
     }
