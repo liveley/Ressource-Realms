@@ -418,7 +418,7 @@ body {
 /* JS-driven spinner highlight */
 .game-loading-spinner .hex {
   /* Remove animation */
-  transition: background 0.18s, transform 0.18s;
+  transition: background 0.18s;
 }
 .game-loading-spinner .hex.highlight {
   background: #ffe066 !important;

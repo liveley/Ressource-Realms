@@ -134,34 +134,28 @@ function animateTitle() {
 // Start title animation when DOM is loaded
 window.addEventListener('DOMContentLoaded', animateTitle);
 
-// --- Robust Hexagon Spinner Animation (gap between highlights) ---
-let spinnerTimeout = null;
-let spinnerCurrent = 0;
+// --- Smooth Hexagon Spinner (single interval, zero overlap) ---
+let spinnerTimer = null;
+const STEP_MS = 240;             // 200 ms bright + 40 ms gap
+
 function startHexSpinner() {
-  const spinner = document.querySelector('.game-loading-spinner');
-  if (!spinner) return;
-  const hexes = spinner.querySelectorAll('.hex');
-  if (spinnerTimeout) clearTimeout(spinnerTimeout);
-  spinnerCurrent = 0;
-  hexes.forEach(h => h.classList.remove('highlight'));
-  function step() {
-    // Highlight current
-    hexes.forEach(h => h.classList.remove('highlight'));
-    hexes[spinnerCurrent].classList.add('highlight');
-    // After 150ms, remove highlight for 50ms gap
-    spinnerTimeout = setTimeout(() => {
-      hexes[spinnerCurrent].classList.remove('highlight');
-      spinnerCurrent = (spinnerCurrent + 1) % hexes.length;
-      spinnerTimeout = setTimeout(step, 5); // 50ms gap
-    }, 50);
-  }
-  step();
+  const hexes = document.querySelectorAll('.game-loading-spinner .hex');
+  if (!hexes.length || spinnerTimer) return;    // already running?
+
+  let i = 0;
+  hexes[i].classList.add('highlight');          // first light
+
+  spinnerTimer = setInterval(() => {
+    hexes[i].classList.remove('highlight');     // start fade‑out
+    i = (i + 1) % hexes.length;                 // next hex
+    hexes[i].classList.add('highlight');        // instant full bright
+  }, STEP_MS);
 }
+
 function stopHexSpinner() {
-  if (spinnerTimeout) clearTimeout(spinnerTimeout);
-  spinnerTimeout = null;
-  const spinner = document.querySelector('.game-loading-spinner');
-  if (!spinner) return;
-  const hexes = spinner.querySelectorAll('.hex');
-  hexes.forEach(h => h.classList.remove('highlight'));
+  clearInterval(spinnerTimer);
+  spinnerTimer = null;
+  document
+    .querySelectorAll('.game-loading-spinner .hex')
+    .forEach(h => h.classList.remove('highlight'));
 }
