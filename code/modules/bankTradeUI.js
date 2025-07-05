@@ -41,14 +41,39 @@ export function createBankTradeUI() {
   tradeBtn.style.padding = '0.2em 1.2em';
   tradeBtn.style.borderRadius = '0.4em';
   tradeBtn.style.border = 'none';
-  tradeBtn.style.background = '#ffe066';
+  tradeBtn.style.background = 'linear-gradient(90deg, #ffe066 80%, #fffbe6 100%)';
+  tradeBtn.style.color = '#222';
   tradeBtn.style.cursor = 'pointer';
+  tradeBtn.style.boxShadow = '0 2px 8px #ffe06644';
 
   // Feedback
   const feedback = document.createElement('span');
   feedback.id = 'bank-trade-feedback';
   feedback.style.marginLeft = '1em';
   feedback.style.fontSize = '0.98em';
+
+  // Style Dropdowns
+  const selectStyle = `
+    background: #fffbe6;
+    border: 1.5px solid #ffe066;
+    border-radius: 0.4em;
+    font-family: 'Montserrat', Arial, sans-serif;
+    font-size: 1em;
+    color: #222;
+    padding: 0.18em 0.7em 0.18em 0.5em;
+    margin: 0 0.1em;
+    box-shadow: 0 1px 4px #ffe06633;
+    outline: none;
+    transition: border-color 0.2s;
+  `;
+  giveSelect.style.cssText = selectStyle;
+  getSelect.style.cssText = selectStyle;
+  giveSelect.onfocus = getSelect.onfocus = function() {
+    this.style.borderColor = '#ffd700';
+  };
+  giveSelect.onblur = getSelect.onblur = function() {
+    this.style.borderColor = '#ffe066';
+  };
 
   // Button-Handler
   tradeBtn.onclick = () => {
