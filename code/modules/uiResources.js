@@ -10,8 +10,6 @@ const resources = [
 ];
 
 let resUI = null;
-let currentPlayer = null; // Track the player whose resources are shown
-let currentPlayerIdx = 0;
 
 export function createResourceUI() {
   resUI = document.createElement('div');
@@ -23,8 +21,12 @@ export function createResourceUI() {
 
 // Update the UI to show the resources of the given player
 export function updateResourceUI(player, idx) {
-  if (typeof idx === 'number') currentPlayerIdx = idx;
-  currentPlayer = player;
+  // Hole IMMER das aktuelle Spielerobjekt aus window.players, falls idx übergeben
+  if (typeof idx === 'number' && window.players) {
+    player = window.players[idx];
+  } else if (typeof window.activePlayerIdx === 'number' && window.players) {
+    player = window.players[window.activePlayerIdx];
+  }
   if (!resUI || !player) {
     return;
   }
@@ -38,15 +40,22 @@ export function updateResourceUI(player, idx) {
 
 // Debug/cheat: allow adding resources to the current player
 export function handleResourceKeydown(e) {
-  if (typeof currentPlayerIdx !== 'number') return;
-  const player = window.players ? window.players[currentPlayerIdx] : currentPlayer;
+  // Nutze window.activePlayerIdx für den aktuellen Spieler
+  const idx = (typeof window.activePlayerIdx === 'number' && window.players && window.players.length > window.activePlayerIdx)
+    ? window.activePlayerIdx : 0;
+  const player = window.players ? window.players[idx] : null;
   if (!player) return;
-  if (e.key === '1') player.resources.wheat++;
-  if (e.key === '2') player.resources.sheep++;
-  if (e.key === '3') player.resources.wood++;
-  if (e.key === '4') player.resources.clay++;
-  if (e.key === '5') player.resources.ore++;
-  updateResourceUI(player, currentPlayerIdx);
+  let changed = false;
+  if (e.key === '1') { player.resources.wheat++; changed = true; }
+  if (e.key === '2') { player.resources.sheep++; changed = true; }
+  if (e.key === '3') { player.resources.wood++; changed = true; }
+  if (e.key === '4') { player.resources.clay++; changed = true; }
+  if (e.key === '5') { player.resources.ore++; changed = true; }
+  if (changed) {
+    updateResourceUI(player, idx);
+    // Optional: Log für Debug
+    // console.log(`Ressourcen für Spieler ${idx + 1} (${player.name}) aktualisiert:`, player.resources);
+  }
 }
 
 export { resources };
