@@ -102,17 +102,25 @@
   min-height: 1.6em;
   text-align: center;
   color: #ffe066;
-  white-space: nowrap;
+  white-space: nowrap;   /* bleibt */
+  width: 400px;          /* NEU – fixe Breite */
+  max-width: 90vw;       /* falls Viewport kleiner */
 }
 
 .game-loading-details {
   font-size: 1em;
   color: rgba(255, 255, 255, 0.8);
   text-align: center;
-  max-width: 400px;
+  margin: 0 auto;          /* Box selbst wird zentriert */
+  /* Responsive Breite – bricht ab, statt überzustehen */
+  max-width: 420px;        /* Desktop-Limit */
+  width: 90vw;             /* Handy: füllt fast den Bildschirm */
+  /* Umbruch erlauben, damit max-width wirkt */
+  white-space: normal;     /* <— nowrap entfernen */
+  /* Höhe fix, damit der Overlay nicht springt */
+  min-height: 2.6em;       /* Platz für zwei Zeilen */
   line-height: 1.4;
-  white-space: nowrap;
-  min-height: 1.3em;
+  color: rgba(255,255,255,0.9);
 }
 
 /* Basic body styling */
