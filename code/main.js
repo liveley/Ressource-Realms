@@ -24,6 +24,8 @@ import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
 import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
+import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
+import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
 
 window.players = window.players || [
   {
@@ -153,6 +155,8 @@ window.addEventListener('startGame', () => {
 });
 
 // === Initialisiere Spielfeld und UI erst nach Spielstart ===
+let devCardsUI = null;
+
 async function startGame() {
   if (gameInitialized) return;
   
@@ -204,6 +208,7 @@ async function startGame() {
       window.activePlayerIdx = idx;
       updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
       updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+      if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
     }, actionBar);
     console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
   } catch (e) {
@@ -212,10 +217,24 @@ async function startGame() {
 
   try {
     createResourceUI();
-    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
-    console.log('Ressourcen-UI erstellt:', document.getElementById('ressource-ui'));
+    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+    // === Entwicklungskarten-UI einbinden (nur einmal anhängen, nach createResourceUI) ===
+    if (!devCardsUI) {
+      devCardsUI = createDevelopmentCardsUI({
+        getPlayer: () => window.players[activePlayerIdx],
+        getBank: () => window.bank,
+        getDeck: () => window.developmentDeck,
+        onBuy: () => {
+          updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+        }
+      });
+      const container = document.getElementById('resource-bank-container');
+      if (container) container.appendChild(devCardsUI);
+    }
+    if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
+    console.log('Ressourcen- und Entwicklungskarten-UI erstellt:', document.getElementById('ressource-ui'), devCardsUI);
   } catch (e) {
-    console.error('Fehler beim Erstellen der Ressourcen-UI:', e);
+    console.error('Fehler beim Erstellen der Ressourcen- oder Entwicklungskarten-UI:', e);
   }
 
   try {
@@ -279,6 +298,10 @@ window.bank = {
   sheep: 19,
   ore: 19
 };
+
+// === Entwicklungskarten-Deck und Spieler-Setup ===
+window.developmentDeck = createDevelopmentDeck();
+window.players.forEach(initPlayerDevCards);
 
 // === Main-Menu-Start-Button-Handler ===
 window.addEventListener('DOMContentLoaded', () => {
