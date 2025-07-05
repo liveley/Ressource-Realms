@@ -15,17 +15,14 @@ let bankUI = null;
 export function createResourceUI() {
   resUI = document.createElement('div');
   resUI.id = 'ressource-ui';
-  resUI.style.position = 'absolute';
+  resUI.style.position = 'static';
   resUI.style.zIndex = '5';
-  document.body.appendChild(resUI);
 
   // --- Bank UI ---
   bankUI = document.createElement('div');
   bankUI.id = 'bank-ui';
-  bankUI.style.position = 'absolute';
+  bankUI.style.position = 'static';
   bankUI.style.zIndex = '5';
-  bankUI.style.top = '3.5em';
-  bankUI.style.left = '0.5em';
   bankUI.style.background = 'rgba(255,255,255,0.92)';
   bankUI.style.borderRadius = '0.5em';
   bankUI.style.padding = '0.4em 1.2em 0.4em 0.8em';
@@ -37,7 +34,21 @@ export function createResourceUI() {
   bankUI.style.gap = '1.2em';
   bankUI.style.alignItems = 'center';
   bankUI.innerHTML = '';
-  document.body.appendChild(bankUI);
+
+  // Container for both UIs
+  const container = document.createElement('div');
+  container.id = 'resource-bank-container';
+  container.style.position = 'absolute';
+  container.style.top = '0.5em';
+  container.style.right = '0.5em';
+  container.style.left = '';
+  container.style.zIndex = '5';
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'flex-end';
+  container.appendChild(resUI);
+  container.appendChild(bankUI);
+  document.body.appendChild(container);
 }
 
 function updateBankUI() {
