@@ -17,6 +17,17 @@ export function createDiceUI(onRoll, parent) {
   // Kein position: absolute mehr!
 
   diceUI.innerHTML = `
+    <div id="dice-result" style="
+      color: #fff;
+      font-size: 2em;
+      min-width: 2em;
+      min-height: 1.5em;
+      text-shadow: 0 2px 8px #000;
+      font-family: 'Montserrat', Arial, sans-serif;
+      display: block;
+      margin-bottom: 0.3em;
+      text-align: center;
+    "></div>
     <button id="roll-dice" style="
       font-size: 2.5em;
       padding: 0.4em;
@@ -25,7 +36,6 @@ export function createDiceUI(onRoll, parent) {
       border-radius: 6px;
       aspect-ratio: auto;
     ">🎲</button>
-    <div id="dice-result" style="color: #fff; font-size: 2em; min-width: 2em; min-height: 1.5em; text-shadow: 0 2px 8px #000; font-family: 'Montserrat', Arial, sans-serif; display: inline-block; margin-left: 1em; vertical-align: middle;"></div>
   `;
 
   // ZUERST ins DOM einfügen, dann erst getElementById!
