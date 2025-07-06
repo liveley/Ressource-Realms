@@ -1,3 +1,4 @@
+// === UI: Spielerwechsel-Button ===
 // change_player.js
 // Modul für das Umschalten des aktiven Spielers und Anzeige des Wechsel-Buttons
 

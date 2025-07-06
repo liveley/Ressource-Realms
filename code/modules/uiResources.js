@@ -1,3 +1,4 @@
+// === UI: Ressourcenanzeige für Spieler und Bank ===
 // modules/uiResources.js
 // Ressourcen-UI für Catan 3D mit Gain Counter
 

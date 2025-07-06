@@ -1,3 +1,4 @@
+// === UI: Build-Preview (Vorschau beim Bauen) ===
 // modules/uiBuildPreview.js
 // Vorschau-Piece für Siedlung/Stadt beim Hover auf dem Spielfeld
 import * as THREE from 'three';

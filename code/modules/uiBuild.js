@@ -1,3 +1,4 @@
+// === UI: Build-Menü (Bauen) ===
 // Build-UI Modul für Siedler von Catan
 // Erstellt und verwaltet die Build-UI (Siedlung/Stadt bauen, Spielerwahl, Feedback)
 // Übergibt buildMode- und activePlayerIdx-Setter als Callback-Parameter

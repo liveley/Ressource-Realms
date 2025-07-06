@@ -1,3 +1,4 @@
+// === UI: Würfeln-Button ===
 // modules/uiDice.js
 // Würfel-UI für Catan 3D
 

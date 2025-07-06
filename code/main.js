@@ -65,7 +65,7 @@ window.activePlayerIdx = activePlayerIdx;
 renderer.domElement.style.visibility = 'hidden';
 renderer.domElement.classList.add('board-hidden');
 
-// === Haupt-Button-Leiste (Action Bar) ===
+// === UI: Haupt-Button-Leiste (Action Bar) ===
 let actionBar = document.getElementById('main-action-bar');
 if (!actionBar) {
   actionBar = document.createElement('div');
@@ -171,6 +171,7 @@ async function startGame() {
   renderer.domElement.classList.remove('board-hidden');
   
   try {
+    // === UI: Build-Menü (Bauen) ===
     createBuildUI({
       players: window.players,
       getBuildMode: () => buildMode,
@@ -190,6 +191,7 @@ async function startGame() {
   }
 
   try {
+    // === UI: Würfeln-Button ===
     createDiceUI(() => {
       throwPhysicsDice(scene);
       window.setDiceResultFromPhysics = (result) => {
@@ -203,11 +205,12 @@ async function startGame() {
   }
 
   try {
+    // === UI: Spielerwechsel-Button ===
     placePlayerSwitchButton(window.players, () => activePlayerIdx, (idx) => {
       activePlayerIdx = idx;
       window.activePlayerIdx = idx;
-      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
-      updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+      updatePlayerOverviews(window.players, () => activePlayerIdx);
       if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
     }, actionBar);
     console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
@@ -216,9 +219,9 @@ async function startGame() {
   }
 
   try {
+    // === UI: Ressourcenanzeige & Entwicklungskarten-UI ===
     createResourceUI();
     updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-    // === Entwicklungskarten-UI einbinden (nur einmal anhängen, nach createResourceUI) ===
     if (!devCardsUI) {
       devCardsUI = createDevelopmentCardsUI({
         getPlayer: () => window.players[activePlayerIdx],
@@ -240,14 +243,16 @@ async function startGame() {
   }
 
   try {
-    createPlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
-    updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+    // === UI: Spieler-Übersicht (oben links) ===
+    createPlayerOverviews(window.players, () => activePlayerIdx);
+    updatePlayerOverviews(window.players, () => activePlayerIdx);
     console.log('Player-Overviews erstellt:', document.getElementById('player-overview-container'));
   } catch (e) {
     console.error('Fehler beim Erstellen der Player-Overviews:', e);
   }
 
   try {
+    // === UI: Tile-Info-Overlay und Toggle-Button ===
     createInfoOverlayToggle();
     initTileInfoOverlay(scene, camera);
     console.log('Info-Overlay erstellt:', document.getElementById('infoOverlay'));
@@ -268,10 +273,10 @@ async function startGame() {
     tryBuildCity,
     tryBuildRoad, // <--- HINZUGEFÜGT
     getCornerWorldPosition,
-    updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx) // Always update for current player
+    updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx)
   });
 
-  // === Build Preview Setup ===
+  // === UI: Build-Preview (Vorschau beim Bauen) ===
   setupBuildPreview(
     renderer,
     scene,
@@ -386,7 +391,7 @@ window.addEventListener('click', (event) => {
             console.log("Successfully placed robber");
         } else {
             console.log("Failed to place robber at the selected location");
-            // Add a visible error message to help with debugging
+            // === UI: Fehler-/Feedback-Popup ===
             const errorMsg = document.createElement('div');
             errorMsg.textContent = "Konnte den Räuber nicht auf diesem Feld platzieren. Versuche ein anderes Feld.";
             errorMsg.style.position = 'fixed';

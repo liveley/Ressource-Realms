@@ -1,3 +1,4 @@
+// === UI: Tile-Info-Overlay und Toggle-Button ===
 // modules/uiTileInfo.js
 // Info-Overlay und Mousemove-Handling für Tile-Infos
 import * as THREE from 'three';
