@@ -1,5 +1,5 @@
 // modules/uiResources.js
-// Ressourcen-UI für Catan 3D
+// Ressourcen-UI für Catan 3D mit Gain Counter
 
 const resources = [
   { key: 'wheat', symbol: '🌾', name: 'Weizen', color: '#ffe066' },
@@ -11,12 +11,20 @@ const resources = [
 
 let resUI = null;
 let bankUI = null;
+let gainTrackers = {}; // Speichert die letzten Gewinne für jeden Spieler
 
 export function createResourceUI() {
   resUI = document.createElement('div');
   resUI.id = 'ressource-ui';
   resUI.style.position = 'static';
   resUI.style.zIndex = '5';
+  resUI.style.background = 'rgba(255,255,255,0.92)';
+  resUI.style.borderRadius = '0.5em';
+  resUI.style.padding = '0.8em 1.2em';
+  resUI.style.boxShadow = '0 2px 8px #0002';
+  resUI.style.fontFamily = 'Montserrat, Arial, sans-serif';
+  resUI.style.minWidth = '350px';
+  resUI.style.boxSizing = 'border-box';
 
   // --- Bank UI ---
   bankUI = document.createElement('div');
@@ -25,14 +33,17 @@ export function createResourceUI() {
   bankUI.style.zIndex = '5';
   bankUI.style.background = 'rgba(255,255,255,0.92)';
   bankUI.style.borderRadius = '0.5em';
-  bankUI.style.padding = '0.4em 1.2em 0.4em 0.8em';
+  bankUI.style.padding = '0.4em 1.5em';
   bankUI.style.marginTop = '0.5em';
   bankUI.style.fontSize = '1.1em';
   bankUI.style.boxShadow = '0 2px 8px #0002';
   bankUI.style.fontFamily = 'Montserrat, Arial, sans-serif';
   bankUI.style.display = 'flex';
-  bankUI.style.gap = '1.2em';
+  bankUI.style.gap = '0.8em';
   bankUI.style.alignItems = 'center';
+  bankUI.style.minWidth = '400px';
+  bankUI.style.boxSizing = 'border-box';
+  bankUI.style.overflow = 'hidden';
   bankUI.innerHTML = '';
 
   // Container for both UIs
@@ -53,14 +64,20 @@ export function createResourceUI() {
 
 function updateBankUI() {
   if (!bankUI || !window.bank) return;
-  bankUI.innerHTML =
-    '<span style="font-weight:bold;color:#222;margin-right:0.7em;">Bank:</span>' +
-    resources.map(r => `
-      <span style="display:inline-flex;align-items:center;gap:0.3em;min-width:3.5em;">
-        <span style="font-size:1.5em;">${r.symbol}</span>
-        <span style="color:${r.color};font-weight:bold;min-width:1.2em;text-align:right;">${window.bank[r.key] ?? 0}</span>
-      </span>
-    `).join('');
+  
+  const bankResources = resources.map(r => `
+    <div style="display:inline-flex;align-items:center;gap:0.2em;min-width:50px;">
+      <span style="font-size:1.4em;">${r.symbol}</span>
+      <span style="color:${r.color};font-weight:bold;min-width:20px;text-align:center;">${window.bank[r.key] ?? 0}</span>
+    </div>
+  `).join('');
+  
+  bankUI.innerHTML = `
+    <span style="font-weight:bold;color:#222;white-space:nowrap;margin-right:0.4em;">Bank:</span>
+    <div style="display:flex;justify-content:space-around;align-items:center;flex:1;">
+      ${bankResources}
+    </div>
+  `;
 }
 
 // Update the UI to show the resources of the given player
@@ -68,20 +85,68 @@ export function updateResourceUI(player, idx) {
   // Hole IMMER das aktuelle Spielerobjekt aus window.players, falls idx übergeben
   if (typeof idx === 'number' && window.players) {
     player = window.players[idx];
+    // Initialisiere gainTrackers für diesen Spieler falls noch nicht vorhanden
+    if (!gainTrackers[idx]) {
+      gainTrackers[idx] = {};
+      resources.forEach(r => gainTrackers[idx][r.key] = 0);
+    }
   } else if (typeof window.activePlayerIdx === 'number' && window.players) {
     player = window.players[window.activePlayerIdx];
+    idx = window.activePlayerIdx;
+    if (!gainTrackers[idx]) {
+      gainTrackers[idx] = {};
+      resources.forEach(r => gainTrackers[idx][r.key] = 0);
+    }
   }
+  
   if (!resUI || !player) {
     return;
   }
-  resUI.innerHTML = resources.map(r => `
-    <span style="display:inline-flex;align-items:center;gap:0.3em;min-width:3.5em;">
-      <span style="font-size:1.5em;">${r.symbol}</span>
-      <span style="color:${r.color};font-weight:bold;min-width:1.2em;text-align:right;">${player.resources[r.key]}</span>
-    </span>
+
+  // Erstelle zwei Zeilen: eine für Ressourcen, eine für Gains
+  const resourceItems = resources.map(r => `
+    <div style="display:inline-flex;flex-direction:column;align-items:center;min-width:50px;">
+      <div style="display:flex;align-items:center;gap:0.2em;">
+        <span style="font-size:1.4em;">${r.symbol}</span>
+        <span style="color:${r.color};font-weight:bold;min-width:20px;text-align:center;">${player.resources[r.key]}</span>
+      </div>
+      ${gainTrackers[idx] && gainTrackers[idx][r.key] > 0 ? 
+        `<span style="color:#4CAF50;font-weight:bold;font-size:0.85em;margin-top:0.1em;">+${gainTrackers[idx][r.key]}</span>` : 
+        '<span style="height:1.1em;"></span>'}
+    </div>
   `).join('');
+
+  resUI.innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.8em;">
+      <span style="font-weight:bold;color:#222;white-space:nowrap;">${player.name || 'Spieler ' + ((idx ?? 0) + 1)}</span>
+      <div style="display:flex;justify-content:space-around;align-items:flex-start;flex:1;">
+        ${resourceItems}
+      </div>
+    </div>
+  `;
+  
   updateBankUI();
 }
+
+// Reset gain counters when dice are rolled (before new distribution)
+window.addEventListener('diceRolled', (e) => {
+  // Reset alle Gain Tracker vor der neuen Verteilung
+  Object.keys(gainTrackers).forEach(playerIdx => {
+    resources.forEach(r => {
+      gainTrackers[playerIdx][r.key] = 0;
+    });
+  });
+});
+
+// Track resource gains when distributed
+window.trackResourceGain = function(playerIdx, resourceType, amount) {
+  if (!gainTrackers[playerIdx]) {
+    gainTrackers[playerIdx] = {};
+    resources.forEach(r => gainTrackers[playerIdx][r.key] = 0);
+  }
+  gainTrackers[playerIdx][resourceType] = (gainTrackers[playerIdx][resourceType] || 0) + amount;
+  console.log(`[Gain Tracker] Spieler ${playerIdx + 1} erhält +${amount} ${resourceType}`);
+};
 
 // Debug/cheat: allow adding resources to the current player
 export function handleResourceKeydown(e) {
