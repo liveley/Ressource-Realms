@@ -26,7 +26,7 @@ import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
 import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
-import { createTurnUI, showPhaseNotification } from './modules/turnUI.js';
+import { createTurnUI, showTurnNotification } from './modules/turnUI.js';
 import { 
   setupActionBarUpdates, 
   onPhaseChange, 
@@ -212,18 +212,19 @@ async function startGame() {
     console.error('Fehler beim Erstellen des Dice-UI:', e);
   }
 
-  try {
-    placePlayerSwitchButton(window.players, () => getActivePlayerIdx(), (idx) => {
-      setActivePlayerIdx(idx);
-      window.activePlayerIdx = idx;
-      updateResourceUI(window.players[getActivePlayerIdx()], getActivePlayerIdx()); // GITHUB COPILOT: Vereinheitlicht auf window.players
-      updatePlayerOverviews(window.players, () => getActivePlayerIdx()); // GITHUB COPILOT: Vereinheitlicht auf window.players
-      if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
-    }, actionBar);
-    console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
-  } catch (e) {
-    console.error('Fehler beim Erstellen des Player-Switch-Buttons:', e);
-  }
+  // Der alte Player-Switch-Button wird nicht mehr benötigt, da wir das Turn-Based-System haben
+  // try {
+  //   placePlayerSwitchButton(window.players, () => getActivePlayerIdx(), (idx) => {
+  //     setActivePlayerIdx(idx);
+  //     window.activePlayerIdx = idx;
+  //     updateResourceUI(window.players[getActivePlayerIdx()], getActivePlayerIdx()); // GITHUB COPILOT: Vereinheitlicht auf window.players
+  //     updatePlayerOverviews(window.players, () => getActivePlayerIdx()); // GITHUB COPILOT: Vereinheitlicht auf window.players
+  //     if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
+  //   }, actionBar);
+  //   console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
+  // } catch (e) {
+  //   console.error('Fehler beim Erstellen des Player-Switch-Buttons:', e);
+  // }
 
   try {
     createResourceUI();
@@ -273,14 +274,19 @@ async function startGame() {
     // Setup Turn-Controller callbacks
     setupActionBarUpdates();
     
-    // Register event listeners for phase changes
+    // Register event listeners for phase changes with intelligent notifications
     onPhaseChange((phase) => {
-      showPhaseNotification(`Phase: ${phase}`);
+      // Die Notification wird nur bei Spielerwechsel angezeigt, um Dopplungen zu vermeiden
+      console.log(`Phase geändert zu: ${phase}`);
     });
     
     onPlayerSwitch((playerIdx) => {
       const player = window.players[playerIdx];
-      showPhaseNotification(`${player?.name || 'Spieler ' + (playerIdx + 1)} ist dran!`);
+      const currentPhase = getCurrentPhase();
+      
+      // Zeige intelligente Notification basierend auf Phase und Spieler
+      showTurnNotification(currentPhase, playerIdx);
+      
       // Update all UIs
       updateResourceUI(window.players[playerIdx], playerIdx);
       updatePlayerOverviews(window.players, () => getActivePlayerIdx());

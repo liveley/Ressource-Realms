@@ -31,33 +31,15 @@ export function createTurnUI(parent) {
 
   turnUI = document.createElement('div');
   turnUI.id = 'turn-ui';
-  turnUI.style.display = 'flex';
-  turnUI.style.flexDirection = 'column';
-  turnUI.style.alignItems = 'center';
-  turnUI.style.gap = '0.5em';
-  turnUI.style.background = 'rgba(255,255,255,0.95)';
-  turnUI.style.border = '2px solid #ddd';
-  turnUI.style.borderRadius = '8px';
-  turnUI.style.padding = '1em';
-  turnUI.style.fontFamily = "'Montserrat', Arial, sans-serif";
-  turnUI.style.fontSize = '1em';
-  turnUI.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-
+  
   // Phasen-Anzeige
   phaseIndicator = document.createElement('div');
   phaseIndicator.id = 'phase-indicator';
-  phaseIndicator.style.fontWeight = 'bold';
-  phaseIndicator.style.fontSize = '1.1em';
-  phaseIndicator.style.color = '#333';
-  phaseIndicator.style.textAlign = 'center';
   turnUI.appendChild(phaseIndicator);
 
   // Spieler-Anzeige
   playerIndicator = document.createElement('div');
   playerIndicator.id = 'player-indicator';
-  playerIndicator.style.fontSize = '1em';
-  playerIndicator.style.color = '#555';
-  playerIndicator.style.textAlign = 'center';
   turnUI.appendChild(playerIndicator);
 
   // Button-Container
@@ -70,13 +52,6 @@ export function createTurnUI(parent) {
   nextPhaseBtn = document.createElement('button');
   nextPhaseBtn.id = 'next-phase-btn';
   nextPhaseBtn.textContent = 'Nächste Phase';
-  nextPhaseBtn.style.padding = '0.5em 1em';
-  nextPhaseBtn.style.borderRadius = '4px';
-  nextPhaseBtn.style.border = 'none';
-  nextPhaseBtn.style.background = '#4CAF50';
-  nextPhaseBtn.style.color = 'white';
-  nextPhaseBtn.style.cursor = 'pointer';
-  nextPhaseBtn.style.fontSize = '0.9em';
   nextPhaseBtn.onclick = () => {
     nextPhase();
   };
@@ -86,13 +61,6 @@ export function createTurnUI(parent) {
   endTurnBtn = document.createElement('button');
   endTurnBtn.id = 'end-turn-btn';
   endTurnBtn.textContent = 'Zug beenden';
-  endTurnBtn.style.padding = '0.5em 1em';
-  endTurnBtn.style.borderRadius = '4px';
-  endTurnBtn.style.border = 'none';
-  endTurnBtn.style.background = '#f44336';
-  endTurnBtn.style.color = 'white';
-  endTurnBtn.style.cursor = 'pointer';
-  endTurnBtn.style.fontSize = '0.9em';
   endTurnBtn.onclick = () => {
     endTurn();
   };
@@ -143,7 +111,12 @@ function updateTurnUI() {
   if (playerIndicator) {
     const playerName = activePlayer?.name || `Spieler ${activePlayerIdx + 1}`;
     playerIndicator.textContent = `Aktueller Spieler: ${playerName}`;
-    playerIndicator.style.color = activePlayer?.color ? `#${activePlayer.color.toString(16)}` : '#555';
+    // Spieler-Farbe setzen wenn vorhanden
+    if (activePlayer?.color) {
+      playerIndicator.style.color = `#${activePlayer.color.toString(16)}`;
+    } else {
+      playerIndicator.style.color = '#555'; // Fallback-Farbe
+    }
   }
 
   // Button-Zustände aktualisieren
@@ -166,9 +139,9 @@ function updateButtonStates() {
     
     // Button-Text basierend auf aktueller Phase
     const nextPhaseTexts = {
-      [TURN_PHASES.DICE]: 'Zu Handeln', // Nach Würfeln kann man handeln
-      [TURN_PHASES.TRADE]: 'Zu Bauen',  // Nach Handeln kann man bauen
-      [TURN_PHASES.BUILD]: 'Zu Handeln' // Nach Bauen kann man wieder handeln
+      [TURN_PHASES.DICE]: 'Zu Handeln',    // Nach Würfeln kann man handeln
+      [TURN_PHASES.TRADE]: 'Zu Bauen',     // Nach Handeln kann man bauen
+      [TURN_PHASES.BUILD]: 'Zu Handeln'    // Nach Bauen kann man wieder handeln
     };
     
     nextPhaseBtn.textContent = nextPhaseTexts[currentPhase] || 'Nächste Phase';
@@ -183,12 +156,21 @@ function updateButtonStates() {
   }
 }
 
+// Notification-System - nur eine Notification gleichzeitig
+let currentNotification = null;
+
 /**
  * Zeigt eine Phasen-Benachrichtigung an
  * @param {string} message - Die Nachricht, die angezeigt werden soll
  * @param {string} color - Die Farbe der Benachrichtigung (optional)
+ * @param {number} duration - Anzeigedauer in Millisekunden (optional)
  */
-export function showPhaseNotification(message, color = '#2196F3') {
+export function showPhaseNotification(message, color = '#2196F3', duration = 3000) {
+  // Vorherige Notification entfernen
+  if (currentNotification) {
+    clearNotification();
+  }
+
   const notification = document.createElement('div');
   notification.style.position = 'fixed';
   notification.style.top = '20%';
@@ -197,32 +179,82 @@ export function showPhaseNotification(message, color = '#2196F3') {
   notification.style.background = color;
   notification.style.color = 'white';
   notification.style.padding = '1em 2em';
-  notification.style.borderRadius = '8px';
+  notification.style.borderRadius = '12px';
   notification.style.fontSize = '1.2em';
   notification.style.fontWeight = 'bold';
   notification.style.zIndex = '10000';
-  notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+  notification.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)';
   notification.style.fontFamily = "'Montserrat', Arial, sans-serif";
+  notification.style.textAlign = 'center';
+  notification.style.minWidth = '200px';
+  notification.style.border = '2px solid rgba(255,255,255,0.3)';
   notification.textContent = message;
 
+  currentNotification = notification;
   document.body.appendChild(notification);
 
-  // Animation: Einblenden
+  // Animation: Einblenden mit leichter Bewegung
   notification.style.opacity = '0';
-  notification.style.transition = 'opacity 0.3s ease';
+  notification.style.transform = 'translateX(-50%) translateY(-20px)';
+  notification.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+  
   setTimeout(() => {
     notification.style.opacity = '1';
+    notification.style.transform = 'translateX(-50%) translateY(0)';
   }, 10);
 
-  // Nach 3 Sekunden ausblenden
+  // Nach angegebener Zeit ausblenden
   setTimeout(() => {
-    notification.style.opacity = '0';
+    if (currentNotification === notification) {
+      clearNotification();
+    }
+  }, duration);
+}
+
+/**
+ * Entfernt die aktuelle Notification
+ */
+function clearNotification() {
+  if (currentNotification) {
+    currentNotification.style.opacity = '0';
+    currentNotification.style.transform = 'translateX(-50%) translateY(-20px)';
+    
     setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
+      if (currentNotification && currentNotification.parentNode) {
+        currentNotification.parentNode.removeChild(currentNotification);
       }
+      currentNotification = null;
     }, 300);
-  }, 3000);
+  }
+}
+
+/**
+ * Zeigt eine intelligente Benachrichtigung basierend auf Phase und Spieler
+ * @param {string} phase - Die aktuelle Phase
+ * @param {number} playerIdx - Der aktive Spieler Index
+ */
+export function showTurnNotification(phase, playerIdx) {
+  const player = window.players?.[playerIdx];
+  const playerName = player?.name || `Spieler ${playerIdx + 1}`;
+  
+  const phaseMessages = {
+    [TURN_PHASES.DICE]: `🎲 ${playerName} würfelt!`,
+    [TURN_PHASES.TRADE]: `💰 ${playerName} kann handeln`,
+    [TURN_PHASES.BUILD]: `🏗️ ${playerName} kann bauen`,
+    [TURN_PHASES.END]: `🏁 ${playerName} beendet den Zug`
+  };
+
+  const phaseColors = {
+    [TURN_PHASES.DICE]: '#FF9800',    // Orange für Würfeln
+    [TURN_PHASES.TRADE]: '#4CAF50',   // Grün für Handeln
+    [TURN_PHASES.BUILD]: '#2196F3',   // Blau für Bauen
+    [TURN_PHASES.END]: '#9C27B0'      // Lila für Zug beenden
+  };
+
+  const message = phaseMessages[phase] || `${playerName} ist dran!`;
+  const color = phaseColors[phase] || '#2196F3';
+
+  showPhaseNotification(message, color, 2500);
 }
 
 /**
