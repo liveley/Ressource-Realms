@@ -421,10 +421,15 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
     return { tileMeshes, tileNumbers };
 }
 
+// Änderungen für game_board.js - ersetze den diceRolled Event Listener mit dieser Version:
+
 // Highlight logic for tiles (e.g. after dice roll)
 window.addEventListener('diceRolled', (e) => {
-  // --- Entferne asynchrone window.players/updateResourceUI-Initialisierung (Fehlerquelle) ---
+    // --- Entferne asynchrone window.players/updateResourceUI-Initialisierung (Fehlerquelle) ---
   const number = e.detail;
+  
+  // Reset gain trackers am Anfang des Events in uiResources.js
+  
   Object.entries(tileMeshes).forEach(([key, mesh]) => {
     if (tileNumbers[key] === number) {
       // === Ressourcenverteilung (fix: alle angrenzenden Hexes/Corners prüfen) ===
@@ -452,18 +457,27 @@ window.addEventListener('diceRolled', (e) => {
               return { q: (mesh.userData.tileQ ?? mesh.userData.q) + dq, r: (mesh.userData.tileR ?? mesh.userData.r) + dr, corner: (corner + 4) % 6 };
             })()
           ];
-          for (const player of window.players || []) {
+          
+          // Iteriere über alle Spieler mit Index für Gain Tracking
+          for (let playerIdx = 0; playerIdx < (window.players || []).length; playerIdx++) {
+            const player = window.players[playerIdx];
             for (const pos of adjacent) {
               // Siedlung: 1 Karte, Stadt: 2 Karten
               if (player.settlements && player.settlements.some(s => s.q === pos.q && s.r === pos.r && s.corner === pos.corner)) {
                 if (window.bank && window.bank[resourceType] > 0) {
                   player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
                   window.bank[resourceType]--;
-                } else {
+                  // Track gain for this player
+                  if (window.trackResourceGain) {
+                    window.trackResourceGain(playerIdx, resourceType, 1);
+                  // } else {
                   // Optional: Hinweis, dass Bank leer ist
                   // console.log(`Bank leer: ${resourceType}`);
+               
+                  }
                 }
               }
+              // Stadt: 2 Karten
               if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
                 let given = 0;
                 for (let i = 0; i < 2; i++) {
@@ -473,7 +487,11 @@ window.addEventListener('diceRolled', (e) => {
                     given++;
                   }
                 }
-                // if (given < 2) console.log(`Bank leer: ${resourceType} (nur ${given} von 2 Karten für Stadt)`);
+                                // if (given < 2) console.log(`Bank leer: ${resourceType} (nur ${given} von 2 Karten für Stadt)`);
+                // Track gain for cities
+                if (given > 0 && window.trackResourceGain) {
+                  window.trackResourceGain(playerIdx, resourceType, given);
+                }
               }
             }
           }
@@ -481,10 +499,12 @@ window.addEventListener('diceRolled', (e) => {
       }
     }
   });
+  
   // UI-Update für alle Spieler
   if (window.updateResourceUI && window.players) {
     // Debug: Log Ressourcen nach Verteilung
     window.players.forEach(p => console.log(`[Ressourcen nach Verteilung] ${p.name}:`, p.resources));
+
     // UI-Update für aktiven Spieler mit globalem Index
     if (typeof window.activePlayerIdx === 'number') {
       window.updateResourceUI(window.players[window.activePlayerIdx], window.activePlayerIdx);

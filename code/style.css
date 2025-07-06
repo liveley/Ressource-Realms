@@ -243,49 +243,6 @@ body {
   transition: background 0.18s, color 0.18s;
 }
 
-#ressource-ui {
-  position: absolute;
-  top: clamp(0.7em, 1.5vh, 1.5em);
-  right: clamp(0.7em, 1.5vw, 1.5em);
-  z-index: 10;
-  background: rgba(255,255,255,0.92);
-  border-radius: 0.6em;
-  padding: clamp(0.2em, 0.7vw, 0.5em) clamp(0.5em, 1vw, 0.8em);
-  box-shadow: 0 2px 8px #0002;
-  display: flex;
-  gap: clamp(0.5em, 1.5vw, 1.2em);
-  font-family: 'Montserrat', Arial, sans-serif;
-  font-size: clamp(0.95em, 1.2vw, 1.1em);
-  align-items: center;
-  min-width: clamp(160px, 16vw, 280px);
-  max-width: clamp(280px, 28vw, 400px);
-  transition: box-shadow 0.2s;
-}
-
-#ressource-ui span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2em;
-  min-width: 0.2em;
-  flex-direction: row;
-}
-
-#ressource-ui span span:first-child {
-  /* Symbol */
-  font-size: clamp(1em, 1.5vw, 1.2em);
-  margin-right: 0.2em;
-  margin-left: 0.2em;
-}
-
-#ressource-ui span span:last-child {
-  /* Zahl */
-  min-width: 0.2em;
-  text-align: right;
-  font-weight: bold;
-  margin-left: 1.5em;
-  margin-right: 0;
-}
-
 #roll-dice {
   font-size: clamp(1em, 2vw, 1.3em);
   padding: clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em);
@@ -379,17 +336,6 @@ body {
     padding: clamp(0.12em, 0.5vw, 0.3em) clamp(0.3em, 0.7vw, 0.7em);
     font-size: 0.9em;
   }
-  #ressource-ui {
-    min-width: clamp(90px, 10vw, 140px);
-    max-width: clamp(140px, 18vw, 220px);
-    font-size: clamp(0.85em, 1vw, 1em);
-  }
-  #ressource-ui span {
-    min-width: 2.7em;
-  }
-  #ressource-ui span span:last-child {
-    min-width: 1.3em;
-  }
 }
 
 @media (max-width: 800px) {
@@ -410,20 +356,6 @@ body {
     margin-top: 0.5em;
     text-align: center;
   }
-  #ressource-ui {
-    position: static;
-    order: -1;
-    align-self: flex-start;
-    margin-bottom: 0.5em;
-    min-width: 0;
-    max-width: 100%;
-    font-size: 0.8em;
-  }
-  #ressource-ui span {
-    min-width: 2.2em;
-    flex-direction: column;
-    gap: 0.1em;
-  }
 }
 
 /* JS-driven spinner highlight */
@@ -434,4 +366,367 @@ body {
 .game-loading-spinner .hex.highlight {
   background: #ffe066 !important;
   z-index: 2;
+}
+
+/* === Resource UI Styles === */
+
+#ressource-ui {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  min-width: unset !important;
+  max-width: unset !important;
+  font-size: inherit !important; /* Use parent font-size */
+  display: block !important;
+  gap: unset !important;
+  align-items: unset !important;
+}
+
+/* Ensure bank UI also uses consistent sizing */
+#bank-ui {
+  font-size: inherit !important; /* Use parent font-size */
+}
+
+/* Resource Container */
+#resource-bank-container {
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  width: 540px; /* Wider to prevent text overflow */
+}
+
+/* Resource Box (applies to both player and bank) */
+.resource-box {
+  background: rgba(255,255,255,0.92);
+  border-radius: 0.5em;
+  padding: 1em 1.2em; /* Equal top/bottom padding */
+  box-shadow: 0 2px 8px #0002;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 1.1em; /* Ensure consistent font size */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Resource Header (contains label and items) */
+.resource-header {
+  display: flex;
+  align-items: baseline; /* Changed from center to baseline for proper text alignment */
+  width: 100%;
+  height: 50px; /* Fixed height for consistency */
+}
+
+/* Resource Label (Player name or "Bank:") */
+.resource-label {
+  font-weight: bold;
+  color: #222;
+  width: 80px; /* Consistent width */
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline; /* Changed from center to baseline */
+  padding-right: 5px;
+}
+
+/* Resource Items Container */
+.resource-items {
+  display: flex;
+  flex: 1;
+  justify-content: flex-start; /* Start from left */
+  align-items: baseline; /* Changed from center to baseline for text alignment */
+  gap: 25px; /* Space between resource groups */
+  padding: 0 10px;
+}
+
+/* Individual Resource Item */
+.resource-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: auto; /* Auto width based on content */
+  text-align: center;
+  flex-shrink: 0; /* Don't shrink */
+}
+
+/* Resource Content (icon + count) */
+.resource-content {
+  display: flex;
+  align-items: baseline; /* Changed from center to baseline for proper text alignment */
+  gap: 2px; /* Small gap between icon and number */
+  height: auto; /* Changed from 30px to auto */
+  justify-content: center;
+}
+
+/* Resource Icon (emoji) */
+.resource-icon {
+  font-size: 1.4em;
+  position: relative;
+  top: -1.8px; /* Fine-tuned vertical alignment */
+}
+
+/* Resource Count Number */
+.resource-count {
+  font-weight: bold;
+  width: 24px; /* Slightly smaller for tighter grouping */
+  min-width: 24px;
+  text-align: right; /* Right align for proper digit placement */
+  display: inline-block;
+  font-variant-numeric: tabular-nums; /* Use monospaced numbers */
+  padding-left: 2px; /* Small padding instead of gap */
+  /* This ensures alignment like:
+     Player:  0  →  " 0"
+     Bank:   19  →  "19"
+     So the 9 aligns with 0, and 1 is in the space before 0 */
+}
+
+/* Resource Gain Indicator */
+.resource-gain {
+  height: 22px;
+  margin-top: 2px;
+  display: block;
+  width: 100%;
+  position: relative;
+}
+
+/* Plus sign under first digit of number */
+.gain-plus {
+  color: #4CAF50;
+  font-weight: bold;
+  font-size: 1em; /* Same size as numbers */
+  font-variant-numeric: tabular-nums; /* Match number spacing */
+  position: absolute;
+  right: 24px; /* Position at start of 26px number field (with 2px adjustment) */
+  text-align: left;
+  width: auto;
+  /* Layout example:
+     "12" → "1" is at left edge, "2" at right edge
+     "+3" → "+" under "1", "3" under "2"
+     " 5" → space at left edge, "5" at right edge  
+     "+2" → "+" under space, "2" under "5" */
+}
+
+/* Gain number under resource count */
+.gain-number {
+  color: #4CAF50;
+  font-weight: bold;
+  font-size: 1em; /* Same size as resource numbers */
+  position: absolute;
+  right: 0;
+  width: 26px; /* Same width as resource-count */
+  text-align: right;
+  font-variant-numeric: tabular-nums; /* Consistent number spacing */
+}
+
+/* Empty gain placeholders in bank */
+#bank-ui .resource-gain {
+  visibility: hidden; /* Keep space but hide content */
+  height: 22px; /* Same height as player gain */
+}
+
+/* Bank UI specific centering */
+#bank-ui .resource-header {
+  align-items: center; /* Override baseline to center vertically */
+}
+
+#bank-ui .resource-label {
+  align-items: center; /* Override baseline to center vertically */
+}
+
+#bank-ui .resource-items {
+  align-items: center; /* Override baseline to center vertically */
+}
+
+#bank-ui .resource-content {
+  align-items: center; /* Override baseline to center vertically */
+}
+
+#bank-ui .resource-item {
+  justify-content: center; /* Center the entire item vertically */
+}
+
+/* Remove the gain placeholder space in bank */
+#bank-ui .resource-gain {
+  display: none; /* Don't reserve space for gain counter in bank */
+}
+
+/* Responsive Styles */
+@media (max-width: 1200px) {
+  #resource-bank-container {
+    width: 500px;
+  }
+  
+  .resource-box {
+    font-size: 1em; /* Slightly smaller but consistent */
+    padding: 0.8em 1.2em;
+  }
+  
+  .resource-label {
+    width: 70px;
+  }
+  
+  .resource-items {
+    gap: 28px;
+  }
+  
+  .resource-count {
+    width: 24px;
+    min-width: 24px;
+  }
+}
+
+@media (max-width: 800px) {
+  #resource-bank-container {
+    position: static;
+    width: 100%;
+    padding: 0.5em;
+  }
+  
+  .resource-box {
+    font-size: 0.9em; /* Consistent sizing */
+    padding: 0.7em 1em;
+  }
+  
+  .resource-label {
+    width: 60px;
+  }
+  
+  .resource-items {
+    gap: 15px;
+  }
+  
+  .resource-icon {
+    font-size: 1.3em;
+    top: -1.8px; /* Same offset as desktop for consistency */
+  }
+  
+  .resource-count {
+    width: 22px;
+    min-width: 22px;
+  }
+  
+  .resource-gain {
+    font-size: 0.8em;
+  }
+}
+
+
+/* Bank Trade UI Styles - Kompakte Version mit vollem Text */
+
+#bank-trade-ui {
+  margin-top: 0.5em;
+  background: rgba(255,255,255,0.92);
+  border-radius: 0.5em;
+  padding: 0.8em 1em; /* Reduziertes Padding */
+  box-shadow: 0 2px 8px #0002;
+  display: flex;
+  align-items: center;
+  gap: 0.6em; /* Kleinerer Gap */
+  font-size: 1.1em; /* Basis Font-Size wie resource-box */
+  font-family: 'Montserrat', Arial, sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#bank-trade-ui button {
+  font-weight: bold;
+  font-size: 0.9em; /* Kleinere Schrift */
+  height: 2.2em; /* Niedrigere Höhe */
+  padding: 0 0.5em; /* Weniger seitliches Padding */
+  border-radius: 0.5em;
+  border: 2px solid #222; /* Schwarze Umrandung */
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  color: #222;
+  cursor: pointer;
+  box-shadow: 0 2px 8px #ffe06644;
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Montserrat', Arial, sans-serif;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s, border-color 0.18s;
+  white-space: nowrap;
+}
+
+#bank-trade-ui button:hover {
+  background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+  box-shadow: 0 4px 16px #ffe06677;
+  transform: translateY(-2px);
+}
+
+#bank-trade-ui select {
+  background: #fffbe6;
+  border: 1.5px solid #ffe066;
+  border-radius: 0.5em;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 0.85em; /* Deutlich kleinere Schrift für Dropdowns */
+  color: #222;
+  padding: 0.25em 0.5em; /* Weniger Padding */
+  margin: 0 0.1em;
+  box-shadow: 0 1px 4px #ffe06633;
+  outline: none;
+  transition: border-color 0.2s;
+  height: 2.2em; /* Niedrigere Höhe */
+}
+
+#bank-trade-ui select:focus {
+  border-color: #ffd700;
+}
+
+#bank-trade-feedback {
+  color: #d7263d;
+  font-size: 0.85em; /* Kleinere Feedback-Schrift */
+  margin-left: 0.5em;
+  white-space: nowrap;
+}
+
+/* Responsive Styles */
+@media (max-width: 1200px) {
+  #bank-trade-ui {
+    font-size: 1em;
+    padding: 0.7em 0.9em;
+    gap: 0.5em;
+  }
+  
+  #bank-trade-ui select {
+    font-size: 0.8em;
+    padding: 0.2em 0.4em;
+    height: 2.1em;
+  }
+  
+  #bank-trade-ui button {
+    font-size: 0.85em;
+    padding: 0 1em;
+    height: 2.1em;
+  }
+}
+
+@media (max-width: 800px) {
+  #bank-trade-ui {
+    font-size: 0.9em;
+    padding: 0.6em 0.8em;
+    flex-wrap: wrap;
+    gap: 0.4em;
+  }
+  
+  #bank-trade-ui select {
+    font-size: 0.75em;
+    padding: 0.15em 0.3em;
+    height: 2em;
+  }
+  
+  #bank-trade-ui button {
+    font-size: 0.8em;
+    padding: 0 0.8em;
+    height: 2em;
+    width: 100%;
+    margin-top: 0.3em;
+  }
+  
+  #bank-trade-feedback {
+    font-size: 0.8em;
+    margin-left: 0;
+    margin-top: 0.3em;
+    width: 100%;
+    text-align: center;
+  }
 }
