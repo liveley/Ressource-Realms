@@ -60,6 +60,10 @@ export function tryBuildCity(player, q, r, corner) {
   if (!hasAtLeastOneLandTileAdjacent(q, r, corner)) {
     return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
   }
+  // Limit: Maximal 4 Städte pro Spieler
+  if (player.cities && player.cities.length >= 4) {
+    return { success: false, reason: 'Du hast keine Städte mehr übrig (Limit: 4)' };
+  }
   // Prüfe alle äquivalenten Ecken auf bestehende Siedlung/Stadt
   const equivalents = getEquivalentCorners(q, r, corner);
   for (const eq of equivalents) {
@@ -225,6 +229,10 @@ export function getEquivalentCorners(q, r, corner) {
 
 // Siedlung bauen (mit Platzierungslogik)
 export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoad = true, ignoreDistanceRule = false, ignoreResourceRule = false} = {}) {
+  // Limit: Maximal 5 Siedlungen pro Spieler
+  if (player.settlements && player.settlements.length >= 5) {
+    return { success: false, reason: 'Du hast keine Siedlungen mehr übrig (Limit: 5)' };
+  }
   if (!hasAtLeastOneLandTileAdjacent(q, r, corner)) {
     return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
   }
@@ -341,6 +349,10 @@ function neighborAxial(q, r, edge) {
 }
 
 export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
+  // Limit: Maximal 15 Straßen pro Spieler
+  if (player.roads && player.roads.length >= 15) {
+    return { success: false, reason: 'Du hast keine Straßen mehr übrig (Limit: 15)' };
+  }
   // Erlaube Straßenbau, wenn mindestens EIN angrenzendes Feld Land ist (Wüste ist erlaubt)
   const [nq, nr] = neighborAxial(q, r, edge);
   if (!isLandTile(q, r) && !isLandTile(nq, nr)) {
