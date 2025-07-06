@@ -610,3 +610,123 @@ body {
     font-size: 0.8em;
   }
 }
+
+
+/* Bank Trade UI Styles - Kompakte Version mit vollem Text */
+
+#bank-trade-ui {
+  margin-top: 0.5em;
+  background: rgba(255,255,255,0.92);
+  border-radius: 0.5em;
+  padding: 0.8em 1em; /* Reduziertes Padding */
+  box-shadow: 0 2px 8px #0002;
+  display: flex;
+  align-items: center;
+  gap: 0.6em; /* Kleinerer Gap */
+  font-size: 1.1em; /* Basis Font-Size wie resource-box */
+  font-family: 'Montserrat', Arial, sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#bank-trade-ui button {
+  font-weight: bold;
+  font-size: 0.9em; /* Kleinere Schrift */
+  height: 2.2em; /* Niedrigere Höhe */
+  padding: 0 0.5em; /* Weniger seitliches Padding */
+  border-radius: 0.5em;
+  border: 2px solid #222; /* Schwarze Umrandung */
+  background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
+  color: #222;
+  cursor: pointer;
+  box-shadow: 0 2px 8px #ffe06644;
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Montserrat', Arial, sans-serif;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s, border-color 0.18s;
+  white-space: nowrap;
+}
+
+#bank-trade-ui button:hover {
+  background: linear-gradient(90deg, #ffe066 80%, #fffbe6 100%);
+  box-shadow: 0 4px 16px #ffe06677;
+  transform: translateY(-2px);
+}
+
+#bank-trade-ui select {
+  background: #fffbe6;
+  border: 1.5px solid #ffe066;
+  border-radius: 0.5em;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 0.85em; /* Deutlich kleinere Schrift für Dropdowns */
+  color: #222;
+  padding: 0.25em 0.5em; /* Weniger Padding */
+  margin: 0 0.1em;
+  box-shadow: 0 1px 4px #ffe06633;
+  outline: none;
+  transition: border-color 0.2s;
+  height: 2.2em; /* Niedrigere Höhe */
+}
+
+#bank-trade-ui select:focus {
+  border-color: #ffd700;
+}
+
+#bank-trade-feedback {
+  color: #d7263d;
+  font-size: 0.85em; /* Kleinere Feedback-Schrift */
+  margin-left: 0.5em;
+  white-space: nowrap;
+}
+
+/* Responsive Styles */
+@media (max-width: 1200px) {
+  #bank-trade-ui {
+    font-size: 1em;
+    padding: 0.7em 0.9em;
+    gap: 0.5em;
+  }
+  
+  #bank-trade-ui select {
+    font-size: 0.8em;
+    padding: 0.2em 0.4em;
+    height: 2.1em;
+  }
+  
+  #bank-trade-ui button {
+    font-size: 0.85em;
+    padding: 0 1em;
+    height: 2.1em;
+  }
+}
+
+@media (max-width: 800px) {
+  #bank-trade-ui {
+    font-size: 0.9em;
+    padding: 0.6em 0.8em;
+    flex-wrap: wrap;
+    gap: 0.4em;
+  }
+  
+  #bank-trade-ui select {
+    font-size: 0.75em;
+    padding: 0.15em 0.3em;
+    height: 2em;
+  }
+  
+  #bank-trade-ui button {
+    font-size: 0.8em;
+    padding: 0 0.8em;
+    height: 2em;
+    width: 100%;
+    margin-top: 0.3em;
+  }
+  
+  #bank-trade-feedback {
+    font-size: 0.8em;
+    margin-left: 0;
+    margin-top: 0.3em;
+    width: 100%;
+    text-align: center;
+  }
+}
