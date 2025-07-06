@@ -71,13 +71,25 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
     let previewType = buildMode;
     let previewParams = {};
     let previewEdge = 0;
+    let shouldShowPreview = true; // New flag to control preview visibility
+    
     if (buildMode === 'settlement') {
       // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
       const res = canPlaceSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
       canBuild = res.success;
+      
+      // Don't show preview if no land tile adjacent
+      if (res.reason === 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)') {
+        shouldShowPreview = false;
+      }
     } else if (buildMode === 'city') {
       const res = canPlaceCity(player, q, r, nearest);
       canBuild = res.success;
+      
+      // Don't show preview if no land tile adjacent
+      if (res.reason === 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)') {
+        shouldShowPreview = false;
+      }
     } else if (buildMode === 'road') {
       // Finde die nächste Kante (edge) zur Mausposition
       let minEdgeDist = Infinity, nearestEdge = 0;
@@ -97,6 +109,17 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
       previewType = 'road';
       previewParams = { q, r, edge: nearestEdge };
       previewEdge = nearestEdge;
+      
+      // Don't show preview if no land tile adjacent
+      if (res.reason === 'Straßenbau auf Wasser nicht erlaubt') {
+        shouldShowPreview = false;
+      }
+    }
+    
+    // If we shouldn't show preview due to no land adjacency, remove any existing preview and return
+    if (!shouldShowPreview) {
+      removePreviewMesh(scene, renderer, camera);
+      return;
     }
     const previewColor = canBuild ? player.color : 0xffe066;
     const previewOpacity = canBuild ? 0.45 : 0.32;
