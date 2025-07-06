@@ -526,56 +526,6 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
   devUI.appendChild(overviewBtn);
   devUI.appendChild(feedback);
 
-  // === Hand-Anzeige ===
-  // (entfernt, da Übersicht jetzt im Pop-Up erfolgt)
-  // const handContainer = document.createElement('div');
-  // handContainer.id = 'devcard-hand-container';
-  // handContainer.style.display = 'flex';
-  // handContainer.style.gap = '0.5em';
-  // handContainer.style.marginTop = '0.5em';
-  // handContainer.style.alignItems = 'center';
-  // handContainer.style.flexWrap = 'wrap';
-  // devUI.appendChild(handContainer);
-
-  // function renderHand() {
-  //   const player = getPlayer();
-  //   if (!player) return;
-  //   // Combine playable and new cards, but mark new ones (not playable this turn)
-  //   const hand = (player.developmentCards || []).concat((player.newDevelopmentCards || []));
-  //   handContainer.innerHTML = '';
-  //   if (!hand.length) {
-  //     handContainer.textContent = 'Keine Entwicklungskarten.';
-  //     handContainer.style.color = '#888';
-  //     return;
-  //   }
-  //   hand.forEach((card, idx) => {
-  //     // Hide victory points (show as verdeckt)
-  //     let label = '';
-  //     let icon = '';
-  //     let isNew = idx >= (player.developmentCards?.length || 0);
-  //     switch(card.type) {
-  //       case 'knight': icon = '🛡️'; label = 'Ritter'; break;
-  //       case 'road_building': icon = '🛤️'; label = 'Straßenbau'; break;
-  //       case 'monopoly': icon = '🃏'; label = 'Monopol'; break;
-  //       case 'year_of_plenty': icon = '🎁'; label = 'Erfindung'; break;
-  //       case 'victory_point': icon = '❓'; label = 'Siegpunkt (verdeckt)'; break;
-  //       default: icon = '❔'; label = card.type;
-  //     }
-  //     const cardDiv = document.createElement('div');
-  //     cardDiv.style.background = isNew ? 'linear-gradient(90deg,#eee 70%,#ffe066 100%)' : 'linear-gradient(90deg,#fff 70%,#cde7b0 100%)';
-  //     cardDiv.style.border = '1.5px solid #bbb';
-  //     cardDiv.style.borderRadius = '0.4em';
-  //     cardDiv.style.padding = '0.3em 0.8em';
-  //     cardDiv.style.display = 'flex';
-  //     cardDiv.style.alignItems = 'center';
-  //     cardDiv.style.gap = '0.5em';
-  //     cardDiv.style.fontWeight = isNew ? 'normal' : 'bold';
-  //     cardDiv.style.opacity = card.type === 'victory_point' ? 0.7 : 1;
-  //     cardDiv.title = isNew ? 'Diese Karte kann erst ab nächster Runde gespielt werden.' : '';
-  //     cardDiv.innerHTML = `<span style="font-size:1.3em;">${icon}</span> <span>${label}</span>` + (isNew && card.type !== 'victory_point' ? ' <span style="font-size:0.9em;color:#c00;">(neu)</span>' : '');
-  //     handContainer.appendChild(cardDiv);
-  //   });
-  // }
 
   // Update hand on buy or when requested
   function updateAll() {
