@@ -368,7 +368,8 @@ body {
   z-index: 2;
 }
 
-/* --- Resource UI Styles --- */
+/* === Resource UI Styles === */
+
 #ressource-ui {
   position: static !important;
   top: auto !important;
@@ -381,7 +382,7 @@ body {
   align-items: unset !important;
 }
 
-/* Resource Container Styles */
+/* Resource Container */
 #resource-bank-container {
   position: absolute;
   top: 0.5em;
@@ -393,6 +394,7 @@ body {
   width: 450px;
 }
 
+/* Resource Box (applies to both player and bank) */
 .resource-box {
   background: rgba(255,255,255,0.92);
   border-radius: 0.5em;
@@ -403,12 +405,14 @@ body {
   box-sizing: border-box;
 }
 
+/* Resource Header (contains label and items) */
 .resource-header {
   display: flex;
   align-items: center;
   width: 100%;
 }
 
+/* Resource Label (Player name or "Bank:") */
 .resource-label {
   font-weight: bold;
   color: #222;
@@ -416,6 +420,7 @@ body {
   flex-shrink: 0;
 }
 
+/* Resource Items Container */
 .resource-items {
   display: flex;
   flex: 1;
@@ -423,6 +428,7 @@ body {
   padding-left: 10px;
 }
 
+/* Individual Resource Item */
 .resource-item {
   display: flex;
   flex-direction: column;
@@ -431,6 +437,7 @@ body {
   text-align: center;
 }
 
+/* Resource Content (icon + count) */
 .resource-content {
   display: flex;
   align-items: center;
@@ -438,16 +445,19 @@ body {
   height: 28px;
 }
 
+/* Resource Icon (emoji) */
 .resource-icon {
   font-size: 1.4em;
 }
 
+/* Resource Count Number */
 .resource-count {
   font-weight: bold;
   min-width: 20px;
   text-align: center;
 }
 
+/* Resource Gain Indicator */
 .resource-gain {
   height: 18px;
   margin-top: 2px;
@@ -497,5 +507,9 @@ body {
   
   .resource-icon {
     font-size: 1.2em;
+  }
+  
+  .resource-gain {
+    font-size: 0.8em;
   }
 }
