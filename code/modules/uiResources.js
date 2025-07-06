@@ -14,68 +14,125 @@ let bankUI = null;
 let gainTrackers = {}; // Speichert die letzten Gewinne für jeden Spieler
 
 export function createResourceUI() {
+  // Spieler UI
   resUI = document.createElement('div');
   resUI.id = 'ressource-ui';
-  resUI.style.position = 'static';
-  resUI.style.zIndex = '5';
-  resUI.style.background = 'rgba(255,255,255,0.92)';
-  resUI.style.borderRadius = '0.5em';
-  resUI.style.padding = '0.8em 1.2em';
-  resUI.style.boxShadow = '0 2px 8px #0002';
-  resUI.style.fontFamily = 'Montserrat, Arial, sans-serif';
-  resUI.style.minWidth = '350px';
-  resUI.style.boxSizing = 'border-box';
-
-  // --- Bank UI ---
+  resUI.className = 'resource-box';
+  
+  // Bank UI
   bankUI = document.createElement('div');
   bankUI.id = 'bank-ui';
-  bankUI.style.position = 'static';
-  bankUI.style.zIndex = '5';
-  bankUI.style.background = 'rgba(255,255,255,0.92)';
-  bankUI.style.borderRadius = '0.5em';
-  bankUI.style.padding = '0.4em 1.5em';
-  bankUI.style.marginTop = '0.5em';
-  bankUI.style.fontSize = '1.1em';
-  bankUI.style.boxShadow = '0 2px 8px #0002';
-  bankUI.style.fontFamily = 'Montserrat, Arial, sans-serif';
-  bankUI.style.display = 'flex';
-  bankUI.style.gap = '0.8em';
-  bankUI.style.alignItems = 'center';
-  bankUI.style.minWidth = '400px';
-  bankUI.style.boxSizing = 'border-box';
-  bankUI.style.overflow = 'hidden';
-  bankUI.innerHTML = '';
-
+  bankUI.className = 'resource-box';
+  
   // Container for both UIs
   const container = document.createElement('div');
   container.id = 'resource-bank-container';
-  container.style.position = 'absolute';
-  container.style.top = '0.5em';
-  container.style.right = '0.5em';
-  container.style.left = '';
-  container.style.zIndex = '5';
-  container.style.display = 'flex';
-  container.style.flexDirection = 'column';
-  container.style.alignItems = 'flex-end';
   container.appendChild(resUI);
   container.appendChild(bankUI);
   document.body.appendChild(container);
+  
+  // Add CSS styles
+  addResourceStyles();
+}
+
+function addResourceStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    #resource-bank-container {
+      position: absolute;
+      top: 0.5em;
+      right: 0.5em;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+      width: 450px;
+    }
+    
+    .resource-box {
+      background: rgba(255,255,255,0.92);
+      border-radius: 0.5em;
+      padding: 0.8em 1.2em;
+      box-shadow: 0 2px 8px #0002;
+      font-family: 'Montserrat', Arial, sans-serif;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .resource-header {
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    
+    .resource-label {
+      font-weight: bold;
+      color: #222;
+      width: 80px;
+      flex-shrink: 0;
+    }
+    
+    .resource-items {
+      display: flex;
+      flex: 1;
+      justify-content: space-between;
+      padding-left: 10px;
+    }
+    
+    .resource-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 60px;
+      text-align: center;
+    }
+    
+    .resource-content {
+      display: flex;
+      align-items: center;
+      gap: 0.2em;
+      height: 28px;
+    }
+    
+    .resource-icon {
+      font-size: 1.4em;
+    }
+    
+    .resource-count {
+      font-weight: bold;
+      min-width: 20px;
+      text-align: center;
+    }
+    
+    .resource-gain {
+      height: 18px;
+      margin-top: 2px;
+      color: #4CAF50;
+      font-weight: bold;
+      font-size: 0.85em;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 function updateBankUI() {
   if (!bankUI || !window.bank) return;
   
-  const bankResources = resources.map(r => `
-    <div style="display:inline-flex;align-items:center;gap:0.2em;min-width:50px;">
-      <span style="font-size:1.4em;">${r.symbol}</span>
-      <span style="color:${r.color};font-weight:bold;min-width:20px;text-align:center;">${window.bank[r.key] ?? 0}</span>
+  const bankItems = resources.map(r => `
+    <div class="resource-item">
+      <div class="resource-content">
+        <span class="resource-icon">${r.symbol}</span>
+        <span class="resource-count" style="color:${r.color}">${window.bank[r.key] ?? 0}</span>
+      </div>
     </div>
   `).join('');
   
   bankUI.innerHTML = `
-    <span style="font-weight:bold;color:#222;white-space:nowrap;margin-right:0.4em;">Bank:</span>
-    <div style="display:flex;justify-content:space-around;align-items:center;flex:1;">
-      ${bankResources}
+    <div class="resource-header">
+      <span class="resource-label">Bank:</span>
+      <div class="resource-items">
+        ${bankItems}
+      </div>
     </div>
   `;
 }
@@ -103,23 +160,23 @@ export function updateResourceUI(player, idx) {
     return;
   }
 
-  // Erstelle zwei Zeilen: eine für Ressourcen, eine für Gains
+  // Erstelle Ressourcen mit Gain Counters
   const resourceItems = resources.map(r => `
-    <div style="display:inline-flex;flex-direction:column;align-items:center;min-width:50px;">
-      <div style="display:flex;align-items:center;gap:0.2em;">
-        <span style="font-size:1.4em;">${r.symbol}</span>
-        <span style="color:${r.color};font-weight:bold;min-width:20px;text-align:center;">${player.resources[r.key]}</span>
+    <div class="resource-item">
+      <div class="resource-content">
+        <span class="resource-icon">${r.symbol}</span>
+        <span class="resource-count" style="color:${r.color}">${player.resources[r.key]}</span>
       </div>
-      ${gainTrackers[idx] && gainTrackers[idx][r.key] > 0 ? 
-        `<span style="color:#4CAF50;font-weight:bold;font-size:0.85em;margin-top:0.1em;">+${gainTrackers[idx][r.key]}</span>` : 
-        '<span style="height:1.1em;"></span>'}
+      <div class="resource-gain">
+        ${gainTrackers[idx] && gainTrackers[idx][r.key] > 0 ? `+${gainTrackers[idx][r.key]}` : ''}
+      </div>
     </div>
   `).join('');
 
   resUI.innerHTML = `
-    <div style="display:flex;align-items:center;gap:0.8em;">
-      <span style="font-weight:bold;color:#222;white-space:nowrap;">${player.name || 'Spieler ' + ((idx ?? 0) + 1)}</span>
-      <div style="display:flex;justify-content:space-around;align-items:flex-start;flex:1;">
+    <div class="resource-header">
+      <span class="resource-label">${player.name || 'Spieler ' + ((idx ?? 0) + 1)}</span>
+      <div class="resource-items">
         ${resourceItems}
       </div>
     </div>
@@ -211,9 +268,6 @@ export function handleResourceKeydown(e) {
   if (changed) {
     updateResourceUI(player, idx);
     updateBankUI();
-    // Optional: Log für Debug
-    // console.log(`Ressourcen für Spieler ${idx + 1} (${player.name}) aktualisiert:`, player.resources);
-    // console.log('Bank:', window.bank);
   }
 }
 
