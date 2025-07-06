@@ -56,6 +56,10 @@ export function buildCity(player, q, r, corner) {
 
 // Stadt bauen (Upgrade, mit Validierung)
 export function tryBuildCity(player, q, r, corner) {
+  // Prüfe, ob mindestens ein angrenzendes Tile Land ist
+  if (!hasAtLeastOneLandTileAdjacent(q, r, corner)) {
+    return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
+  }
   // Prüfe alle äquivalenten Ecken auf bestehende Siedlung/Stadt
   const equivalents = getEquivalentCorners(q, r, corner);
   for (const eq of equivalents) {
@@ -143,7 +147,7 @@ function isRoadAdjacentToCorner(road, q, r, corner) {
 }
 
 // Helper: Prüft, ob ein Tile ein Landfeld ist (kein Wasser, keine Wüste)
-function isLandTile(q, r) {
+export function isLandTile(q, r) {
   // Prüfe, ob das Tile laut tileMeshes ein Wasserfeld ist
   if (typeof window.tileMeshes === 'object') {
     const mesh = window.tileMeshes[`${q},${r}`];
@@ -166,6 +170,49 @@ function isLandTile(q, r) {
   return true;
 }
 
+// Helper: Gibt alle 3 Tiles zurück, die an eine Ecke angrenzen
+export function getTilesAdjacentToCorner(q, r, corner) {
+  const tiles = [{ q, r }]; // Das aktuelle Tile
+  
+  // Eine Ecke wird von 3 Tiles geteilt
+  // Ecke N liegt zwischen den Kanten N-1 und N
+  // Die anderen beiden Tiles sind die Nachbarn in diesen Richtungen
+  const edge1 = (corner + 5) % 6; // Vorherige Kante (N-1)
+  const edge2 = corner; // Aktuelle Kante (N)
+  
+  const [nq1, nr1] = neighborAxial(q, r, edge1);
+  const [nq2, nr2] = neighborAxial(q, r, edge2);
+  
+  tiles.push({ q: nq1, r: nr1 });
+  tiles.push({ q: nq2, r: nr2 });
+  
+  return tiles;
+}
+
+// Helper: Prüft, ob mindestens eines der angrenzenden Tiles ein Landfeld ist
+export function hasAtLeastOneLandTileAdjacent(q, r, corner) {
+  // Einfacherer Ansatz: Prüfe das aktuelle Tile und die beiden Nachbartiles
+  // die diese Ecke teilen
+  
+  // Das aktuelle Tile
+  if (isLandTile(q, r)) {
+    return true;
+  }
+  
+  // Die beiden Nachbartiles die diese Ecke teilen
+  const edge1 = (corner + 5) % 6; // Vorherige Kante
+  const edge2 = corner; // Aktuelle Kante
+  
+  const [nq1, nr1] = neighborAxial(q, r, edge1);
+  const [nq2, nr2] = neighborAxial(q, r, edge2);
+  
+  if (isLandTile(nq1, nr1) || isLandTile(nq2, nr2)) {
+    return true;
+  }
+  
+  return false;
+}
+
 // Gibt alle äquivalenten Ecken für eine physische Ecke zurück
 export function getEquivalentCorners(q, r, corner) {
   const eq = [{ q, r, corner }];
@@ -178,8 +225,8 @@ export function getEquivalentCorners(q, r, corner) {
 
 // Siedlung bauen (mit Platzierungslogik)
 export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoad = true, ignoreDistanceRule = false, ignoreResourceRule = false} = {}) {
-  if (!isLandTile(q, r)) {
-    return { success: false, reason: 'Hier kann nicht gebaut werden (kein Landfeld)' };
+  if (!hasAtLeastOneLandTileAdjacent(q, r, corner)) {
+    return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
   }
   // Prüfe alle äquivalenten Ecken auf bestehende Siedlung/Stadt
   const equivalents = getEquivalentCorners(q, r, corner);
@@ -229,9 +276,10 @@ export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoa
 
 // === Nur-Prüf-Funktion für Build-Preview (ohne Ressourcenabzug, ohne Bauen) ===
 export function canPlaceSettlement(player, q, r, corner, allPlayers, {requireRoad = true, ignoreDistanceRule = false, ignoreResourceRule = false} = {}) {
-  if (!isLandTile(q, r)) {
-    return { success: false, reason: 'Hier kann nicht gebaut werden (kein Landfeld)' };
+  if (!hasAtLeastOneLandTileAdjacent(q, r, corner)) {
+    return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
   }
+  
   // Prüfe alle äquivalenten Ecken auf bestehende Siedlung/Stadt
   const equivalents = getEquivalentCorners(q, r, corner);
   for (const other of allPlayers) {
@@ -247,10 +295,16 @@ export function canPlaceSettlement(player, q, r, corner, allPlayers, {requireRoa
   if (!ignoreResourceRule && !canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
   if (!ignoreDistanceRule && !isSettlementPlacementValid(q, r, corner, allPlayers)) return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
   if (requireRoad && !isSettlementConnectedToOwnRoad(player, q, r, corner)) return { success: false, reason: 'Keine eigene Straße an dieser Ecke' };
+  
   return { success: true };
 }
 
 export function canPlaceCity(player, q, r, corner) {
+  // Prüfe, ob mindestens ein angrenzendes Tile Land ist
+  if (!hasAtLeastOneLandTileAdjacent(q, r, corner)) {
+    return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
+  }
+  
   // Prüfe alle äquivalenten Ecken auf eigene Siedlung
   const equivalents = getEquivalentCorners(q, r, corner);
   for (const eq of equivalents) {
