@@ -104,12 +104,13 @@ export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePl
   btn.id = 'player-switch-btn';
   btn.classList.add('main-action-btn', 'player-switch-btn');
   // Style exakt wie in modules/uiDice.js für #roll-dice
-  btn.style.fontSize = '2.5em';
-  btn.style.padding = '0.4em';
-  btn.style.margin = '0';
-  btn.style.cursor = 'pointer';
-  btn.style.borderRadius = '6px';
-  btn.style.aspectRatio = 'auto';
+  btn.style.fontSize = 'clamp(1.5em, 2.5vw, 2.5em)';
+  btn.style.padding = 'clamp(0.3em, 0.5vw, 0.4em)';
+  btn.style.margin = 'clamp(0.1em, 0.2vw, 0)';
+  btn.style.borderRadius = 'clamp(4px, 0.5vw, 6px)';
+  btn.style.aspectRatio = '1 / 1';
+  btn.style.width = 'clamp(2.4em, 3.8vw, 3.4em)';
+  btn.style.height = 'clamp(2.4em, 3.8vw, 3.4em)';
   btn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
   btn.style.border = 'none';
   btn.style.boxShadow = '0 2px 8px #0001';
@@ -118,8 +119,6 @@ export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePl
   btn.style.fontFamily = "'Montserrat', Arial, sans-serif";
   btn.style.fontWeight = '700';
   btn.style.color = '#222';
-  btn.style.width = 'auto';
-  btn.style.height = 'auto';
   btn.style.display = 'flex';
   btn.style.flexDirection = 'column';
   btn.style.alignItems = 'center';
