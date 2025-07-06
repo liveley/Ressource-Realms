@@ -24,6 +24,8 @@ import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
 import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
+import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
+import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
 
 window.players = window.players || [
   {
@@ -153,6 +155,8 @@ window.addEventListener('startGame', () => {
 });
 
 // === Initialisiere Spielfeld und UI erst nach Spielstart ===
+let devCardsUI = null;
+
 async function startGame() {
   if (gameInitialized) return;
   
@@ -204,6 +208,7 @@ async function startGame() {
       window.activePlayerIdx = idx;
       updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
       updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+      if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
     }, actionBar);
     console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
   } catch (e) {
@@ -212,10 +217,26 @@ async function startGame() {
 
   try {
     createResourceUI();
-    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
-    console.log('Ressourcen-UI erstellt:', document.getElementById('ressource-ui'));
+    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+    // === Entwicklungskarten-UI einbinden (nur einmal anhängen, nach createResourceUI) ===
+    if (!devCardsUI) {
+      devCardsUI = createDevelopmentCardsUI({
+        getPlayer: () => window.players[activePlayerIdx],
+        getBank: () => window.bank,
+        getDeck: () => window.developmentDeck,
+        onBuy: () => {
+          updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+        },
+        getScene: () => scene,
+        getTileMeshes: () => tileMeshes
+      });
+      const container = document.getElementById('resource-bank-container');
+      if (container) container.appendChild(devCardsUI);
+    }
+    if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
+    console.log('Ressourcen- und Entwicklungskarten-UI erstellt:', document.getElementById('ressource-ui'), devCardsUI);
   } catch (e) {
-    console.error('Fehler beim Erstellen der Ressourcen-UI:', e);
+    console.error('Fehler beim Erstellen der Ressourcen- oder Entwicklungskarten-UI:', e);
   }
 
   try {
@@ -280,6 +301,10 @@ window.bank = {
   ore: 19
 };
 
+// === Entwicklungskarten-Deck und Spieler-Setup ===
+window.developmentDeck = createDevelopmentDeck();
+window.players.forEach(initPlayerDevCards);
+
 // === Main-Menu-Start-Button-Handler ===
 window.addEventListener('DOMContentLoaded', () => {
   console.log('DOM geladen, versuche Start-Button-Handler zu setzen...');
@@ -307,69 +332,6 @@ controls.maxPolarAngle = Math.PI * 0.44; // ca. 79°, verhindert "unter das Feld
 controls.minDistance = 10;  // Näher ranzoomen von oben möglich
 controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
 
-// Game board initialization - now handled by preloading system
-/*
-scene.add(createHexGrid());
-createDirectionArrows(scene);
-
-setupLights(scene);
-*/
-
-// Nach dem Erstellen des Spielfelds: Number Tokens hinzufügen - now handled by preloading
-// addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
-
-// === Robber erst initialisieren, wenn das Wüstenfeld-Mesh geladen ist === - now handled by preloading
-/*
-const initialRobberTileKey = '0,0';
-function waitForDesertTileAndInitRobber(retries = 20) {
-  if (tileMeshes[initialRobberTileKey]) {
-    // Number token colors setzen
-    setTimeout(() => {
-      console.log("Setting initial token colors for robber on desert");
-      updateNumberTokensForRobber(initialRobberTileKey);
-    }, 200);
-    // Robber initialisieren
-    console.log("Initializing robber on the desert tile");
-    initializeRobber(scene, null, tileMeshes);
-  } else if (retries > 0) {
-    setTimeout(() => waitForDesertTileAndInitRobber(retries - 1), 100);
-  } else {
-    console.warn("Desert tile mesh (0,0) not found after waiting. Robber not initialized.");
-  }
-}
-waitForDesertTileAndInitRobber();
-
-// Platzhalter-Spielkarten erstellen
-createPlaceholderCards(scene);
-// === JPEG-Karten laden und zur Szene hinzufügen ===
-const cardManager = new CardManager();
-cardManager.loadAllCards().catch(error => console.error("Fehler beim Laden der Karten:", error));
-*/
-
-// Ressourcen-UI anzeigen - now handled by startGame()
-// createResourceUI();
-
-// Game mode variables - now handled at the top of the file
-// let buildMode = 'settlement'; // 'settlement' or 'city'
-// let activePlayerIdx = 0;
-
-// Initial resource UI update - now handled by startGame()
-// updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Show initial player resources
-
-// UI-Elemente für Würfeln - now handled by startGame()
-/*
-createDiceUI(() => {
-  throwPhysicsDice(scene);
-  window.setDiceResultFromPhysics = (result) => {
-    setDiceResult(result.sum); // Zeige die Summe im UI
-    window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
-  };
-});
-*/
-//createInfoOverlayToggle();  //auskommentiert wegen doppelter Initialisierung
-
-// Info-Overlay und Mousemove-Handling für Tile-Infos
-//initTileInfoOverlay(scene, camera); //auskommentiert wegen doppelter Initialisierung
 
 // Create a raycaster for robber tile selection
 const raycaster = new THREE.Raycaster();
@@ -523,27 +485,6 @@ window.addEventListener('diceRolled', (e) => {
     }
 });
 
-// === Build Mode UI ===  auskommentiert, da doppelte Initialisierung
-//createBuildUI({
-//  players: window.players,
-//  getBuildMode: () => buildMode,
-//  setBuildMode: (mode) => { buildMode = mode; },
-//  getActivePlayerIdx: () => activePlayerIdx,
-//  setActivePlayerIdx: (idx) => {
-//    activePlayerIdx = idx;
-//    window.activePlayerIdx = idx;
-//    updateResourceUI(players[activePlayerIdx]); // Update resource UI on player switch
-//    updatePlayerOverviews(players, () => activePlayerIdx);
-//    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // Update resource UI on player switch
-//  }
-//});
-// === Spielerwechsel-Button UI === auskommentiert, da doppelte Initialisierung
-//placePlayerSwitchButton(players, () => activePlayerIdx, (idx) => {
-//  activePlayerIdx = idx;
-//  window.activePlayerIdx = idx;
-//  updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-//  updatePlayerOverviews(window.players, () => activePlayerIdx);
-//});
 
 // === Build Event Handler Setup ===
 setupBuildEventHandler({
@@ -594,3 +535,10 @@ window.addEventListener('keydown', (e) => {
         createDebugDiceIndicator(window.debugDiceEnabled, 7);
     }
 });
+
+// Globale Hilfsfunktion für Entwicklungskarten-Logik (z.B. Monopol)
+window.getAllPlayers = function() {
+  return window.players;
+};
+
+window.startRobberPlacement = startRobberPlacement;
