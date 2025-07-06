@@ -99,9 +99,11 @@ export function showPlayerSwitchButton(players, getActivePlayerIdx, setActivePla
 export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePlayerIdx, parent) {
   // Prüfe, ob der Button schon existiert
   if (document.getElementById('player-switch-btn')) return;
-  // Button im Stil des Würfeln- und Bauen-Buttons
+  // === Würfeln-Button Style 1:1 übernehmen ===
   const btn = document.createElement('button');
   btn.id = 'player-switch-btn';
+  btn.classList.add('main-action-btn', 'player-switch-btn');
+  // Style exakt wie in modules/uiDice.js für #roll-dice
   btn.style.fontSize = '2.5em';
   btn.style.padding = '0.4em';
   btn.style.margin = '0';
@@ -116,25 +118,22 @@ export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePl
   btn.style.fontFamily = "'Montserrat', Arial, sans-serif";
   btn.style.fontWeight = '700';
   btn.style.color = '#222';
-  btn.style.minWidth = 'clamp(100px, 14vw, 180px)';
-  btn.style.minHeight = 'clamp(56px, 3.5em, 80px)';
-  btn.style.padding = 'clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em)';
-  btn.style.boxSizing = 'border-box';
+  btn.style.width = 'auto';
+  btn.style.height = 'auto';
+  btn.style.display = 'flex';
+  btn.style.flexDirection = 'column';
+  btn.style.alignItems = 'center';
+  btn.style.justifyContent = 'center';
 
-  // Emoji (gleiche Größe wie Würfeln)
+  // Emoji (wie Würfeln-Button)
   const emoji = document.createElement('span');
   emoji.textContent = '🔄';
   emoji.style.fontSize = '1em';
   emoji.style.lineHeight = '1';
+  emoji.style.flex = '0 0 auto';
   btn.appendChild(emoji);
 
-  // Text "Spieler" darunter, kleiner
-  const label = document.createElement('span');
-  label.textContent = 'Spieler';
-  label.style.fontSize = '0.32em';
-  label.style.color = '#222';
-  label.style.marginTop = '0.1em';
-  btn.appendChild(label);
+  // Kein Label/Text darunter für exakten Größenvergleich
 
   // Klick-Handler: Wechselt zum nächsten Spieler
   btn.onclick = () => {
