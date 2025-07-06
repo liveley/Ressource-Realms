@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { loadTile } from '../loader.js'; // Import the function to load a single tile
 import { initializeHighlighting, animateHalos, testBorderHighlighting } from './tileHighlight.js';
+import { getEquivalentCorners } from './buildLogic.js';
 
 const HEX_RADIUS = 3;
 const hexGroup = new THREE.Group();
@@ -431,6 +432,12 @@ window.addEventListener('diceRolled', (e) => {
   // Reset gain trackers am Anfang des Events in uiResources.js
   
   Object.entries(tileMeshes).forEach(([key, mesh]) => {
+    // Blockiere Ressourcenverteilung, wenn Räuber auf diesem Feld steht
+    if (typeof window.blockedTileKey !== 'undefined' && key === window.blockedTileKey) {
+      // Optional: Debug-Log
+      console.log(`[Räuber] Ressourcenverteilung auf Feld ${key} blockiert.`);
+      return;
+    }
     if (tileNumbers[key] === number) {
       // === Ressourcenverteilung (fix: alle angrenzenden Hexes/Corners prüfen) ===
       // Ermittle Rohstofftyp aus userData.type (sicher und eindeutig)
@@ -551,3 +558,163 @@ export function updateNumberTokensForRobber(robberTileKey) {
         });
     }
 }
+
+// === Funktion: Nach Räuberplatzierung einen Rohstoff von einem betroffenen Spieler stehlen ===
+function handleRobberSteal(q, r) {
+  if (!window.players || typeof window.activePlayerIdx !== 'number') return;
+  const activePlayer = window.players[window.activePlayerIdx];
+  // Prüfe alle 6 Ecken des Hexfelds und sammle alle Opfer
+  let allVictims = [];
+  let victimSet = new Set();
+  for (let corner = 0; corner < 6; corner++) {
+    const equivalents = typeof getEquivalentCorners === 'function' ? getEquivalentCorners(q, r, corner) : [{q, r, corner}];
+    window.players.forEach((p, idx) => {
+      if (idx === window.activePlayerIdx) return;
+      const isVictim = equivalents.some(eq =>
+        (p.settlements && p.settlements.some(s => s.q === eq.q && s.r === eq.r && s.corner === eq.corner)) ||
+        (p.cities && p.cities.some(c => c.q === eq.q && c.r === eq.r && c.corner === eq.corner))
+      );
+      if (isVictim && !victimSet.has(idx)) {
+        allVictims.push(p);
+        victimSet.add(idx);
+      }
+    });
+  }
+  if (allVictims.length === 0) {
+    showRobberFeedback('Kein Spieler zum Stehlen an diesem Feld.', '#888');
+    return;
+  }
+  // Wenn nur ein Opfer: direkt stehlen
+  if (allVictims.length === 1) {
+    stealRandomResource(activePlayer, allVictims[0]);
+    return;
+  }
+  // Mehrere Opfer: UI-Auswahl
+  showRobberVictimDialog(activePlayer, allVictims);
+}
+
+function stealRandomResource(stealer, victim) {
+  // Erstelle Liste aller Rohstoffe, die der Spieler hat
+  const resourceKeys = Object.keys(victim.resources).filter(k => victim.resources[k] > 0);
+  if (resourceKeys.length === 0) {
+    showRobberFeedback(`${victim.name} hat keine Rohstoffe zum Stehlen.`, '#888');
+    return;
+  }
+  const chosen = resourceKeys[Math.floor(Math.random() * resourceKeys.length)];
+  victim.resources[chosen]--;
+  stealer.resources[chosen] = (stealer.resources[chosen] || 0) + 1;
+  showRobberFeedback(`${stealer.name} stiehlt 1x ${chosen} von ${victim.name}!`, '#2a8c2a');
+  if (typeof window.updateResourceUI === 'function') window.updateResourceUI(stealer);
+  if (typeof window.updateResourceUI === 'function') window.updateResourceUI(victim);
+}
+
+function showRobberVictimDialog(stealer, victims) {
+  // Einfaches Dialog-Overlay
+  let overlay = document.getElementById('robber-victim-overlay');
+  if (overlay) overlay.remove();
+  overlay = document.createElement('div');
+  overlay.id = 'robber-victim-overlay';
+  overlay.style.position = 'fixed';
+  overlay.style.left = '0';
+  overlay.style.top = '0';
+  overlay.style.width = '100vw';
+  overlay.style.height = '100vh';
+  overlay.style.background = 'rgba(0,0,0,0.25)';
+  overlay.style.zIndex = '100001';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+
+  const dialog = document.createElement('div');
+  dialog.style.background = 'rgba(255,255,255,0.98)';
+  dialog.style.borderRadius = '0.7em';
+  dialog.style.boxShadow = '0 8px 32px #0004';
+  dialog.style.padding = '2em 2.5em 1.5em 2.5em';
+  dialog.style.display = 'flex';
+  dialog.style.flexDirection = 'column';
+  dialog.style.alignItems = 'center';
+  dialog.style.gap = '1.2em';
+  dialog.style.fontFamily = 'Montserrat, Arial, sans-serif';
+  dialog.style.minWidth = '320px';
+  dialog.style.maxWidth = '90vw';
+
+  const title = document.createElement('div');
+  title.textContent = 'Wähle einen Spieler zum Stehlen:';
+  title.style.fontWeight = 'bold';
+  title.style.fontSize = '1.2em';
+  title.style.marginBottom = '0.5em';
+  dialog.appendChild(title);
+
+  victims.forEach(victim => {
+    const btn = document.createElement('button');
+    btn.textContent = victim.name;
+    btn.style.background = '#ffe066';
+    btn.style.color = '#222';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '0.3em';
+    btn.style.padding = '0.5em 2em';
+    btn.style.fontWeight = 'bold';
+    btn.style.fontSize = '1.1em';
+    btn.style.cursor = 'pointer';
+    btn.style.margin = '0.5em 0';
+    btn.onclick = () => {
+      stealRandomResource(stealer, victim);
+      overlay.remove();
+    };
+    dialog.appendChild(btn);
+  });
+
+  // Abbrechen-Button
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Abbrechen';
+  cancelBtn.style.background = '#bbb';
+  cancelBtn.style.color = '#222';
+  cancelBtn.style.border = 'none';
+  cancelBtn.style.borderRadius = '0.3em';
+  cancelBtn.style.padding = '0.5em 2em';
+  cancelBtn.style.fontWeight = 'bold';
+  cancelBtn.style.fontSize = '1.1em';
+  cancelBtn.style.cursor = 'pointer';
+  cancelBtn.style.marginTop = '1.2em';
+  cancelBtn.onclick = () => overlay.remove();
+  dialog.appendChild(cancelBtn);
+
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+}
+
+function showRobberFeedback(msg, color = '#2a8c2a', duration = 2500) {
+  let el = document.getElementById('robber-feedback');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'robber-feedback';
+    el.style.position = 'fixed';
+    el.style.left = '50%';
+    el.style.bottom = '4.5em';
+    el.style.transform = 'translateX(-50%)';
+    el.style.background = 'rgba(255,255,255,0.95)';
+    el.style.color = color;
+    el.style.fontWeight = 'bold';
+    el.style.fontSize = '1.15em';
+    el.style.fontFamily = 'Montserrat, Arial, sans-serif';
+    el.style.padding = '0.7em 2.2em';
+    el.style.borderRadius = '0.7em';
+    el.style.boxShadow = '0 4px 24px #0002';
+    el.style.zIndex = '99999';
+    el.style.textAlign = 'center';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.color = color;
+  el.style.display = 'block';
+  clearTimeout(el._hideTimeout);
+  el._hideTimeout = setTimeout(() => { el.style.display = 'none'; }, duration);
+}
+
+// Event-Listener für Räuberbewegung: Stehlen nach Platzierung
+window.addEventListener('robberMoved', (e) => {
+    // ...existing code...
+    // Stehlen-Logik aufrufen
+    // Nur q, r übergeben, alle 6 Ecken werden geprüft
+    handleRobberSteal(e.detail.q, e.detail.r);
+});
