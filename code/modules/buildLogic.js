@@ -1,12 +1,7 @@
 // buildLogic.js
 // Zentrale Spiellogik für Siedlungen und Städte
 
-import { 
-  initializeVictoryPoints, 
-  updateLongestRoad, 
-  getCanonicalRoad,
-  updateAllVictoryPoints
-} from './victoryPoints.js';
+import { initializeVictoryPoints, updateAllVictoryPoints, updateLongestRoad, getCanonicalRoad } from './victoryPoints.js';
 
 // Beispiel-Spielerstruktur (kann später erweitert werden)
 export const players = [

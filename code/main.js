@@ -26,6 +26,7 @@ import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
 import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
+import { createVictoryPointsDebugUI } from './modules/victoryPointsDebug.js';
 import { createSettingsMenu } from './modules/uiSettingsMenu.js';
 import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDisplay, calculateLongestRoad } from './modules/victoryPoints.js';
 import { enableRoadDebug, disableRoadDebug, analyzePlayerRoads, testRoadConnections, toggleRoadDebugTools, isRoadDebugToolsVisible } from './modules/debugging/longestRoadDebug.js';
@@ -64,6 +65,7 @@ initializeVictoryPoints(window.players);
 window.updateAllVictoryPoints = updateAllVictoryPoints;
 window.initializeVictoryPoints = initializeVictoryPoints;
 window.getVictoryPointsForDisplay = getVictoryPointsForDisplay;
+window.debugRoadConnections = debugRoadConnections;
 
 window.updateResourceUI = updateResourceUI;
 
@@ -152,7 +154,7 @@ window.addEventListener('initializeGame', async () => {
   console.log('Game initialization requested...');
   try {
     // First preload the game board
-    console.log('Starting preload...');
+    console.log('Starting preload...');    
     await preloadGameBoard();
     console.log('Game board preloaded, now starting UI...');
     
@@ -197,7 +199,7 @@ async function startGame() {
   console.log('Zeige Spielfeld...');
   renderer.domElement.style.visibility = 'visible';
   renderer.domElement.classList.remove('board-hidden');
-  console.log('Spielfeld sollte jetzt sichtbar sein...');
+  console.log('Spielfeld sollte jetzt sichtbar sein...');  
   
   try {
     // === UI: Build-Menü (Bauen) ===
@@ -533,6 +535,14 @@ async function startGame() {
     tryBuildSettlement,
     tryBuildCity
   );
+
+  // Create debug UI for victory points
+  try {
+    createVictoryPointsDebugUI();
+    console.log('Victory Points Debug UI created');
+  } catch (e) {
+    console.error('Error creating Victory Points Debug UI:', e);
+  }
 
   // Mark game as initialized
   gameInitialized = true;

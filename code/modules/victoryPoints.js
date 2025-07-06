@@ -2,19 +2,9 @@
 // Comprehensive Victory Points System for Catan 3D
 
 /**
- * Victory Points Sexport function addVictoryPointCard(player) {
-  if (!player.victoryPoints) initializeVictoryPoints([player]);
-  
-  // Track VP cards separately for proper counting
-  if (!player.victoryPointCardsCount) player.victoryPointCardsCount = 0;
-  
-  player.victoryPointCardsCount += 1;
-  player.victoryPoints.hiddenVP += 1;
-  
-  console.log(`Player ${player.name || 'Unknown'} received VP card (${player.victoryPointCardsCount} total)`);
-  
-  checkWinCondition(player);
-  return true;les all aspects of victory point calculation and tracking:
+ * Victory Points System
+ * 
+ * Handles all aspects of victory point calculation and tracking:
  * - Base VP sources (settlements, cities, VP cards)
  * - Special VP sources (Longest Road, Largest Army)
  * - Hidden VP tracking
@@ -41,7 +31,6 @@ export function initializeVictoryPoints(players) {
     if (!player.knightsPlayed) player.knightsPlayed = 0;
     if (!player.roads) player.roads = [];
     if (!player.longestRoadLength) player.longestRoadLength = 0;
-    if (!player.victoryPointCardsCount) player.victoryPointCardsCount = 0;
   });
 }
 
@@ -88,10 +77,6 @@ export function calculatePublicVictoryPoints(player) {
  * @param {Object} player - The player object
  */
 export function updateSettlementVP(player) {
-  if (!player) {
-    console.error('updateSettlementVP: player is null/undefined');
-    return;
-  }
   if (!player.victoryPoints) initializeVictoryPoints([player]);
   player.victoryPoints.settlements = (player.settlements || []).length;
   checkWinCondition(player);
@@ -102,10 +87,6 @@ export function updateSettlementVP(player) {
  * @param {Object} player - The player object
  */
 export function updateCityVP(player) {
-  if (!player) {
-    console.error('updateCityVP: player is null/undefined');
-    return;
-  }
   if (!player.victoryPoints) initializeVictoryPoints([player]);
   player.victoryPoints.cities = (player.cities || []).length * 2;
   checkWinCondition(player);
@@ -114,21 +95,11 @@ export function updateCityVP(player) {
 /**
  * Add victory point card (immediately adds to hidden VP)
  * @param {Object} player - The player object
- * @returns {boolean} - True if card was added, false if limit reached
  */
 export function addVictoryPointCard(player) {
   if (!player.victoryPoints) initializeVictoryPoints([player]);
-  
-  // Track VP cards separately for proper counting
-  if (!player.victoryPointCardsCount) player.victoryPointCardsCount = 0;
-  
-  player.victoryPointCardsCount += 1;
   player.victoryPoints.hiddenVP += 1;
-  
-  console.log(`Player ${player.name || 'Unknown'} received VP card (${player.victoryPointCardsCount} total)`);
-  
   checkWinCondition(player);
-  return true;
 }
 
 /**
@@ -200,9 +171,27 @@ function areRoadsConnected(road1, road2) {
   const vertices1 = getRoadVertices(road1);
   const vertices2 = getRoadVertices(road2);
   
+  // Debug logging (only if enabled)
+  if (window.DEBUG_ROAD_CONNECTIONS) {
+    console.log(`Checking connection between road ${getRoadKey(road1)} and ${getRoadKey(road2)}`);
+    console.log(`Road 1 vertices:`, vertices1);
+    console.log(`Road 2 vertices:`, vertices2);
+  }
+  
   const connected = vertices1.some(v1 => 
-    vertices2.some(v2 => areVerticesEqual(v1, v2))
+    vertices2.some(v2 => {
+      // Check if vertices are at the same physical location
+      const same = areVerticesEqual(v1, v2);
+      if (same && window.DEBUG_ROAD_CONNECTIONS) {
+        console.log(`Connection found at vertex:`, v1);
+      }
+      return same;
+    })
   );
+  
+  if (window.DEBUG_ROAD_CONNECTIONS) {
+    console.log(`Connected:`, connected);
+  }
   return connected;
 }
 
@@ -230,37 +219,51 @@ function areVerticesEqual(v1, v2) {
 }
 
 /**
- * Get all equivalent representations of a vertex (simplified based on axial coordinates)
+ * Get all equivalent representations of a vertex
  * @param {Object} vertex - Vertex object {q, r, corner}
  * @returns {Array} Array of equivalent vertex objects
  */
 function getEquivalentVertices(vertex) {
   const { q, r, corner } = vertex;
-  
-  // Each vertex is shared by exactly 3 tiles
-  // Using the axial coordinate system with directions: [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  // For corner N on tile (q,r), the equivalent representations are:
-  // - Current tile: (q, r, corner)
-  // - Neighbor in direction (corner-1)%6: corner becomes (corner+2)%6
-  // - Neighbor in direction corner: corner becomes (corner+4)%6
-  
-  const directions = [
-    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  ];
-  
   const equivalents = [{ q, r, corner }];
   
-  // Add representation from neighbor in direction (corner-1)%6
-  const dir1 = (corner + 5) % 6; // (corner - 1) % 6 with wrap-around
-  const neighbor1 = [q + directions[dir1][0], r + directions[dir1][1]];
-  equivalents.push({ q: neighbor1[0], r: neighbor1[1], corner: (corner + 2) % 6 });
+  // Map corner to its equivalent representations in neighboring tiles
+  // Each corner of a hex is shared by 3 tiles
+  const cornerMappings = {
+    0: [
+      { q: q, r: r, corner: 0 },
+      { q: q, r: r - 1, corner: 4 },
+      { q: q + 1, r: r - 1, corner: 5 }
+    ],
+    1: [
+      { q: q, r: r, corner: 1 },
+      { q: q + 1, r: r - 1, corner: 4 },
+      { q: q + 1, r: r, corner: 5 }
+    ],
+    2: [
+      { q: q, r: r, corner: 2 },
+      { q: q + 1, r: r, corner: 0 },
+      { q: q + 1, r: r + 1, corner: 5 }
+    ],
+    3: [
+      { q: q, r: r, corner: 3 },
+      { q: q + 1, r: r + 1, corner: 0 },
+      { q: q, r: r + 1, corner: 1 }
+    ],
+    4: [
+      { q: q, r: r, corner: 4 },
+      { q: q, r: r + 1, corner: 2 },
+      { q: q - 1, r: r + 1, corner: 1 }
+    ],
+    5: [
+      { q: q, r: r, corner: 5 },
+      { q: q - 1, r: r + 1, corner: 2 },
+      { q: q - 1, r: r, corner: 3 }
+    ]
+  };
   
-  // Add representation from neighbor in direction corner
-  const dir2 = corner;
-  const neighbor2 = [q + directions[dir2][0], r + directions[dir2][1]];
-  equivalents.push({ q: neighbor2[0], r: neighbor2[1], corner: (corner + 4) % 6 });
-  
-  return equivalents;
+  const mappings = cornerMappings[corner] || [{ q, r, corner }];
+  return mappings;
 }
 
 /**
@@ -308,8 +311,8 @@ function buildSimpleRoadAdjacencyList(roads) {
       
       const key2 = getRoadKey(road2);
       
-      // Check if roads are connected (share a vertex)
-      if (areRoadsConnectedVertex(road1, road2)) {
+      // Check if roads are adjacent (share a vertex)
+      if (areRoadsAdjacent(road1, road2)) {
         adjacencyList.get(key1).push(key2);
       }
     });
@@ -319,54 +322,22 @@ function buildSimpleRoadAdjacencyList(roads) {
 }
 
 /**
- * Check if two roads are connected using the EXACT same logic as the game's isRoadOccupied
- * @param {Object} road1 - First road {q, r, edge}
- * @param {Object} road2 - Second road {q, r, edge}
- * @returns {boolean} True if roads are connected
+ * Simple check if two roads are adjacent (share a vertex)
+ * @param {Object} road1 - First road
+ * @param {Object} road2 - Second road
+ * @returns {boolean} True if roads are adjacent
  */
-function areRoadsConnectedVertex(road1, road2) {
-  const directions = [
-    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  ];
+function areRoadsAdjacent(road1, road2) {
+  // Get the endpoints of each road
+  const endpoints1 = getRoadEndpoints(road1);
+  const endpoints2 = getRoadEndpoints(road2);
   
-  // Method 1: Same physical edge (different tile perspectives)
-  // This replicates the exact logic from isRoadOccupied
-  const [nq1, nr1] = [road1.q + directions[road1.edge][0], road1.r + directions[road1.edge][1]];
-  const oppositeEdge1 = (road1.edge + 3) % 6;
-  
-  if (nq1 === road2.q && nr1 === road2.r && oppositeEdge1 === road2.edge) {
-    return true; // Same physical edge
-  }
-  
-  const [nq2, nr2] = [road2.q + directions[road2.edge][0], road2.r + directions[road2.edge][1]];
-  const oppositeEdge2 = (road2.edge + 3) % 6;
-  
-  if (nq2 === road1.q && nr2 === road1.r && oppositeEdge2 === road1.edge) {
-    return true; // Same physical edge (other direction)
-  }
-  
-  // Method 2: Adjacent roads on same tile (share a vertex)
-  if (road1.q === road2.q && road1.r === road2.r) {
-    const edgeDiff = Math.abs(road1.edge - road2.edge);
-    if (edgeDiff === 1 || edgeDiff === 5) { // Adjacent edges (including wrap-around 0-5)
-      return true;
-    }
-  }
-  
-  // Method 3: Roads on different tiles that share a vertex
-  // Use a more robust approach - check if roads share any vertex
-  const vertices1 = getRoadVertices(road1);
-  const vertices2 = getRoadVertices(road2);
-  
-  for (const v1 of vertices1) {
-    for (const v2 of vertices2) {
-      if (areVerticesEqual(v1, v2)) {
-        return true;
-      }
-    }
-  }
-  
-  return false;
+  // Check if any endpoint of road1 matches any endpoint of road2
+  return endpoints1.some(ep1 => 
+    endpoints2.some(ep2 => 
+      Math.abs(ep1.x - ep2.x) < 0.001 && Math.abs(ep1.y - ep2.y) < 0.001
+    )
+  );
 }
 
 /**
@@ -456,10 +427,7 @@ function getRoadKey(road) {
 export function updateLongestRoad(players) {
   if (!players || players.length === 0) return;
   
-  // Debug logging (only if enabled)
-  if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-    console.log('Updating longest road for', players.length, 'players');
-  }
+  console.log('Updating longest road for', players.length, 'players');
   
   // Calculate road lengths for all players
   const roadLengths = players.map(player => ({
@@ -467,18 +435,14 @@ export function updateLongestRoad(players) {
     length: calculateLongestRoad(player)
   }));
   
-  if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-    console.log('Road lengths:', roadLengths.map(r => ({ name: r.player.name, length: r.length })));
-  }
+  console.log('Road lengths:', roadLengths.map(r => ({ name: r.player.name, length: r.length })));
   
   // Find the longest road (must be at least 5)
   const validRoads = roadLengths.filter(item => item.length >= 5);
   
   if (validRoads.length === 0) {
     // No one has longest road
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log('No player has 5+ roads for longest road');
-    }
+    console.log('No player has 5+ roads for longest road');
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.longestRoad = 0;
@@ -496,42 +460,20 @@ export function updateLongestRoad(players) {
   
   if (winners.length === 1) {
     // Clear winner
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log(`${winners[0].player.name} gets longest road with ${maxLength} roads`);
-    }
+    console.log(`${winners[0].player.name} gets longest road with ${maxLength} roads`);
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.longestRoad = (player === winners[0].player) ? 2 : 0;
       }
     });
   } else {
-    // Tie - check who currently has the longest road achievement
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log(`Longest road tie at ${maxLength} roads between:`, winners.map(w => w.player.name));
-    }
-    const currentHolder = players.find(player => player.victoryPoints?.longestRoad > 0);
-    
-    if (currentHolder && winners.some(w => w.player === currentHolder)) {
-      // Current holder is tied, they keep it
-      if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-        console.log(`${currentHolder.name} keeps longest road (tie-breaker rule)`);
+    // Tie - no one gets the bonus
+    console.log('Longest road tie, no one gets it');
+    players.forEach(player => {
+      if (player.victoryPoints) {
+        player.victoryPoints.longestRoad = 0;
       }
-      players.forEach(player => {
-        if (player.victoryPoints) {
-          player.victoryPoints.longestRoad = (player === currentHolder) ? 2 : 0;
-        }
-      });
-    } else {
-      // No current holder among tied players, first tied player gets it
-      if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-        console.log(`${winners[0].player.name} gets longest road (first to achieve tie)`);
-      }
-      players.forEach(player => {
-        if (player.victoryPoints) {
-          player.victoryPoints.longestRoad = (player === winners[0].player) ? 2 : 0;
-        }
-      });
-    }
+    });
   }
   
   // Store road lengths for display
@@ -548,25 +490,18 @@ export function updateLongestRoad(players) {
 export function updateLargestArmy(players) {
   if (!players || players.length === 0) return;
   
-  // Debug logging (only if enabled)
-  if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-    console.log('Updating largest army for', players.length, 'players');
-  }
+  console.log('Updating largest army for', players.length, 'players');
   
   // Find players with at least 3 knights played
   const validArmies = players
     .filter(player => (player.knightsPlayed || 0) >= 3)
     .map(player => ({ player, knights: player.knightsPlayed || 0 }));
     
-  if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-    console.log('Valid armies:', validArmies.map(a => ({ name: a.player.name, knights: a.knights })));
-  }
+  console.log('Valid armies:', validArmies.map(a => ({ name: a.player.name, knights: a.knights })));
   
   if (validArmies.length === 0) {
     // No one has largest army
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log('No player has 3+ knights for largest army');
-    }
+    console.log('No player has 3+ knights for largest army');
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.largestArmy = 0;
@@ -584,29 +519,20 @@ export function updateLargestArmy(players) {
   
   if (winners.length === 1) {
     // Clear winner
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log(`${winners[0].player.name} gets largest army with ${maxKnights} knights`);
-    }
+    console.log(`${winners[0].player.name} gets largest army with ${maxKnights} knights`);
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.largestArmy = (player === winners[0].player) ? 2 : 0;
       }
     });
   } else {
-    // Tie - current holder keeps it, or first player gets it
-    const currentHolder = players.find(player => player.victoryPoints?.largestArmy > 0);
-    
-    if (currentHolder && winners.some(w => w.player === currentHolder)) {
-      // Current holder is tied, they keep it
-      // (keine Änderung nötig)
-    } else {
-      // No current holder among tied players, first tied player gets it
-      players.forEach(player => {
-        if (player.victoryPoints) {
-          player.victoryPoints.largestArmy = (player === winners[0].player) ? 2 : 0;
-        }
-      });
-    }
+    // Tie - no one gets the bonus
+    console.log('Largest army tie, no one gets it');
+    players.forEach(player => {
+      if (player.victoryPoints) {
+        player.victoryPoints.largestArmy = 0;
+      }
+    });
   }
 }
 
@@ -629,18 +555,9 @@ export function playKnight(player, allPlayers) {
  * @returns {boolean} True if player has won
  */
 export function checkWinCondition(player) {
-  // Prevent multiple win triggers
-  if (typeof window !== 'undefined' && window.gameWon) {
-    return false;
-  }
-  
   const totalVP = calculateVictoryPoints(player, true);
   
   if (totalVP >= 10) {
-    // Set immediately to prevent race conditions
-    if (typeof window !== 'undefined') {
-      window.gameWon = true;
-    }
     // Player has won!
     triggerGameWin(player, totalVP);
     return true;
@@ -711,9 +628,7 @@ function triggerGameWin(winner, totalVP) {
   playAgainBtn.style.fontWeight = 'bold';
   playAgainBtn.onclick = () => {
     // Reload the page for a new game
-    if (typeof window !== 'undefined' && window.location) {
-      window.location.reload();
-    }
+    window.location.reload();
   };
   
   winOverlay.appendChild(winMessage);
@@ -723,17 +638,13 @@ function triggerGameWin(winner, totalVP) {
   document.body.appendChild(winOverlay);
   
   // Disable further game actions
-  if (typeof window !== 'undefined') {
-    window.gameWon = true;
-  }
+  window.gameWon = true;
   
   // Fire custom event
-  if (typeof window !== 'undefined' && window.dispatchEvent) {
-    const winEvent = new CustomEvent('gameWon', {
-      detail: { winner, totalVP }
-    });
-    window.dispatchEvent(winEvent);
-  }
+  const winEvent = new CustomEvent('gameWon', {
+    detail: { winner, totalVP }
+  });
+  window.dispatchEvent(winEvent);
 }
 
 /**
@@ -802,29 +713,35 @@ export function getVictoryPointsForDisplay(player, isCurrentPlayer = false) {
 }
 
 /**
- * Get canonical road representation to prevent duplicates
- * Roads can be represented from either end, so we normalize to a standard form
- * @param {Object} road - Road object with q, r, edge
- * @returns {Object} Canonical road representation
+ * Debug function to test road connections
+ * @param {Array} roads - Array of road objects
  */
-export function getCanonicalRoad(road) {
-  const { q, r, edge } = road;
+export function debugRoadConnections(roads) {
+  console.log('\n=== DEBUG ROAD CONNECTIONS ===');
+  console.log('Roads:', roads);
   
-  // Calculate neighbor tile coordinates
-  const directions = [
-    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  ];
-  
-  const [nq, nr] = [q + directions[edge][0], r + directions[edge][1]];
-  const neighborEdge = (edge + 3) % 6;
-  
-  // Choose the canonical representation based on tile coordinates
-  // Use lexicographic ordering: smaller q first, then smaller r, then smaller edge
-  if (q < nq || (q === nq && r < nr) || (q === nq && r === nr && edge < neighborEdge)) {
-    return { q, r, edge };
-  } else {
-    return { q: nq, r: nr, edge: neighborEdge };
+  if (!roads || roads.length === 0) {
+    console.log('No roads to debug');
+    return;
   }
+  
+  // Build adjacency list
+  const adjacencyList = buildSimpleRoadAdjacencyList(roads);
+  console.log('Road adjacency list:', adjacencyList);
+  
+  // Test connections
+  roads.forEach((road1, i) => {
+    roads.forEach((road2, j) => {
+      if (i >= j) return; // Avoid duplicate checks
+      
+      const connected = areRoadsAdjacent(road1, road2);
+      console.log(`Road ${getRoadKey(road1)} <-> Road ${getRoadKey(road2)}: ${connected ? 'CONNECTED' : 'not connected'}`);
+    });
+  });
+  
+  // Calculate longest road
+  const longestLength = calculateLongestRoad({ roads });
+  console.log(`Longest road calculated: ${longestLength}`);
+  
+  console.log('=== END DEBUG ===\n');
 }
-
-
