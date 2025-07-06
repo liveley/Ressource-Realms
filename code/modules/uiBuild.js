@@ -29,7 +29,9 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildToggleBtn.style.margin = '0';
   buildToggleBtn.style.cursor = 'pointer';
   buildToggleBtn.style.borderRadius = '6px';
-  buildToggleBtn.style.aspectRatio = 'auto';
+  buildToggleBtn.style.width = 'clamp(2.4em, 3.8vw, 3.4em)';
+  buildToggleBtn.style.height = 'clamp(2.4em, 3.8vw, 3.4em)';
+  buildToggleBtn.style.aspectRatio = '1 / 1';
   buildToggleBtn.onclick = () => {
     buildEnabled = !buildEnabled;
     console.log('Build-UI: buildEnabled =', buildEnabled);

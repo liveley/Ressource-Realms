@@ -274,10 +274,9 @@ body {
 }
 
 #build-toggle-btn {
-  font-size: 2.5em; /* Wie Würfeln- und Spielerwechsel-Button */
-  padding: clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em);
+  font-size: 2.5em; /* Matches dice and player switch buttons */
+  padding: clamp(0.3em, 1vw, 0.7em);
   border-radius: 0.5em;
-  /*aspect-ratio: auto;*/
   background: linear-gradient(90deg, #ffe066 60%, #fffbe6 100%);
   border: none;
   font-family: 'Montserrat', Arial, sans-serif;
@@ -287,21 +286,10 @@ body {
   transition: background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s;
   outline: none;
   display: block;
-  min-width: 4.5em;
-  min-height: 2.5em;
-  width: auto;
-  height: auto;
-  aspect-ratio: auto;
+  aspect-ratio: 1 / 1; /* Enforces square shape */
 }
 
-#build-ui.menu-open #build-toggle-btn {
-  font-size: 1.3em;
-  padding: 0.2em 0.5em;
-  min-width: 4.5em;
-  min-height: 2.5em;
-}
-
-/* Quadratische Hauptbuttons im Action Bar */
+/* Remove legacy rules */
 /* #main-action-bar > button, #main-action-bar > div > button, #main-action-bar > div#build-ui > button, #roll-dice, #player-switch-btn, #build-toggle-btn {
   aspect-ratio: 1 / 1 !important;
   min-width: 3.2em !important;
