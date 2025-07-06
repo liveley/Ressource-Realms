@@ -467,6 +467,7 @@ export function handleTileSelection(intersection, tileMeshes, getTilePosition) {
             console.log(`Placing robber on tile ${selectedTileKey}`);
               // Update current robber position
             currentRobberTile = { q, r };
+            window.blockedTileKey = selectedTileKey;
             
             // Get the world position of the tile center using our accurate center calculation
             const tilePosition = getTileCenter(q, r, tileMeshes);

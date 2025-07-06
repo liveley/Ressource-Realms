@@ -487,7 +487,8 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
           playBtn.style.boxShadow = '0 2px 8px #2a8c2a33';
           playBtn.style.display = 'block';
           playBtn.disabled = isNew;
-          playBtn.onclick = () => {
+          playBtn.onclick = (event) => {
+            if (event) event.stopPropagation();
             if (isNew) {
               showGlobalFeedback('Diese Karte kann erst ab nächster Runde gespielt werden.', '#c00', 2500);
               return;
