@@ -2,6 +2,7 @@
 // UI-Komponente für 4:1 Banktausch
 import { resources } from './uiResources.js';
 import { doBankTrade } from './bankTrade.js';
+import { canTrade, onPhaseChange } from './turnController.js';
 
 export function createBankTradeUI() {
   const tradeUI = document.createElement('div');
@@ -65,6 +66,12 @@ export function createBankTradeUI() {
 
   // Button-Handler - Original Version
   tradeBtn.onclick = () => {
+    // Prüfe, ob Handeln erlaubt ist
+    if (!canTrade()) {
+      showGlobalFeedback('Handeln nicht in aktueller Phase erlaubt!', '#c00', 3200);
+      return;
+    }
+    
     const giveKey = giveSelect.value;
     const getKey = getSelect.value;
     const idx = (typeof window.activePlayerIdx === 'number' && window.players && window.players.length > window.activePlayerIdx)
@@ -92,6 +99,31 @@ export function createBankTradeUI() {
       showGlobalFeedback(result.reason || 'Tausch nicht möglich', '#c00', 3200);
     }
   };
+
+  // Event-Listener für Phasen-Updates
+  onPhaseChange((phase) => {
+    updateTradeButtonState();
+  });
+
+  // Initial button state aktualisieren
+  updateTradeButtonState();
+
+  // Hilfsfunktion für Button-Zustand
+  function updateTradeButtonState() {
+    const canTradeNow = canTrade();
+    
+    if (canTradeNow) {
+      tradeBtn.style.opacity = "1";
+      tradeBtn.style.cursor = "pointer";
+      tradeBtn.disabled = false;
+      tradeBtn.title = "Mit Bank tauschen";
+    } else {
+      tradeBtn.style.opacity = "0.5";
+      tradeBtn.style.cursor = "not-allowed";
+      tradeBtn.disabled = true;
+      tradeBtn.title = "Handeln nicht in aktueller Phase erlaubt";
+    }
+  }
   
   tradeUI.appendChild(giveSelect);
   tradeUI.appendChild(getSelect);

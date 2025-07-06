@@ -679,54 +679,141 @@ body {
   white-space: nowrap;
 }
 
-/* Responsive Styles */
-@media (max-width: 1200px) {
-  #bank-trade-ui {
-    font-size: 1em;
-    padding: 0.7em 0.9em;
-    gap: 0.5em;
+/* === Turn-Based UI Styles === */
+#turn-ui {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  padding: 1em;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  font-family: 'Montserrat', Arial, sans-serif;
+  min-width: 220px;
+  backdrop-filter: blur(10px);
+}
+
+#phase-indicator {
+  font-weight: bold;
+  font-size: 1.2em;
+  color: #333;
+  text-align: center;
+  margin-bottom: 0.5em;
+  padding: 0.5em;
+  background: linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 8px;
+  border: 1px solid #90caf9;
+}
+
+#player-indicator {
+  font-size: 1em;
+  color: #555;
+  text-align: center;
+  margin-bottom: 1em;
+  padding: 0.4em;
+  background: linear-gradient(90deg, #f3e5f5 0%, #e1bee7 100%);
+  border-radius: 6px;
+  border: 1px solid #ce93d8;
+}
+
+#turn-ui button {
+  padding: 0.6em 1.2em;
+  border-radius: 6px;
+  border: none;
+  font-weight: bold;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Montserrat', Arial, sans-serif;
+  min-width: 110px;
+}
+
+#next-phase-btn {
+  background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+#next-phase-btn:hover {
+  background: linear-gradient(90deg, #45a049 0%, #5cb85c 100%);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  transform: translateY(-2px);
+}
+
+#end-turn-btn {
+  background: linear-gradient(90deg, #f44336 0%, #ef5350 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+#end-turn-btn:hover {
+  background: linear-gradient(90deg, #e53935 0%, #e57373 100%);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Phase notification styles */
+.phase-notification {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2196F3;
+  color: white;
+  padding: 1em 2em;
+  border-radius: 8px;
+  font-size: 1.2em;
+  font-weight: bold;
+  z-index: 10000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  font-family: 'Montserrat', Arial, sans-serif;
+  animation: slideInFadeOut 3s ease-in-out;
+}
+
+@keyframes slideInFadeOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
   }
-  
-  #bank-trade-ui select {
-    font-size: 0.8em;
-    padding: 0.2em 0.4em;
-    height: 2.1em;
+  20%, 80% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
-  
-  #bank-trade-ui button {
-    font-size: 0.85em;
-    padding: 0 1em;
-    height: 2.1em;
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
   }
 }
 
+/* Responsive Design für Turn-UI */
 @media (max-width: 800px) {
-  #bank-trade-ui {
+  #turn-ui {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    min-width: auto;
+    padding: 0.8em;
+  }
+  
+  #turn-ui button {
+    font-size: 0.8em;
+    padding: 0.5em 1em;
+    min-width: 90px;
+  }
+  
+  #phase-indicator {
+    font-size: 1em;
+  }
+  
+  #player-indicator {
     font-size: 0.9em;
-    padding: 0.6em 0.8em;
-    flex-wrap: wrap;
-    gap: 0.4em;
   }
-  
-  #bank-trade-ui select {
-    font-size: 0.75em;
-    padding: 0.15em 0.3em;
-    height: 2em;
-  }
-  
-  #bank-trade-ui button {
-    font-size: 0.8em;
-    padding: 0 0.8em;
-    height: 2em;
-    width: 100%;
-    margin-top: 0.3em;
-  }
-  
-  #bank-trade-feedback {
-    font-size: 0.8em;
-    margin-left: 0;
-    margin-top: 0.3em;
-    width: 100%;
-    text-align: center;
-  }
+}
+
+/* Integration mit der Action Bar */
+#main-action-bar {
+  /* Platz für die Turn-UI schaffen */
+  margin-top: 120px;
 }

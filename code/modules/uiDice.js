@@ -1,6 +1,8 @@
 // modules/uiDice.js
 // Würfel-UI für Catan 3D
 
+import { canRollDice, rollDiceAndAdvancePhase, onPhaseChange } from './turnController.js';
+
 let diceUI = null;
 let diceResult = null;
 let diceBtn = null;
@@ -43,8 +45,25 @@ export function createDiceUI(onRoll, parent) {
   }
 
   diceBtn.onclick = () => {
-    if (typeof onRoll === 'function') onRoll();
+    // Prüfe, ob Würfeln erlaubt ist
+    if (!canRollDice()) {
+      console.log('Würfeln nicht erlaubt in aktueller Phase');
+      return;
+    }
+    
+    if (typeof onRoll === 'function') {
+      // Verwende die Turn-Controller-Logik
+      rollDiceAndAdvancePhase(onRoll);
+    }
   };
+
+  // Event-Listener für Phasen-Updates
+  onPhaseChange((phase) => {
+    updateDiceButtonState();
+  });
+
+  // Initial button state aktualisieren
+  updateDiceButtonState();
 }
 
 export function setDiceResult(sum) {
@@ -74,6 +93,27 @@ export function blockDiceRolls(reason = "Aktion erforderlich") {
 }
 
 /**
+ * Aktualisiert den Zustand des Würfel-Buttons basierend auf der aktuellen Phase
+ */
+function updateDiceButtonState() {
+  if (!diceBtn) return;
+  
+  const canRoll = canRollDice();
+  
+  if (canRoll) {
+    diceBtn.style.opacity = "1";
+    diceBtn.style.cursor = "pointer";
+    diceBtn.disabled = false;
+    diceBtn.title = "Würfeln";
+  } else {
+    diceBtn.style.opacity = "0.5";
+    diceBtn.style.cursor = "not-allowed";
+    diceBtn.disabled = true;
+    diceBtn.title = "Nicht in der Würfelphase";
+  }
+}
+
+/**
  * Unblock the dice button
  */
 export function unblockDiceRolls() {
@@ -84,9 +124,12 @@ export function unblockDiceRolls() {
     diceBtn.onclick = diceBtn._origOnClick;
     diceBtn._origOnClick = null;
   }
-    // Remove visual indication
+  // Remove visual indication
   diceBtn.style.opacity = "1";
   diceBtn.style.cursor = "pointer";
   diceBtn.disabled = false;
   diceBtn.title = "";
+  
+  // Update based on current phase
+  updateDiceButtonState();
 }

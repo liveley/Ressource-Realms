@@ -3,6 +3,7 @@
 // Übergibt buildMode- und activePlayerIdx-Setter als Callback-Parameter
 
 import { showPlayerSwitchButton } from './change_player.js';
+import { canBuild, onPhaseChange } from './turnController.js';
 
 let buildEnabled = false;
 let buildMenu = null;
@@ -22,9 +23,15 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildToggleBtn.textContent = '🏗️';
   buildToggleBtn.style.fontSize = '2.5em'; // Emoji so groß wie beim Würfeln-Button
   buildToggleBtn.onclick = () => {
+    // Prüfe, ob Bauen erlaubt ist
+    if (!canBuild()) {
+      showBuildPopupFeedback('Bauen nicht in aktueller Phase erlaubt!', false);
+      return;
+    }
+    
     buildEnabled = !buildEnabled;
     console.log('Build-UI: buildEnabled =', buildEnabled);
-    buildToggleBtn.textContent = buildEnabled ? '\ud83c\udfd7\ufe0f AUS' : '\ud83c\udfd7\ufe0f';
+    buildToggleBtn.textContent = buildEnabled ? '🏗️ AUS' : '🏗️';
     if (buildMenu) buildMenu.style.display = buildEnabled ? 'flex' : 'none';
     // Hintergrund und Rand nur anzeigen, wenn Menü offen ist
     if (buildEnabled) {
@@ -35,6 +42,14 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
       console.log('Build-UI: Menü geschlossen');
     }
   };
+
+  // Event-Listener für Phasen-Updates
+  onPhaseChange((phase) => {
+    updateBuildButtonState();
+  });
+
+  // Initial button state aktualisieren
+  updateBuildButtonState();
   ui.appendChild(buildToggleBtn);
 
   // Das eigentliche Baumenü (Buttons für Spielerwahl, Straße, Siedlung, Stadt)
@@ -101,7 +116,38 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
 export function isBuildEnabled() {
   // Prüfe, ob das Build-Menü offen ist (über die Klasse am UI-Element)
   const ui = document.getElementById('build-ui');
-  return !!(ui && ui.classList.contains('menu-open'));
+  return !!(ui && ui.classList.contains('menu-open')) && canBuild();
+}
+
+/**
+ * Aktualisiert den Zustand des Build-Buttons basierend auf der aktuellen Phase
+ */
+function updateBuildButtonState() {
+  const buildToggleBtn = document.getElementById('build-toggle-btn');
+  if (!buildToggleBtn) return;
+  
+  const canBuildNow = canBuild();
+  
+  if (canBuildNow) {
+    buildToggleBtn.style.opacity = "1";
+    buildToggleBtn.style.cursor = "pointer";
+    buildToggleBtn.disabled = false;
+    buildToggleBtn.title = "Bauen";
+  } else {
+    buildToggleBtn.style.opacity = "0.5";
+    buildToggleBtn.style.cursor = "not-allowed";
+    buildToggleBtn.disabled = true;
+    buildToggleBtn.title = "Nicht in der Bauphase";
+    
+    // Schließe das Build-Menü wenn Bauen nicht erlaubt ist
+    if (buildEnabled) {
+      buildEnabled = false;
+      buildToggleBtn.textContent = '🏗️';
+      if (buildMenu) buildMenu.style.display = 'none';
+      const ui = document.getElementById('build-ui');
+      if (ui) ui.classList.remove('menu-open');
+    }
+  }
 }
 
 // Pop-up Feedback-Funktion

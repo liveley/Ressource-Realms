@@ -26,6 +26,16 @@ import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
 import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
+import { createTurnUI, showPhaseNotification } from './modules/turnUI.js';
+import { 
+  setupActionBarUpdates, 
+  onPhaseChange, 
+  onPlayerSwitch, 
+  getCurrentPhase, 
+  getActivePlayerIdx,
+  setActivePlayerIdx,
+  resetToStart 
+} from './modules/turnController.js';
 
 window.players = window.players || [
   {
@@ -58,8 +68,8 @@ let gameInitialized = false;
 let tileMeshes = {};
 let tileNumbers = {};
 let buildMode = 'settlement';
-let activePlayerIdx = 0;
-window.activePlayerIdx = activePlayerIdx;
+// Verwende Turn-Controller für activePlayerIdx
+window.activePlayerIdx = getActivePlayerIdx();
 
 // Hide the renderer initially
 renderer.domElement.style.visibility = 'hidden';
@@ -175,12 +185,12 @@ async function startGame() {
       players: window.players,
       getBuildMode: () => buildMode,
       setBuildMode: (mode) => { buildMode = mode; },
-      getActivePlayerIdx: () => activePlayerIdx,
+      getActivePlayerIdx: () => getActivePlayerIdx(),
       setActivePlayerIdx: (idx) => {
-        activePlayerIdx = idx;
+        setActivePlayerIdx(idx);
         window.activePlayerIdx = idx;
-        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-        updatePlayerOverviews(window.players, () => activePlayerIdx);
+        updateResourceUI(window.players[getActivePlayerIdx()], getActivePlayerIdx());
+        updatePlayerOverviews(window.players, () => getActivePlayerIdx());
       },
       parent: actionBar
     });
@@ -203,11 +213,11 @@ async function startGame() {
   }
 
   try {
-    placePlayerSwitchButton(window.players, () => activePlayerIdx, (idx) => {
-      activePlayerIdx = idx;
+    placePlayerSwitchButton(window.players, () => getActivePlayerIdx(), (idx) => {
+      setActivePlayerIdx(idx);
       window.activePlayerIdx = idx;
-      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
-      updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+      updateResourceUI(window.players[getActivePlayerIdx()], getActivePlayerIdx()); // GITHUB COPILOT: Vereinheitlicht auf window.players
+      updatePlayerOverviews(window.players, () => getActivePlayerIdx()); // GITHUB COPILOT: Vereinheitlicht auf window.players
       if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
     }, actionBar);
     console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
@@ -217,15 +227,15 @@ async function startGame() {
 
   try {
     createResourceUI();
-    updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+    updateResourceUI(window.players[getActivePlayerIdx()], getActivePlayerIdx());
     // === Entwicklungskarten-UI einbinden (nur einmal anhängen, nach createResourceUI) ===
     if (!devCardsUI) {
       devCardsUI = createDevelopmentCardsUI({
-        getPlayer: () => window.players[activePlayerIdx],
+        getPlayer: () => window.players[getActivePlayerIdx()],
         getBank: () => window.bank,
         getDeck: () => window.developmentDeck,
         onBuy: () => {
-          updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+          updateResourceUI(window.players[getActivePlayerIdx()], getActivePlayerIdx());
         },
         getScene: () => scene,
         getTileMeshes: () => tileMeshes
@@ -240,8 +250,8 @@ async function startGame() {
   }
 
   try {
-    createPlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
-    updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+    createPlayerOverviews(window.players, () => getActivePlayerIdx()); // GITHUB COPILOT: Vereinheitlicht auf window.players
+    updatePlayerOverviews(window.players, () => getActivePlayerIdx()); // GITHUB COPILOT: Vereinheitlicht auf window.players
     console.log('Player-Overviews erstellt:', document.getElementById('player-overview-container'));
   } catch (e) {
     console.error('Fehler beim Erstellen der Player-Overviews:', e);
@@ -255,6 +265,33 @@ async function startGame() {
     console.error('Fehler beim Erstellen des Info-Overlays:', e);
   }
 
+  // === Turn-Based UI Setup ===
+  try {
+    createTurnUI(actionBar);
+    console.log('Turn-UI erstellt:', document.getElementById('turn-ui'));
+    
+    // Setup Turn-Controller callbacks
+    setupActionBarUpdates();
+    
+    // Register event listeners for phase changes
+    onPhaseChange((phase) => {
+      showPhaseNotification(`Phase: ${phase}`);
+    });
+    
+    onPlayerSwitch((playerIdx) => {
+      const player = window.players[playerIdx];
+      showPhaseNotification(`${player?.name || 'Spieler ' + (playerIdx + 1)} ist dran!`);
+      // Update all UIs
+      updateResourceUI(window.players[playerIdx], playerIdx);
+      updatePlayerOverviews(window.players, () => getActivePlayerIdx());
+      if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
+    });
+    
+    console.log('Turn-Controller Setup abgeschlossen');
+  } catch (e) {
+    console.error('Fehler beim Erstellen der Turn-UI:', e);
+  }
+
   // === Build Event Handler Setup ===
   setupBuildEventHandler({
     renderer,
@@ -263,12 +300,12 @@ async function startGame() {
     tileMeshes,
     players: window.players,
     getBuildMode: () => buildMode,
-    getActivePlayerIdx: () => activePlayerIdx,
+    getActivePlayerIdx: () => getActivePlayerIdx(),
     tryBuildSettlement,
     tryBuildCity,
     tryBuildRoad, // <--- HINZUGEFÜGT
     getCornerWorldPosition,
-    updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx) // Always update for current player
+    updateResourceUI: () => updateResourceUI(window.players[getActivePlayerIdx()], getActivePlayerIdx()) // Always update for current player
   });
 
   // === Build Preview Setup ===
@@ -279,7 +316,7 @@ async function startGame() {
     tileMeshes,
     window.players,
     () => buildMode,
-    () => activePlayerIdx,
+    () => getActivePlayerIdx(),
     tryBuildSettlement,
     tryBuildCity
   );
@@ -287,6 +324,9 @@ async function startGame() {
   // Mark game as initialized
   gameInitialized = true;
   console.log('Game initialization complete!');
+  
+  // Initialize turn-based system
+  resetToStart();
   
   // Notify HTML that game is ready
   window.dispatchEvent(new CustomEvent('gameReady'));

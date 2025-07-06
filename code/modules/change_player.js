@@ -1,6 +1,8 @@
 // change_player.js
 // Modul für das Umschalten des aktiven Spielers und Anzeige des Wechsel-Buttons
 
+import { setActivePlayerIdx } from './turnController.js';
+
 /**
  * Erstellt ein Dropdown zur Spielerwahl und hängt es an das angegebene Parent-Element an.
  * @param {HTMLElement} parent - Das Element, an das das Dropdown angehängt wird.
@@ -9,7 +11,7 @@
  * @param {Function} setActivePlayerIdx - Funktion, die den neuen Spielerindex setzt.
  * @returns {HTMLSelectElement} Das erzeugte Select-Element
  */
-export function createPlayerSelect(parent, players, getActivePlayerIdx, setActivePlayerIdx) {
+export function createPlayerSelect(parent, players, getActivePlayerIdx, setActivePlayerIdxFn) {
   const playerSelectSpan = document.createElement('span');
   const sel = document.createElement('select');
   sel.id = 'player-select';
@@ -20,7 +22,7 @@ export function createPlayerSelect(parent, players, getActivePlayerIdx, setActiv
     sel.appendChild(opt);
   });
   sel.value = getActivePlayerIdx();
-  sel.onchange = e => setActivePlayerIdx(parseInt(e.target.value));
+  sel.onchange = e => setActivePlayerIdxFn(parseInt(e.target.value));
   playerSelectSpan.appendChild(sel);
   parent.appendChild(playerSelectSpan);
   return sel;
@@ -75,11 +77,11 @@ export function showPlayerSwitchButton(players, getActivePlayerIdx, setActivePla
   label.style.marginTop = '0.1em';
   btn.appendChild(label);
 
-  // Klick-Handler: Wechselt zum nächsten Spieler
+  // Klick-Handler: Wechselt zum nächsten Spieler - verwendet Turn-Controller
   btn.onclick = () => {
     const idx = getActivePlayerIdx();
     const nextIdx = (idx + 1) % players.length;
-    setActivePlayerIdx(nextIdx);
+    setActivePlayerIdx(nextIdx); // Verwende Turn-Controller
   };
   // In angegebenes Parent-Element einfügen, sonst body
   if (parent) {
@@ -136,11 +138,11 @@ export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePl
   label.style.marginTop = '0.1em';
   btn.appendChild(label);
 
-  // Klick-Handler: Wechselt zum nächsten Spieler
+  // Klick-Handler: Wechselt zum nächsten Spieler - verwendet Turn-Controller
   btn.onclick = () => {
     const idx = getActivePlayerIdx();
     const nextIdx = (idx + 1) % players.length;
-    setActivePlayerIdx(nextIdx);
+    setActivePlayerIdx(nextIdx); // Verwende Turn-Controller
   };
   // Button in das gewünschte Parent-Element einfügen (z.B. Action Bar)
   if (parent) {
