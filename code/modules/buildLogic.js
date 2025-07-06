@@ -1,6 +1,8 @@
 // buildLogic.js
 // Zentrale Spiellogik für Siedlungen und Städte
 
+import { updateAllVictoryPoints, updateLongestRoad } from './victoryPoints.js';
+
 // Beispiel-Spielerstruktur (kann später erweitert werden)
 export const players = [
   {
@@ -41,6 +43,12 @@ export function canBuildRoad(player) {
 export function buildSettlement(player, q, r, corner) {
   // Nur Spielfeld-Update, KEIN Ressourcenabzug mehr!
   player.settlements.push({ q, r, corner });
+  
+  // Update victory points
+  if (window.players && Array.isArray(window.players)) {
+    updateAllVictoryPoints(player, window.players);
+  }
+  
   return true;
 }
 
@@ -51,6 +59,12 @@ export function buildCity(player, q, r, corner) {
   if (idx === -1) return false;
   player.settlements.splice(idx, 1);
   player.cities.push({ q, r, corner });
+  
+  // Update victory points
+  if (window.players && Array.isArray(window.players)) {
+    updateAllVictoryPoints(player, window.players);
+  }
+  
   return true;
 }
 
@@ -373,6 +387,12 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
   }
   if (!player.roads) player.roads = [];
   player.roads.push({ q, r, edge });
+  
+  // Update longest road after building
+  if (window.players && Array.isArray(window.players)) {
+    updateLongestRoad(window.players);
+  }
+  
   return { success: true };
 }
 

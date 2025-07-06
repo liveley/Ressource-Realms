@@ -1,6 +1,8 @@
 // modules/developmentCards.js
 // Entwicklungskarten-Deck und Spieler-Logik für Catan 3D
 
+import { addVictoryPointCard, checkWinCondition } from './victoryPoints.js';
+
 const CARD_TYPES = [
   { type: 'knight', count: 5 },
   { type: 'road_building', count: 2 },
@@ -58,5 +60,11 @@ export function buyDevelopmentCard(player, bank, deck) {
   // Karte ziehen
   const card = deck.pop();
   player.newDevelopmentCards.push(card);
+  
+  // If it's a victory point card, add VP immediately
+  if (card.type === 'victory_point') {
+    addVictoryPointCard(player);
+  }
+  
   return { success: true, card };
 }
