@@ -617,3 +617,8 @@ window.addEventListener('keydown', (e) => {
         createDebugDiceIndicator(window.debugDiceEnabled, 7);
     }
 });
+
+// Globale Hilfsfunktion für Entwicklungskarten-Logik (z.B. Monopol)
+window.getAllPlayers = function() {
+  return window.players;
+};
