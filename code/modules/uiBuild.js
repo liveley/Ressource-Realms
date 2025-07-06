@@ -15,13 +15,21 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   ui.style.display = 'flex';
   ui.style.flexDirection = 'column';
   ui.style.alignItems = 'center';
-  // Keine absolute Positionierung mehr!
+  ui.style.justifyContent = 'flex-end';
+  ui.style.margin = '0';
+  ui.style.padding = '0';
+  ui.style.boxSizing = 'border-box';
 
   // Bau-Button (immer sichtbar)
   const buildToggleBtn = document.createElement('button');
   buildToggleBtn.id = 'build-toggle-btn';
   buildToggleBtn.textContent = '🏗️';
-  buildToggleBtn.style.fontSize = '2.5em'; // Emoji so groß wie beim Würfeln-Button
+  buildToggleBtn.style.fontSize = '2.5em';
+  buildToggleBtn.style.padding = '0.4em';
+  buildToggleBtn.style.margin = '0';
+  buildToggleBtn.style.cursor = 'pointer';
+  buildToggleBtn.style.borderRadius = '6px';
+  buildToggleBtn.style.aspectRatio = 'auto';
   buildToggleBtn.onclick = () => {
     buildEnabled = !buildEnabled;
     console.log('Build-UI: buildEnabled =', buildEnabled);
