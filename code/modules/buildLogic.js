@@ -295,13 +295,15 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
   if (!ignoreResourceRule && !canBuildRoad(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
   if (isRoadOccupied(q, r, edge, allPlayers)) return { success: false, reason: 'Hier liegt schon eine Straße' };
   // TODO: Anbindung an eigene Straße/Siedlung prüfen (optional)
-  // Ressourcen abziehen
-  player.resources.wood--;
-  player.resources.clay--;
-  // Ressourcen zurück an die Bank
-  if (window.bank) {
-    window.bank.wood = (window.bank.wood || 0) + 1;
-    window.bank.clay = (window.bank.clay || 0) + 1;
+  // Ressourcen abziehen nur wenn nicht ignoreResourceRule
+  if (!ignoreResourceRule) {
+    player.resources.wood--;
+    player.resources.clay--;
+    // Ressourcen zurück an die Bank
+    if (window.bank) {
+      window.bank.wood = (window.bank.wood || 0) + 1;
+      window.bank.clay = (window.bank.clay || 0) + 1;
+    }
   }
   if (!player.roads) player.roads = [];
   player.roads.push({ q, r, edge });

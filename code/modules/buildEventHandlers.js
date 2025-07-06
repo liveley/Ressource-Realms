@@ -93,11 +93,22 @@ export function setupBuildEventHandler({
       }
       if (minEdgeDist > 1.5) return;
       // tryBuildRoad benötigt: player, q, r, edge, allPlayers
+      let ignoreResourceRule = false;
+      if (window._roadBuildingMode && window._roadBuildingMode.player === player && window._roadBuildingMode.roadsLeft > 0) {
+        ignoreResourceRule = true;
+      }
       if (typeof tryBuildRoad === 'function') {
-        result = tryBuildRoad(player, q, r, nearestEdge, players);
+        result = tryBuildRoad(player, q, r, nearestEdge, players, { ignoreResourceRule });
         if (result.success) {
           placeRoadMesh(scene, getCornerWorldPosition, q, r, nearestEdge, player.color);
           meshPlaced = true;
+          // Straßenbau-Modus: Zähler runterzählen und ggf. beenden
+          if (ignoreResourceRule && window._roadBuildingMode && window._roadBuildingMode.player === player) {
+            window._roadBuildingMode.roadsLeft--;
+            if (window._roadBuildingMode.roadsLeft <= 0) {
+              if (typeof window._roadBuildingMode.finish === 'function') window._roadBuildingMode.finish();
+            }
+          }
         }
       } else {
         result = { success: false, reason: 'Straßenbau nicht implementiert' };

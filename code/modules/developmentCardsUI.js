@@ -186,9 +186,25 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
           showGlobalFeedback('Räuberplatzierung nicht möglich (Szene oder Tiles fehlen)', '#c00', 3000);
         }
         break;
-      case 'road_building':
-        showGlobalFeedback('Straßenbau gespielt! Baue 2 Straßen (Logik noch zu implementieren).', '#2a8c2a', 3000);
-        break;
+      case 'road_building': {
+        // Straßenbau: Aktiviere Modus für 2 kostenlose Straßen
+        if (!window._roadBuildingMode) {
+          window._roadBuildingMode = {
+            roadsLeft: 2,
+            player: player,
+            finish: () => {
+              window._roadBuildingMode = null;
+              showGlobalFeedback('Straßenbau abgeschlossen!', '#2a8c2a', 2500);
+            }
+          };
+          showGlobalFeedback('Straßenbau gespielt! Baue 2 Straßen kostenlos.', '#2a8c2a', 3500);
+        }
+        removeDevCardFromHand(player, idx);
+        if (typeof devUI.updateDevHand === 'function') devUI.updateDevHand();
+        popup.style.display = 'none';
+        if (onBuy) onBuy();
+        return;
+      }
       default:
         showGlobalFeedback('Diese Karte kann nicht ausgespielt werden.', '#c00', 3000);
         return;
