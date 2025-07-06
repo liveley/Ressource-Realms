@@ -67,8 +67,8 @@ export function setupBuildEventHandler({
     let result;
     let meshPlaced = false;
     if (getBuildMode() === 'settlement') {
-      // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
-      result = tryBuildSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
+      // Abstandregel und Straßenregel korrekt prüfen (keine Debug-Flags!)
+      result = tryBuildSettlement(player, q, r, nearest, players, { requireRoad: true, ignoreDistanceRule: false });
       if (result.success) {
         placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'settlement', player.color);
         meshPlaced = true;

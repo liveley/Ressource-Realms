@@ -75,7 +75,7 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
     
     if (buildMode === 'settlement') {
       // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
-      const res = canPlaceSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
+      const res = canPlaceSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: false });
       canBuild = res.success;
       
       // Don't show preview if no land tile adjacent

@@ -130,11 +130,14 @@ function getNeighborCorner(q, r, corner) {
 
 // === Platzierungsregel: Siedlung muss an eigene Straße angrenzen (außer bei Startaufstellung) ===
 export function isSettlementConnectedToOwnRoad(player, q, r, corner) {
-  // Für jede eigene Straße prüfen, ob sie an diese Ecke angrenzt
+  // Prüfe alle äquivalenten Ecken (physische Ecke!)
+  const equivalents = getEquivalentCorners(q, r, corner);
   if (!player.roads || player.roads.length === 0) return false;
-  for (const road of player.roads) {
-    if (isRoadAdjacentToCorner(road, q, r, corner)) {
-      return true;
+  for (const eq of equivalents) {
+    for (const road of player.roads) {
+      if (isRoadAdjacentToCorner(road, eq.q, eq.r, eq.corner)) {
+        return true;
+      }
     }
   }
   return false;
@@ -262,8 +265,14 @@ export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoa
   }
   // Ressourcen prüfen
   if (!ignoreResourceRule && !canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
-  // Abstand zu anderen Siedlungen/Städten prüfen
-  if (!ignoreDistanceRule && !isSettlementPlacementValid(q, r, corner, allPlayers)) return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+  // Abstand zu anderen Siedlungen/Städten prüfen (für alle äquivalenten Ecken!)
+  if (!ignoreDistanceRule) {
+    for (const eq of equivalents) {
+      if (!isSettlementPlacementValid(eq.q, eq.r, eq.corner, allPlayers)) {
+        return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+      }
+    }
+  }
   // Straßenanbindung prüfen (außer bei Startaufstellung)
   if (requireRoad && !isSettlementConnectedToOwnRoad(player, q, r, corner)) return { success: false, reason: 'Keine eigene Straße an dieser Ecke' };
   // Bauen & Ressourcen abziehen
@@ -372,7 +381,13 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
     }
   }
   if (!player.roads) player.roads = [];
-  player.roads.push({ q, r, edge });
+  // Speichere beide Endpunkte der Straße für die Adjazenzprüfung
+  const [nq_road, nr_road] = neighborAxial(q, r, edge);
+  player.roads.push({
+    q1: q, r1: r, corner1: edge,
+    q2: nq_road, r2: nr_road, corner2: (edge + 3) % 6,
+    q, r, edge // optional, falls noch woanders genutzt
+  });
   return { success: true };
 }
 
