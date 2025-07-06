@@ -1,6 +1,9 @@
 // modules/uiResources.js
 // Ressourcen-UI für Catan 3D
 
+import { doBankTrade, canBankTrade } from './bankTrade.js';
+import { createBankTradeUI } from './bankTradeUI.js';
+
 const resources = [
   { key: 'wheat', symbol: '🌾', name: 'Weizen', color: '#ffe066' },
   { key: 'sheep', symbol: '🐑', name: 'Schaf', color: '#8fd19e' },
@@ -48,6 +51,8 @@ export function createResourceUI() {
   container.style.alignItems = 'flex-end';
   container.appendChild(resUI);
   container.appendChild(bankUI);
+  // Banktausch-UI modularisiert
+  container.appendChild(createBankTradeUI());
   document.body.appendChild(container);
 }
 
