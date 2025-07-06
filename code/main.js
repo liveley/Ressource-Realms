@@ -226,7 +226,9 @@ async function startGame() {
         getDeck: () => window.developmentDeck,
         onBuy: () => {
           updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-        }
+        },
+        getScene: () => scene,
+        getTileMeshes: () => tileMeshes
       });
       const container = document.getElementById('resource-bank-container');
       if (container) container.appendChild(devCardsUI);
@@ -622,3 +624,5 @@ window.addEventListener('keydown', (e) => {
 window.getAllPlayers = function() {
   return window.players;
 };
+
+window.startRobberPlacement = startRobberPlacement;

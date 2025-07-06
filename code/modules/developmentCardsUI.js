@@ -2,11 +2,12 @@
 // UI-Komponente für Entwicklungskarten-Kauf und Anzeige
 import { buyDevelopmentCard, canBuyDevelopmentCard } from './developmentCards.js';
 import { resources } from './uiResources.js';
+import { showBanditOnTile } from './bandit.js';
 
 // Debug: Alle Entwicklungskarten immer spielbar machen
 window.ALLOW_ALL_DEV_CARDS_PLAY = true;
 
-export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy } = {}) {
+export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, getScene, getTileMeshes } = {}) {
   const devUI = document.createElement('div');
   devUI.id = 'development-cards-ui';
   devUI.style.marginTop = '0.7em';
@@ -171,7 +172,19 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy } 
     }
     switch(card.type) {
       case 'knight':
-        showGlobalFeedback('Ritter gespielt! Räuber darf versetzt werden (Logik noch zu implementieren).', '#2a8c2a', 3000);
+        // Ritter: Räuber verschieben
+        if (typeof getScene === 'function' && typeof getTileMeshes === 'function') {
+          const scene = getScene();
+          const tileMeshes = getTileMeshes();
+          // Starte Räuberplatzierung (UI/UX: Info anzeigen)
+          showGlobalFeedback('Ritter gespielt! Wähle ein Feld für den Räuber.', '#2a8c2a', 3000);
+          // Korrekt: tileNumbers als zweites Argument übergeben
+          if (typeof window.startRobberPlacement === 'function') {
+            window.startRobberPlacement(tileMeshes, window.tileNumbers);
+          }
+        } else {
+          showGlobalFeedback('Räuberplatzierung nicht möglich (Szene oder Tiles fehlen)', '#c00', 3000);
+        }
         break;
       case 'road_building':
         showGlobalFeedback('Straßenbau gespielt! Baue 2 Straßen (Logik noch zu implementieren).', '#2a8c2a', 3000);
