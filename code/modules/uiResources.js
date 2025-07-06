@@ -78,17 +78,23 @@ export function updateResourceUI(player, idx) {
   }
 
   // Erstelle Ressourcen mit Gain Counters
-  const resourceItems = resources.map(r => `
-    <div class="resource-item">
-      <div class="resource-content">
-        <span class="resource-icon">${r.symbol}</span>
-        <span class="resource-count" style="color:${r.color}">${player.resources[r.key]}</span>
+  const resourceItems = resources.map(r => {
+    const gainValue = gainTrackers[idx] && gainTrackers[idx][r.key] > 0 ? gainTrackers[idx][r.key] : 0;
+    return `
+      <div class="resource-item">
+        <div class="resource-content">
+          <span class="resource-icon">${r.symbol}</span>
+          <span class="resource-count" style="color:${r.color}">${player.resources[r.key]}</span>
+        </div>
+        <div class="resource-gain">
+          ${gainValue > 0 ? `
+            <span class="gain-plus">+</span>
+            <span class="gain-number">${gainValue}</span>
+          ` : ''}
+        </div>
       </div>
-      <div class="resource-gain">
-        ${gainTrackers[idx] && gainTrackers[idx][r.key] > 0 ? `+${gainTrackers[idx][r.key]}` : ''}
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   resUI.innerHTML = `
     <div class="resource-header">
