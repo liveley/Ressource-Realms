@@ -12,7 +12,7 @@ import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
-import { initTileInfoOverlay, createInfoOverlayToggle } from './modules/uiTileInfo.js';
+import { initTileInfoOverlay } from './modules/uiTileInfo.js';
 import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, handleTileSelection, isInRobberPlacementMode, getTileCenter } from './modules/bandit.js';
 import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
@@ -26,6 +26,7 @@ import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
 import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
+import { createSettingsMenu } from './modules/uiSettingsMenu.js';
 
 window.players = window.players || [
   {
@@ -457,8 +458,15 @@ async function startGame() {
   }
 
   try {
-    // === UI: Tile-Info-Overlay und Toggle-Button ===
-    createInfoOverlayToggle();
+    // === UI: Settings-Menu (Einstellungen & Info) ===
+    createSettingsMenu();
+    console.log('Settings-Menu erstellt:', document.getElementById('settings-button'));
+  } catch (e) {
+    console.error('Fehler beim Erstellen des Settings-Menu:', e);
+  }
+
+  try {
+    // === UI: Tile-Info-Overlay (nur das Overlay, kein Button mehr) ===
     initTileInfoOverlay(scene, camera);
     console.log('Info-Overlay erstellt:', document.getElementById('infoOverlay'));
   } catch (e) {
