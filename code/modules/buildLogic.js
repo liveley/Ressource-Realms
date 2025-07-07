@@ -1,7 +1,11 @@
 // buildLogic.js
 // Zentrale Spiellogik für Siedlungen und Städte
 
-import { initializeVictoryPoints, updateAllVictoryPoints, updateLongestRoad, getCanonicalRoad } from './victoryPoints.js';
+import { 
+  initializeVictoryPoints, 
+  updateLongestRoad, 
+  getCanonicalRoad
+} from './victoryPoints.js';
 
 // Beispiel-Spielerstruktur (kann später erweitert werden)
 export const players = [
@@ -386,6 +390,10 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
     }
   }
   if (!player.roads) player.roads = [];
+  
+  // Use canonical coordinates to prevent duplicates
+  const canonicalRoad = getCanonicalRoad({ q, r, edge });
+  player.roads.push(canonicalRoad);
   
   // Use canonical coordinates to prevent duplicates
   const canonicalRoad = getCanonicalRoad({ q, r, edge });

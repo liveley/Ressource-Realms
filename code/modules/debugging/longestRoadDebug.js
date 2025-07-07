@@ -1,7 +1,7 @@
 // moved from modules/longestRoadDebug.js
 // Debug script to analyze longest road calculation issues
 
-import { debugRoadConnections } from './victoryPointsTestingUtils.js';
+import { debugRoadConnections } from '../victoryPoints.js';
 
 // Global variables to track road debug popup state
 let roadDebugUI = null;
