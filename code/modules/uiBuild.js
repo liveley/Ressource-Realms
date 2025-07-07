@@ -52,7 +52,7 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
 
   ui.appendChild(buildToggleBtn);
 
-  // Das eigentliche Baumenü (Buttons für Spielerwahl, Straße, Siedlung, Stadt, Bauen aus)
+  // Das eigentliche Baumenü (Buttons für Straße, Siedlung, Stadt, Bauen aus)
   buildMenu = document.createElement('div');
   buildMenu.id = 'build-menu';
   buildMenu.style.display = 'none'; // Anfangs ausgeblendet
@@ -64,9 +64,9 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   // Menü an rechter unterer Ecke des Buttons verankern
   buildMenu.style.right = '0';
   buildMenu.style.bottom = '0';
-  // Breite und Höhe relativ zum Button, wie gewünscht
-  buildMenu.style.width = 'calc(clamp(2.1em, 2.8vw, 2.5em) * 1.33)';
-  buildMenu.style.height = 'calc(clamp(2.1em, 2.8vw, 2.5em) * 1.5)';
+  // Exakt gewünschte Breite und Höhe laut User-Devtools
+  buildMenu.style.width = 'calc(3 * clamp(2.1em, 2.8vw, 2.5em))';
+  buildMenu.style.height = 'calc(3 * clamp(2.1em, 2.8vw, 2.5em))';
   buildMenu.style.background = 'rgba(255,255,255,0.98)';
   buildMenu.style.border = '2px solid #ffe066';
   buildMenu.style.borderRadius = '0.5em';
@@ -74,13 +74,13 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildMenu.style.padding = '0.4em 0.3em';
   buildMenu.style.overflow = 'hidden';
 
-  // Helper für kleine, längliche Buttons
+  // Helper für kompakte, längliche Menü-Buttons
   function makeMenuBtn(id, text, onClick) {
     const btn = document.createElement('button');
     btn.id = id;
     btn.textContent = text;
     btn.style.width = '100%';
-    btn.style.height = '22%';
+    btn.style.height = '22%'; // 4 Buttons passen mit gap exakt in 100%
     btn.style.minHeight = '1.5em';
     btn.style.maxHeight = '2.2em';
     btn.style.fontSize = '1em';
@@ -106,34 +106,7 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildMenu.appendChild(makeMenuBtn('build-city', 'Stadt bauen', () => setBuildMode('city')));
   buildMenu.appendChild(makeMenuBtn('build-cancel', 'Bauen aus', () => setBuildMode(null)));
 
-  // Straße bauen
-  const roadBtn = document.createElement('button');
-  roadBtn.id = 'build-road';
-  roadBtn.textContent = 'Straße bauen';
-  roadBtn.onclick = () => setBuildMode('road');
-  buildMenu.appendChild(roadBtn);
-
-  // Siedlung bauen
-  const settlementBtn = document.createElement('button');
-  settlementBtn.id = 'build-settlement';
-  settlementBtn.textContent = 'Siedlung bauen';
-  settlementBtn.onclick = () => setBuildMode('settlement');
-  buildMenu.appendChild(settlementBtn);
-
-  // Stadt bauen
-  const cityBtn = document.createElement('button');
-  cityBtn.id = 'build-city';
-  cityBtn.textContent = 'Stadt bauen';
-  cityBtn.onclick = () => setBuildMode('city');
-  buildMenu.appendChild(cityBtn);
-
-  // ui.appendChild(buildMenu); // <--- Menü komplett auskommentiert, falls du es testen willst
-  //
-  // Alternativ: Nur die Breite exakt auf die des Buttons setzen (ohne min/max)
-  // buildMenu.style.width = buildToggleBtn.style.width;
-  // buildMenu.style.minWidth = '';
-  // buildMenu.style.maxWidth = '';
-  ui.appendChild(buildMenu); // <--- Standard: Menü bleibt erhalten
+  ui.appendChild(buildMenu); // Menü bleibt erhalten
 
   // In gewünschtes Parent-Element einfügen
   if (parent) {
