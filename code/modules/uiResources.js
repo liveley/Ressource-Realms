@@ -22,11 +22,13 @@ export function createResourceUI() {
   resUI = document.createElement('div');
   resUI.id = 'ressource-ui';
   resUI.className = 'resource-box';
+  resUI.style.display = 'none'; // Standardmäßig ausgeblendet
   
   // Bank UI
   bankUI = document.createElement('div');
   bankUI.id = 'bank-ui';
   bankUI.className = 'resource-box';
+  bankUI.style.display = 'none'; // Standardmäßig ausgeblendet
   
   // Container for both UIs
   const container = document.createElement('div');
