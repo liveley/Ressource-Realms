@@ -104,7 +104,13 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildMenu.appendChild(makeMenuBtn('build-road', 'Straße bauen', () => setBuildMode('road')));
   buildMenu.appendChild(makeMenuBtn('build-settlement', 'Siedlung bauen', () => setBuildMode('settlement')));
   buildMenu.appendChild(makeMenuBtn('build-city', 'Stadt bauen', () => setBuildMode('city')));
-  buildMenu.appendChild(makeMenuBtn('build-cancel', 'Bauen aus', () => setBuildMode(null)));
+  // "Bauen aus" schließt das Menü (nicht mehr setBuildMode(null), sondern Menü schließen)
+  buildMenu.appendChild(makeMenuBtn('build-cancel', 'Bauen aus', () => {
+    buildEnabled = false;
+    buildToggleBtn.textContent = '\ud83c\udfd7\ufe0f';
+    buildMenu.style.display = 'none';
+    ui.classList.remove('menu-open');
+  }));
 
   ui.appendChild(buildMenu); // Menü bleibt erhalten
 
