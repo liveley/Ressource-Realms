@@ -18,8 +18,9 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildToggleBtn.style.margin = '0';
   buildToggleBtn.style.cursor = 'pointer';
   buildToggleBtn.style.borderRadius = '6px';
-  buildToggleBtn.style.width = 'clamp(2.4em, 3.8vw, 3.4em)';
-  buildToggleBtn.style.height = 'clamp(2.4em, 3.8vw, 3.4em)';
+  // Noch etwas kleiner
+  buildToggleBtn.style.width = 'clamp(2.1em, 2.8vw, 2.5em)';
+  buildToggleBtn.style.height = 'clamp(2.1em, 2.8vw, 2.5em)';
   buildToggleBtn.style.aspectRatio = '1 / 1';
   buildToggleBtn.onclick = () => {
     buildEnabled = !buildEnabled;
