@@ -8,6 +8,10 @@ let diceResult = null;
 let diceBtn = null;
 let diceBar = null;
 
+// ✅ State-Machine für Button-Kontrolle
+let blockReasons = new Set(); // Sammelt alle Gründe für Blockierung
+let originalClickHandler = null; // Einmalige Speicherung des ursprünglichen Handlers
+
 // callback: Funktion, die beim Klick auf "Würfeln" ausgeführt wird
 export function createDiceUI(onRoll, parent) {
   diceUI = document.createElement('div');
@@ -57,6 +61,9 @@ export function createDiceUI(onRoll, parent) {
     }
   };
 
+  // ✅ Speichere ursprünglichen Handler einmalig
+  originalClickHandler = diceBtn.onclick;
+
   // Event-Listener für Phasen-Updates
   onPhaseChange((phase) => {
     updateDiceButtonState();
@@ -74,62 +81,90 @@ export function setDiceResult(sum) {
 }
 
 /**
- * Block the dice button with a reason message
- * @param {string} reason - The reason to show why dice are blocked
- */
-export function blockDiceRolls(reason = "Aktion erforderlich") {
-  if (!diceBtn) return;
-  
-  // Store the original click handler
-  diceBtn._origOnClick = diceBtn.onclick;
-  diceBtn.onclick = () => {}; // Empty handler
-  
-  // Add visual indication
-  diceBtn.style.opacity = "0.5";
-  diceBtn.style.cursor = "not-allowed";
-  diceBtn.disabled = true;
-    // Show reason only as tooltip
-  diceBtn.title = `Würfeln blockiert: ${reason}`;
-}
-
-/**
- * Aktualisiert den Zustand des Würfel-Buttons basierend auf der aktuellen Phase
+ * ✅ Neue State-Machine für Button-Kontrolle
+ * Sammelt alle Blockierungsgründe und entscheidet zentral über Button-Zustand
  */
 function updateDiceButtonState() {
   if (!diceBtn) return;
   
   const canRoll = canRollDice();
+  const isBlocked = blockReasons.size > 0;
   
-  if (canRoll) {
+  // Zentrale Entscheidungslogik: Button nur enabled wenn beide true
+  const shouldEnable = canRoll && !isBlocked;
+  
+  if (shouldEnable) {
+    // Button aktivieren
     diceBtn.style.opacity = "1";
     diceBtn.style.cursor = "pointer";
     diceBtn.disabled = false;
+    diceBtn.onclick = originalClickHandler;
     diceBtn.title = "Würfeln";
   } else {
+    // Button deaktivieren
     diceBtn.style.opacity = "0.5";
     diceBtn.style.cursor = "not-allowed";
     diceBtn.disabled = true;
-    diceBtn.title = "Nicht in der Würfelphase";
+    diceBtn.onclick = () => {}; // Empty handler
+    
+    // Priorisierte Tooltip-Logik
+    if (!canRoll) {
+      diceBtn.title = "Nicht in der Würfelphase";
+    } else if (isBlocked) {
+      const reasons = Array.from(blockReasons).join(', ');
+      diceBtn.title = `Würfeln blockiert: ${reasons}`;
+    }
   }
 }
 
 /**
- * Unblock the dice button
+ * ✅ Verbesserte Block-Funktion mit State-Machine
+ * @param {string} reason - Der Grund für die Blockierung
  */
-export function unblockDiceRolls() {
+export function blockDiceRolls(reason = "Aktion erforderlich") {
   if (!diceBtn) return;
   
-  // Restore original click handler
-  if (diceBtn._origOnClick) {
-    diceBtn.onclick = diceBtn._origOnClick;
-    diceBtn._origOnClick = null;
-  }
-  // Remove visual indication
-  diceBtn.style.opacity = "1";
-  diceBtn.style.cursor = "pointer";
-  diceBtn.disabled = false;
-  diceBtn.title = "";
+  // Füge Grund zur Set hinzu (automatisch dedupliziert)
+  blockReasons.add(reason);
+  console.log(`Dice blocked: ${reason}. Active blocks:`, Array.from(blockReasons));
   
-  // Update based on current phase
+  // Aktualisiere Button-Zustand über zentrale Logik
   updateDiceButtonState();
+}
+
+/**
+ * ✅ Verbesserte Unblock-Funktion mit State-Machine
+ * @param {string} reason - Der spezifische Grund der entfernt werden soll
+ */
+export function unblockDiceRolls(reason = null) {
+  if (!diceBtn) return;
+  
+  if (reason) {
+    // Entferne spezifischen Grund
+    blockReasons.delete(reason);
+    console.log(`Dice unblocked: ${reason}. Remaining blocks:`, Array.from(blockReasons));
+  } else {
+    // Entferne alle Gründe (Backwards-Kompatibilität)
+    blockReasons.clear();
+    console.log('Dice unblocked: All reasons cleared');
+  }
+  
+  // Aktualisiere Button-Zustand über zentrale Logik
+  updateDiceButtonState();
+}
+
+/**
+ * ✅ Hilfsfunktion: Prüft ob Button blockiert ist
+ * @returns {boolean} - True wenn blockiert
+ */
+export function isDiceBlocked() {
+  return blockReasons.size > 0;
+}
+
+/**
+ * ✅ Hilfsfunktion: Gibt alle aktiven Blockierungsgründe zurück
+ * @returns {string[]} - Array der aktiven Gründe
+ */
+export function getBlockReasons() {
+  return Array.from(blockReasons);
 }
