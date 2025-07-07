@@ -52,22 +52,59 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
 
   ui.appendChild(buildToggleBtn);
 
-  // Das eigentliche Baumenü (Buttons für Spielerwahl, Straße, Siedlung, Stadt)
+  // Das eigentliche Baumenü (Buttons für Spielerwahl, Straße, Siedlung, Stadt, Bauen aus)
   buildMenu = document.createElement('div');
   buildMenu.id = 'build-menu';
   buildMenu.style.display = 'none'; // Anfangs ausgeblendet
   buildMenu.style.flexDirection = 'column';
-  buildMenu.style.gap = '0.5em';
-  buildMenu.style.marginTop = '0.7em';
+  buildMenu.style.justifyContent = 'space-between';
   buildMenu.style.alignItems = 'stretch';
+  buildMenu.style.gap = '0.3em';
   buildMenu.style.position = 'absolute';
-  buildMenu.style.bottom = '100%'; // Direkt über dem Button
-  buildMenu.style.right = '-1em';
-  buildMenu.style.marginBottom = '0';
-  buildMenu.style.width = buildToggleBtn.style.width; // Nur width, keine min/max
-  buildMenu.style.minWidth = buildToggleBtn.style.width;
-  buildMenu.style.maxWidth = buildToggleBtn.style.width;
-  buildMenu.style.height = 'auto'; // Höhe automatisch anpassen
+  // Menü an rechter unterer Ecke des Buttons verankern
+  buildMenu.style.right = '0';
+  buildMenu.style.bottom = '0';
+  // Breite und Höhe relativ zum Button, wie gewünscht
+  buildMenu.style.width = 'calc(clamp(2.1em, 2.8vw, 2.5em) * 1.33)';
+  buildMenu.style.height = 'calc(clamp(2.1em, 2.8vw, 2.5em) * 1.5)';
+  buildMenu.style.background = 'rgba(255,255,255,0.98)';
+  buildMenu.style.border = '2px solid #ffe066';
+  buildMenu.style.borderRadius = '0.5em';
+  buildMenu.style.boxShadow = '0 4px 24px #0003, 0 1.5px 0 #ffe066';
+  buildMenu.style.padding = '0.4em 0.3em';
+  buildMenu.style.overflow = 'hidden';
+
+  // Helper für kleine, längliche Buttons
+  function makeMenuBtn(id, text, onClick) {
+    const btn = document.createElement('button');
+    btn.id = id;
+    btn.textContent = text;
+    btn.style.width = '100%';
+    btn.style.height = '22%';
+    btn.style.minHeight = '1.5em';
+    btn.style.maxHeight = '2.2em';
+    btn.style.fontSize = '1em';
+    btn.style.fontFamily = 'inherit';
+    btn.style.fontWeight = '600';
+    btn.style.borderRadius = '0.35em';
+    btn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
+    btn.style.border = 'none';
+    btn.style.boxShadow = '0 1px 4px #0001';
+    btn.style.margin = '0';
+    btn.style.padding = '0.2em 0.5em';
+    btn.style.cursor = 'pointer';
+    btn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s';
+    btn.style.display = 'block';
+    btn.onclick = onClick;
+    btn.onmouseover = () => { btn.style.background = 'linear-gradient(90deg, #ffe066 80%, #fffbe6 100%)'; };
+    btn.onmouseout = () => { btn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)'; };
+    return btn;
+  }
+
+  buildMenu.appendChild(makeMenuBtn('build-road', 'Straße bauen', () => setBuildMode('road')));
+  buildMenu.appendChild(makeMenuBtn('build-settlement', 'Siedlung bauen', () => setBuildMode('settlement')));
+  buildMenu.appendChild(makeMenuBtn('build-city', 'Stadt bauen', () => setBuildMode('city')));
+  buildMenu.appendChild(makeMenuBtn('build-cancel', 'Bauen aus', () => setBuildMode(null)));
 
   // Straße bauen
   const roadBtn = document.createElement('button');
