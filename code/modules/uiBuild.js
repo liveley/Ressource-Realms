@@ -43,14 +43,11 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   ui.style.flexDirection = 'column';
   ui.style.alignItems = 'center';
   ui.style.justifyContent = 'flex-end';
-  ui.style.margin = '0';
-  ui.style.marginLeft = '1.2em'; // Fester Abstand von 1.2em zum vorherigen Element
   ui.style.padding = '0';
   ui.style.boxSizing = 'border-box';
   ui.style.position = 'relative';
-  ui.style.width = buildToggleBtn.style.width;
-  ui.style.minWidth = buildToggleBtn.style.width;
-  ui.style.maxWidth = buildToggleBtn.style.width;
+  // Positionierung direkt im JS:
+  ui.style.marginLeft = '1.2em';
 
   ui.appendChild(buildToggleBtn);
 
