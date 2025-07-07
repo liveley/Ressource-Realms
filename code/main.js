@@ -207,7 +207,52 @@ async function startGame() {
   }
   */
 
-  // Kombinierter Button:
+  try {
+    // === UI: Markt-Button (unabhängig vom Würfeln-Button) ===
+    let marketBtn = document.getElementById('market-btn');
+    if (!marketBtn) {
+      marketBtn = document.createElement('button');
+      marketBtn.id = 'market-btn';
+      marketBtn.title = 'Markt öffnen';
+      marketBtn.style.fontSize = '2.5em';
+      marketBtn.style.padding = '0.4em';
+      marketBtn.style.margin = '0 0.5em';
+      marketBtn.style.cursor = 'pointer';
+      marketBtn.style.borderRadius = '6px';
+      marketBtn.style.aspectRatio = '1 / 1';
+      marketBtn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
+      marketBtn.style.border = 'none';
+      marketBtn.style.boxShadow = '0 2px 8px #0001';
+      marketBtn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s';
+      marketBtn.style.outline = 'none';
+      marketBtn.style.fontFamily = "'Montserrat', Arial, sans-serif";
+      marketBtn.style.fontWeight = '700';
+      marketBtn.style.color = '#222';
+      marketBtn.style.display = 'flex';
+      marketBtn.style.flexDirection = 'column';
+      marketBtn.style.alignItems = 'center';
+      marketBtn.style.justifyContent = 'center';
+      // Emoji
+      const emojiSpan = document.createElement('span');
+      emojiSpan.textContent = '🏬';
+      emojiSpan.style.display = 'block';
+      emojiSpan.style.fontSize = '1em';
+      emojiSpan.style.lineHeight = '1';
+      marketBtn.appendChild(emojiSpan);
+      // Click-Handler: Markt-UI toggeln
+      marketBtn.onclick = () => {
+        const marketUI = document.getElementById('bank-trade-ui');
+        if (marketUI) {
+          marketUI.style.display = (marketUI.style.display === 'none' || marketUI.style.display === '') ? 'block' : 'none';
+        }
+      };
+      actionBar.appendChild(marketBtn);
+    }
+  } catch (e) {
+    console.error('Fehler beim Erstellen des Markt-Buttons:', e);
+  }
+
+  // === UI: Kombinierter Würfeln- und Spielerwechsel-Button ===
   try {
     // Entferne evtl. alten Button UND Wrapper
     const oldBtn = document.getElementById('roll-dice-combined');
@@ -242,12 +287,7 @@ async function startGame() {
     emoji.style.lineHeight = '1';
     btn.appendChild(emoji);
 
-    const label = document.createElement('span');
-    label.textContent = 'Würfeln';
-    label.style.fontSize = '0.32em';
-    label.style.color = '#222';
-    label.style.marginTop = '0.1em';
-    btn.appendChild(label);
+    // Label entfernt - nur noch Emoji wird angezeigt
 
     // Dummy-UI für das Würfelergebnis (wie dice-result), aber außerhalb des Buttons
     let resultDiv = document.getElementById('dice-result');
@@ -293,13 +333,10 @@ async function startGame() {
     function updateButtonUI() {
       if (state === 0) {
         emoji.textContent = '🎲';
-        label.textContent = 'Würfeln';
+        // Label entfernt - nur Emoji wird geändert
       } else {
         emoji.textContent = '🔄';
-        // Zeige nächsten Spielernamen
-        const idx = activePlayerIdx;
-        const nextIdx = (idx + 1) % window.players.length;
-        label.textContent = window.players[nextIdx].name;
+        // Spielerwechsel-Emoji, kein Label nötig
       }
     }
     updateButtonUI();
@@ -359,64 +396,19 @@ async function startGame() {
     console.error('Fehler beim Erstellen des kombinierten Buttons:', e);
   }
 
-  try {
-    // === UI: Markt-Button (unabhängig vom Würfeln-Button) ===
-    let marketBtn = document.getElementById('market-btn');
-    if (!marketBtn) {
-      marketBtn = document.createElement('button');
-      marketBtn.id = 'market-btn';
-      marketBtn.title = 'Markt öffnen';
-      marketBtn.style.fontSize = '2.5em';
-      marketBtn.style.padding = '0.4em';
-      marketBtn.style.margin = '0 0.5em';
-      marketBtn.style.cursor = 'pointer';
-      marketBtn.style.borderRadius = '6px';
-      marketBtn.style.aspectRatio = '1 / 1';
-      marketBtn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
-      marketBtn.style.border = 'none';
-      marketBtn.style.boxShadow = '0 2px 8px #0001';
-      marketBtn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s';
-      marketBtn.style.outline = 'none';
-      marketBtn.style.fontFamily = "'Montserrat', Arial, sans-serif";
-      marketBtn.style.fontWeight = '700';
-      marketBtn.style.color = '#222';
-      marketBtn.style.display = 'flex';
-      marketBtn.style.flexDirection = 'column';
-      marketBtn.style.alignItems = 'center';
-      marketBtn.style.justifyContent = 'center';
-      // Emoji
-      const emojiSpan = document.createElement('span');
-      emojiSpan.textContent = '🏬';
-      emojiSpan.style.display = 'block';
-      emojiSpan.style.fontSize = '1em';
-      emojiSpan.style.lineHeight = '1';
-      marketBtn.appendChild(emojiSpan);
-      // Click-Handler: Markt-UI toggeln
-      marketBtn.onclick = () => {
-        const marketUI = document.getElementById('bank-trade-ui');
-        if (marketUI) {
-          marketUI.style.display = (marketUI.style.display === 'none' || marketUI.style.display === '') ? 'block' : 'none';
-        }
-      };
-      actionBar.appendChild(marketBtn);
-    }
-  } catch (e) {
-    console.error('Fehler beim Erstellen des Markt-Buttons:', e);
-  }
-
-  try {
-    // === UI: Spielerwechsel-Button ===
-    placePlayerSwitchButton(window.players, () => activePlayerIdx, (idx) => {
-      activePlayerIdx = idx;
-      window.activePlayerIdx = idx;
-      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-      updatePlayerOverviews(window.players, () => activePlayerIdx);
-      if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
-    }, actionBar);
-    console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
-  } catch (e) {
-    console.error('Fehler beim Erstellen des Player-Switch-Buttons:', e);
-  }
+  // try {
+  //   // === UI: Spielerwechsel-Button ===
+  //   placePlayerSwitchButton(window.players, () => activePlayerIdx, (idx) => {
+  //     activePlayerIdx = idx;
+  //     window.activePlayerIdx = idx;
+  //     updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+  //     updatePlayerOverviews(window.players, () => activePlayerIdx);
+  //     if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
+  //   }, actionBar);
+  //   console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
+  // } catch (e) {
+  //   console.error('Fehler beim Erstellen des Player-Switch-Buttons:', e);
+  // }
 
   try {
     // === UI: Ressourcenanzeige & Entwicklungskarten-UI ===
