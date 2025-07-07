@@ -26,7 +26,7 @@ function createSettingsButton() {
     settingsContainer = document.createElement('div');
     settingsContainer.id = 'settings-ui';
     settingsContainer.style.position = 'absolute';
-    settingsContainer.style.top = '2em';
+    settingsContainer.style.top = '8em';
     settingsContainer.style.left = '2em';
     settingsContainer.style.zIndex = '15';
     document.body.appendChild(settingsContainer);
