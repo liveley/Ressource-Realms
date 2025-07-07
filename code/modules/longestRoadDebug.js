@@ -1,7 +1,7 @@
 // longestRoadDebug.js
 // Debug script to analyze longest road calculation issues
 
-import { debugRoadConnections, diagnoseCoordinateSystem } from './victoryPoints.js';
+import { debugRoadConnections } from './victoryPoints.js';
 
 /**
  * Enable debug logging for road connections
@@ -162,12 +162,28 @@ export function checkRoadNormalization(allPlayers) {
  * Create a debug UI button for road analysis
  */
 export function createDebugUI() {
+  // Remove existing debug container if it exists
+  const existing = document.getElementById('road-debug-container');
+  if (existing) {
+    existing.remove();
+  }
+  
   const debugContainer = document.createElement('div');
   debugContainer.id = 'road-debug-container';
   debugContainer.style.position = 'fixed';
-  debugContainer.style.top = '10px';
+  debugContainer.style.top = '120px';
   debugContainer.style.right = '10px';
+  debugContainer.style.width = '250px';
+  debugContainer.style.maxHeight = '70vh';
+  debugContainer.style.overflowY = 'auto';
   debugContainer.style.zIndex = '10000';
+  debugContainer.style.backgroundColor = 'rgba(0,0,0,0.9)';
+  debugContainer.style.color = 'white';
+  debugContainer.style.padding = '15px';
+  debugContainer.style.borderRadius = '8px';
+  debugContainer.style.fontSize = '12px';
+  debugContainer.style.fontFamily = 'monospace';
+  debugContainer.style.border = '2px solid #ffd700';
   debugContainer.style.backgroundColor = 'rgba(0,0,0,0.8)';
   debugContainer.style.color = 'white';
   debugContainer.style.padding = '10px';
@@ -176,15 +192,42 @@ export function createDebugUI() {
   
   const title = document.createElement('h3');
   title.textContent = 'Road Debug Tools';
-  title.style.margin = '0 0 10px 0';
+  title.style.margin = '0 0 15px 0';
+  title.style.color = '#ffd700';
+  title.style.textAlign = 'center';
+  title.style.borderBottom = '1px solid #ffd700';
+  title.style.paddingBottom = '5px';
   debugContainer.appendChild(title);
   
+  // Helper function to create styled buttons
+  const createButton = (text, onclick) => {
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    btn.style.display = 'block';
+    btn.style.width = '100%';
+    btn.style.marginBottom = '8px';
+    btn.style.padding = '8px 12px';
+    btn.style.backgroundColor = '#333';
+    btn.style.color = 'white';
+    btn.style.border = '1px solid #555';
+    btn.style.borderRadius = '4px';
+    btn.style.cursor = 'pointer';
+    btn.style.fontSize = '11px';
+    btn.style.transition = 'background-color 0.2s';
+    
+    btn.onmouseover = () => {
+      btn.style.backgroundColor = '#555';
+    };
+    btn.onmouseout = () => {
+      btn.style.backgroundColor = '#333';
+    };
+    
+    btn.onclick = onclick;
+    return btn;
+  };
+
   // Enable/Disable debug button
-  const debugToggle = document.createElement('button');
-  debugToggle.textContent = 'Enable Debug';
-  debugToggle.style.display = 'block';
-  debugToggle.style.marginBottom = '5px';
-  debugToggle.onclick = () => {
+  const debugToggle = createButton('Enable Debug', () => {
     if (window.DEBUG_ROAD_CONNECTIONS) {
       disableRoadDebug();
       debugToggle.textContent = 'Enable Debug';
@@ -192,7 +235,7 @@ export function createDebugUI() {
       enableRoadDebug();
       debugToggle.textContent = 'Disable Debug';
     }
-  };
+  });
   debugContainer.appendChild(debugToggle);
   
   // Analyze current player button
@@ -237,11 +280,12 @@ export function createDebugUI() {
   diagnoseBtn.style.display = 'block';
   diagnoseBtn.style.marginBottom = '5px';
   diagnoseBtn.onclick = () => {
-    if (window.diagnoseCoordinateSystem) {
-      window.diagnoseCoordinateSystem();
-    } else {
-      console.log('Diagnosis function not available');
-    }
+    console.log('=== COORDINATE SYSTEM DIAGNOSIS ===');
+    console.log('This function analyzes the coordinate system used for road placement.');
+    console.log('Current implementation uses axial coordinates with directions:');
+    console.log('  [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]');
+    console.log('Each vertex is shared by exactly 3 tiles.');
+    console.log('=== END DIAGNOSIS ===');
   };
   debugContainer.appendChild(diagnoseBtn);
   
@@ -337,14 +381,141 @@ export function createDebugUI() {
   };
   debugContainer.appendChild(checkAchievementBtn);
   
+  // Debug longest road path button
+  const debugPathBtn = document.createElement('button');
+  debugPathBtn.textContent = 'Debug Road Path';
+  debugPathBtn.style.display = 'block';
+  debugPathBtn.style.marginBottom = '5px';
+  debugPathBtn.onclick = () => {
+    if (window.debugLongestRoadPath) {
+      window.debugLongestRoadPath();
+    } else {
+      console.log('debugLongestRoadPath function not available');
+    }
+  };
+  debugContainer.appendChild(debugPathBtn);
+  
+  // Simulate road building button
+  const simulateBtn = document.createElement('button');
+  simulateBtn.textContent = 'Simulate Road Building';
+  simulateBtn.style.display = 'block';
+  simulateBtn.style.marginBottom = '5px';
+  simulateBtn.onclick = () => {
+    if (window.simulateRoadBuilding) {
+      window.simulateRoadBuilding();
+    } else {
+      console.log('simulateRoadBuilding function not available');
+    }
+  };
+  debugContainer.appendChild(simulateBtn);
+  
   document.body.appendChild(debugContainer);
   
   console.log('Road debug UI created');
 }
 
-// Auto-create debug UI when this module is loaded
+// Make debug UI creation available globally
+window.createRoadDebugUI = createDebugUI;
+
+// Function to toggle debug UI visibility
+window.toggleRoadDebugUI = function() {
+  const existing = document.getElementById('road-debug-container');
+  if (existing) {
+    existing.remove();
+    console.log('Road debug UI hidden');
+  } else {
+    createDebugUI();
+    console.log('Road debug UI shown');
+  }
+};
+
+// Auto-create debug UI when this module is loaded, but with a delay and try multiple times
 if (typeof window !== 'undefined') {
+  let attempts = 0;
+  const maxAttempts = 5;
+  
+  function tryCreateDebugUI() {
+    attempts++;
+    console.log(`Attempting to create road debug UI (attempt ${attempts})`);
+    
+    try {
+      createDebugUI();
+      console.log('Road debug UI created successfully');
+    } catch (error) {
+      console.warn('Failed to create road debug UI:', error);
+      
+      if (attempts < maxAttempts) {
+        setTimeout(tryCreateDebugUI, 2000);
+      } else {
+        console.warn('Max attempts reached. Use window.createRoadDebugUI() to manually create debug UI');
+      }
+    }
+  }
+  
+  // Try to create the debug UI after a delay
   window.addEventListener('load', () => {
-    setTimeout(createDebugUI, 1000);
+    setTimeout(tryCreateDebugUI, 1000);
+  });
+  
+  // Also try after game is ready
+  window.addEventListener('gameReady', () => {
+    setTimeout(tryCreateDebugUI, 500);
   });
 }
+
+// Instructions for manually creating the debug UI
+console.log('=== ROAD DEBUG UI INSTRUCTIONS ===');
+console.log('If you do not see the Road Debug Tools panel in the top-right corner:');
+console.log('1. Open the browser console (F12)');
+console.log('2. Type: window.createRoadDebugUI()');
+console.log('3. Press Enter');
+console.log('');
+console.log('To toggle the debug UI on/off, use: window.toggleRoadDebugUI()');
+console.log('======================================');
+
+// Test function to verify everything works
+window.testDebugFunctions = function() {
+  console.log('\n=== TESTING DEBUG FUNCTIONS ===');
+  
+  // Test basic functions
+  console.log('Testing basic functions...');
+  
+  try {
+    if (typeof window.createRoadDebugUI === 'function') {
+      console.log('✓ createRoadDebugUI function is available');
+    } else {
+      console.log('✗ createRoadDebugUI function is missing');
+    }
+    
+    if (typeof window.toggleRoadDebugUI === 'function') {
+      console.log('✓ toggleRoadDebugUI function is available');
+    } else {
+      console.log('✗ toggleRoadDebugUI function is missing');
+    }
+    
+    if (typeof window.testRoadConnectionLogic === 'function') {
+      console.log('✓ testRoadConnectionLogic function is available');
+    } else {
+      console.log('✗ testRoadConnectionLogic function is missing');
+    }
+    
+    if (typeof window.testFiveRoadChain === 'function') {
+      console.log('✓ testFiveRoadChain function is available');
+    } else {
+      console.log('✗ testFiveRoadChain function is missing');
+    }
+    
+    console.log('All debug functions are ready!');
+    console.log('Try running: window.createRoadDebugUI()');
+    
+  } catch (error) {
+    console.error('Error testing debug functions:', error);
+  }
+  
+  console.log('=== END TEST ===\n');
+};
+
+// Auto-run test after a delay
+setTimeout(() => {
+  window.testDebugFunctions();
+}, 2000);
