@@ -171,27 +171,9 @@ function areRoadsConnected(road1, road2) {
   const vertices1 = getRoadVertices(road1);
   const vertices2 = getRoadVertices(road2);
   
-  // Debug logging (only if enabled)
-  if (window.DEBUG_ROAD_CONNECTIONS) {
-    console.log(`Checking connection between road ${getRoadKey(road1)} and ${getRoadKey(road2)}`);
-    console.log(`Road 1 vertices:`, vertices1);
-    console.log(`Road 2 vertices:`, vertices2);
-  }
-  
   const connected = vertices1.some(v1 => 
-    vertices2.some(v2 => {
-      // Check if vertices are at the same physical location
-      const same = areVerticesEqual(v1, v2);
-      if (same && window.DEBUG_ROAD_CONNECTIONS) {
-        console.log(`Connection found at vertex:`, v1);
-      }
-      return same;
-    })
+    vertices2.some(v2 => areVerticesEqual(v1, v2))
   );
-  
-  if (window.DEBUG_ROAD_CONNECTIONS) {
-    console.log(`Connected:`, connected);
-  }
   return connected;
 }
 
@@ -445,7 +427,10 @@ function getRoadKey(road) {
 export function updateLongestRoad(players) {
   if (!players || players.length === 0) return;
   
-  console.log('Updating longest road for', players.length, 'players');
+  // Debug logging (only if enabled)
+  if (window.DEBUG_VICTORY_POINTS) {
+    console.log('Updating longest road for', players.length, 'players');
+  }
   
   // Calculate road lengths for all players
   const roadLengths = players.map(player => ({
@@ -453,14 +438,18 @@ export function updateLongestRoad(players) {
     length: calculateLongestRoad(player)
   }));
   
-  console.log('Road lengths:', roadLengths.map(r => ({ name: r.player.name, length: r.length })));
+  if (window.DEBUG_VICTORY_POINTS) {
+    console.log('Road lengths:', roadLengths.map(r => ({ name: r.player.name, length: r.length })));
+  }
   
   // Find the longest road (must be at least 5)
   const validRoads = roadLengths.filter(item => item.length >= 5);
   
   if (validRoads.length === 0) {
     // No one has longest road
-    console.log('No player has 5+ roads for longest road');
+    if (window.DEBUG_VICTORY_POINTS) {
+      console.log('No player has 5+ roads for longest road');
+    }
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.longestRoad = 0;
@@ -478,7 +467,9 @@ export function updateLongestRoad(players) {
   
   if (winners.length === 1) {
     // Clear winner
-    console.log(`${winners[0].player.name} gets longest road with ${maxLength} roads`);
+    if (window.DEBUG_VICTORY_POINTS) {
+      console.log(`${winners[0].player.name} gets longest road with ${maxLength} roads`);
+    }
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.longestRoad = (player === winners[0].player) ? 2 : 0;
@@ -486,12 +477,16 @@ export function updateLongestRoad(players) {
     });
   } else {
     // Tie - check who currently has the longest road achievement
-    console.log(`Longest road tie at ${maxLength} roads between:`, winners.map(w => w.player.name));
+    if (window.DEBUG_VICTORY_POINTS) {
+      console.log(`Longest road tie at ${maxLength} roads between:`, winners.map(w => w.player.name));
+    }
     const currentHolder = players.find(player => player.victoryPoints?.longestRoad > 0);
     
     if (currentHolder && winners.some(w => w.player === currentHolder)) {
       // Current holder is tied, they keep it
-      console.log(`${currentHolder.name} keeps longest road (tie-breaker rule)`);
+      if (window.DEBUG_VICTORY_POINTS) {
+        console.log(`${currentHolder.name} keeps longest road (tie-breaker rule)`);
+      }
       players.forEach(player => {
         if (player.victoryPoints) {
           player.victoryPoints.longestRoad = (player === currentHolder) ? 2 : 0;
@@ -499,7 +494,9 @@ export function updateLongestRoad(players) {
       });
     } else {
       // No current holder among tied players, first tied player gets it
-      console.log(`${winners[0].player.name} gets longest road (first to achieve tie)`);
+      if (window.DEBUG_VICTORY_POINTS) {
+        console.log(`${winners[0].player.name} gets longest road (first to achieve tie)`);
+      }
       players.forEach(player => {
         if (player.victoryPoints) {
           player.victoryPoints.longestRoad = (player === winners[0].player) ? 2 : 0;
@@ -522,18 +519,25 @@ export function updateLongestRoad(players) {
 export function updateLargestArmy(players) {
   if (!players || players.length === 0) return;
   
-  console.log('Updating largest army for', players.length, 'players');
+  // Debug logging (only if enabled)
+  if (window.DEBUG_VICTORY_POINTS) {
+    console.log('Updating largest army for', players.length, 'players');
+  }
   
   // Find players with at least 3 knights played
   const validArmies = players
     .filter(player => (player.knightsPlayed || 0) >= 3)
     .map(player => ({ player, knights: player.knightsPlayed || 0 }));
     
-  console.log('Valid armies:', validArmies.map(a => ({ name: a.player.name, knights: a.knights })));
+  if (window.DEBUG_VICTORY_POINTS) {
+    console.log('Valid armies:', validArmies.map(a => ({ name: a.player.name, knights: a.knights })));
+  }
   
   if (validArmies.length === 0) {
     // No one has largest army
-    console.log('No player has 3+ knights for largest army');
+    if (window.DEBUG_VICTORY_POINTS) {
+      console.log('No player has 3+ knights for largest army');
+    }
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.largestArmy = 0;
@@ -551,7 +555,9 @@ export function updateLargestArmy(players) {
   
   if (winners.length === 1) {
     // Clear winner
-    console.log(`${winners[0].player.name} gets largest army with ${maxKnights} knights`);
+    if (window.DEBUG_VICTORY_POINTS) {
+      console.log(`${winners[0].player.name} gets largest army with ${maxKnights} knights`);
+    }
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.largestArmy = (player === winners[0].player) ? 2 : 0;
@@ -559,7 +565,9 @@ export function updateLargestArmy(players) {
     });
   } else {
     // Tie - no one gets the bonus
-    console.log('Largest army tie, no one gets it');
+    if (window.DEBUG_VICTORY_POINTS) {
+      console.log('Largest army tie, no one gets it');
+    }
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.largestArmy = 0;
@@ -744,78 +752,4 @@ export function getVictoryPointsForDisplay(player, isCurrentPlayer = false) {
   }
 }
 
-/**
- * Debug function to test road connections
- * @param {Array} roads - Array of road objects
- */
-export function debugRoadConnections(roads) {
-  console.log('\n=== DEBUG ROAD CONNECTIONS ===');
-  console.log('Roads:', roads);
-  
-  if (!roads || roads.length === 0) {
-    console.log('No roads to debug');
-    return;
-  }
-  
-  // Build adjacency list
-  const adjacencyList = buildSimpleRoadAdjacencyList(roads);
-  console.log('Road adjacency list:', adjacencyList);
-  
-  // Test connections
-  roads.forEach((road1, i) => {
-    roads.forEach((road2, j) => {
-      if (i >= j) return; // Avoid duplicate checks
-      
-      const connected = areRoadsConnectedVertex(road1, road2);
-      console.log(`Road ${getRoadKey(road1)} <-> Road ${getRoadKey(road2)}: ${connected ? 'CONNECTED' : 'not connected'}`);
-      
-      if (connected && window.DEBUG_ROAD_CONNECTIONS) {
-        const vertices1 = getRoadVertices(road1);
-        const vertices2 = getRoadVertices(road2);
-        console.log(`  Vertices road1:`, vertices1);
-        console.log(`  Vertices road2:`, vertices2);
-        
-        // Show which vertex is shared
-        for (const v1 of vertices1) {
-          for (const v2 of vertices2) {
-            if (areVerticesEqual(v1, v2)) {
-              console.log(`  Shared vertex: {q: ${v1.q}, r: ${v1.r}, corner: ${v1.corner}}`);
-            }
-          }
-        }
-      }
-    });
-  });
-  
-  // Calculate longest road
-  const longestLength = calculateLongestRoad({ roads });
-  console.log(`Longest road calculated: ${longestLength}`);
-  
-  console.log('=== END DEBUG ===\n');
-}
 
-/**
- * Get canonical road representation to prevent duplicates
- * Roads can be represented from either end, so we normalize to a standard form
- * @param {Object} road - Road object with q, r, edge
- * @returns {Object} Canonical road representation
- */
-export function getCanonicalRoad(road) {
-  const { q, r, edge } = road;
-  
-  // Calculate neighbor tile coordinates
-  const directions = [
-    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  ];
-  
-  const [nq, nr] = [q + directions[edge][0], r + directions[edge][1]];
-  const neighborEdge = (edge + 3) % 6;
-  
-  // Choose the canonical representation based on tile coordinates
-  // Use lexicographic ordering: smaller q first, then smaller r, then smaller edge
-  if (q < nq || (q === nq && r < nr) || (q === nq && r === nr && edge < neighborEdge)) {
-    return { q, r, edge };
-  } else {
-    return { q: nq, r: nr, edge: neighborEdge };
-  }
-}
