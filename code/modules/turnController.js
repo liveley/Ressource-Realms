@@ -126,6 +126,7 @@ export function nextPhase() {
     case TURN_PHASES.BUILD:
       return setPhase(TURN_PHASES.TRADE); // Von BUILD zurück zu TRADE (flexibles Wechseln)
     case TURN_PHASES.END:
+      // END-Phase wird durch endTurn() nicht mehr erreicht, aber für Vollständigkeit
       return nextPlayer(); // Automatisch zum nächsten Spieler wechseln
     default:
       console.warn(`nextPhase: Unbekannte Phase ${currentPhase}`);
@@ -204,7 +205,8 @@ export function canBuild() {
 
 export function endTurn() {
   console.log(`Turn ended for player ${getActivePlayerIdx()}`);
-  return setPhase(TURN_PHASES.END);
+  // Direkt zum nächsten Spieler wechseln, statt nur Phase zu setzen
+  return nextPlayer();
 }
 
 export function resetToStart() {
