@@ -30,6 +30,8 @@ import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDis
 import { enableRoadDebug, disableRoadDebug, analyzePlayerRoads, testRoadConnections, toggleRoadDebugTools, isRoadDebugToolsVisible } from './modules/debugging/longestRoadDebug.js';
 import { initRoadTestingUtils } from './modules/debugging/roadTestingUtils.js';
 import { initDebugKeyHandlers } from './modules/debugging/debugKeyHandlers.js';
+import { initDebugControls } from './modules/debugging/debugControls.js';
+import { initVictoryPointsTestingUtils } from './modules/debugging/victoryPointsTestingUtils.js';
 
 window.players = window.players || [
   {
@@ -558,6 +560,14 @@ console.log('Road testing utilities initialized and available in console.');
 
 // === Initialize Debug Key Handlers ===
 initDebugKeyHandlers();
+
+// === Initialize Debug Controls ===
+initDebugControls();
+console.log('Debug controls initialized. Use enableDebugLogging() / disableDebugLogging() in console.');
+
+// === Initialize Victory Points Testing Utils ===
+initVictoryPointsTestingUtils();
+console.log('Victory Points testing utilities initialized.');
 
 // === Main-Menu-Start-Button-Handler ===
 // NOTE: This is handled by index.js, so commenting out to avoid conflicts

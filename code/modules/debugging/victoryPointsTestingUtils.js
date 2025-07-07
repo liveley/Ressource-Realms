@@ -9,7 +9,7 @@
 //    - getCanonicalRoad(road) - Get canonical representation of a road
 //    - testRoadConnections() - Run comprehensive road connection tests
 
-import { calculateLongestRoad, getCanonicalRoad } from '../victoryPoints.js';
+import { calculateLongestRoad } from '../victoryPoints.js';
 
 // Internal functions that are also used in the debug module
 // These are copies of the functions from victoryPoints.js for debugging purposes
@@ -202,7 +202,7 @@ export function debugRoadConnections(roads) {
       const connected = areRoadsConnectedVertex(road1, road2);
       console.log(`Road ${getRoadKey(road1)} <-> Road ${getRoadKey(road2)}: ${connected ? 'CONNECTED' : 'not connected'}`);
       
-      if (connected && typeof window !== 'undefined' && window.DEBUG_ROAD_CONNECTIONS) {
+      if (connected && window.DEBUG_ROAD_CONNECTIONS) {
         const vertices1 = getRoadVertices(road1);
         const vertices2 = getRoadVertices(road2);
         console.log(`  Vertices road1:`, vertices1);
@@ -225,6 +225,32 @@ export function debugRoadConnections(roads) {
   console.log(`Longest road calculated: ${longestLength}`);
   
   console.log('=== END DEBUG ===\n');
+}
+
+/**
+ * Get canonical road representation to prevent duplicates
+ * Roads can be represented from either end, so we normalize to a standard form
+ * @param {Object} road - Road object with q, r, edge
+ * @returns {Object} Canonical road representation
+ */
+export function getCanonicalRoad(road) {
+  const { q, r, edge } = road;
+  
+  // Calculate neighbor tile coordinates
+  const directions = [
+    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+  ];
+  
+  const [nq, nr] = [q + directions[edge][0], r + directions[edge][1]];
+  const neighborEdge = (edge + 3) % 6;
+  
+  // Choose the canonical representation based on tile coordinates
+  // Use lexicographic ordering: smaller q first, then smaller r, then smaller edge
+  if (q < nq || (q === nq && r < nr) || (q === nq && r === nr && edge < neighborEdge)) {
+    return { q, r, edge };
+  } else {
+    return { q: nq, r: nr, edge: neighborEdge };
+  }
 }
 
 /**
@@ -274,11 +300,9 @@ export function testRoadConnections() {
  */
 export function initVictoryPointsTestingUtils() {
   // Make debug functions globally available
-  if (typeof window !== 'undefined') {
-    window.debugRoadConnections = debugRoadConnections;
-    window.getCanonicalRoad = getCanonicalRoad;  // Import from victoryPoints.js
-    window.testRoadConnections = testRoadConnections;
-  }
+  window.debugRoadConnections = debugRoadConnections;
+  window.getCanonicalRoad = getCanonicalRoad;
+  window.testRoadConnections = testRoadConnections;
   
   console.log('Victory Points Testing Utils initialized. Available functions:');
   console.log('- debugRoadConnections(roads)');

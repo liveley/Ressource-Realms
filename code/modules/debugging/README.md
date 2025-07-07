@@ -15,7 +15,6 @@ The debug and testing functionality has been successfully refactored and organiz
 2. **Cleaned up victoryPoints.js**:
    - Moved debug/testing functions → `victoryPointsTestingUtils.js`
    - Made console logging conditional (controlled by `window.DEBUG_VICTORY_POINTS`)
-   - **Kept core functions needed by main game logic** (like `getCanonicalRoad`)
 
 3. **Created centralized debug control system**:
    - `debugControls.js` - Centralized debug flag management
