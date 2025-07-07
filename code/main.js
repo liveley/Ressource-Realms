@@ -200,6 +200,32 @@ async function startGame() {
       };
     }, actionBar);
     console.log('Dice-UI erstellt:', document.getElementById('dice-ui'));
+
+    // === UI: Markt-Button (identisch zu Würfeln) ===
+    // Wir kopieren den Würfeln-Button und passen nur das Symbol und die Funktion an
+    const diceBtn = document.getElementById('roll-dice');
+    if (diceBtn) {
+      const marketBtn = diceBtn.cloneNode(true);
+      marketBtn.id = 'market-btn';
+      marketBtn.title = 'Markt öffnen';
+      // Symbol ändern
+      marketBtn.innerHTML = diceBtn.innerHTML;
+      // Versuche das Emoji zu ersetzen, falls vorhanden
+      const emojiSpan = marketBtn.querySelector('span');
+      if (emojiSpan) emojiSpan.textContent = '🛒';
+      // Text ändern, falls vorhanden
+      const labelSpan = marketBtn.querySelector('span + span');
+      if (labelSpan) labelSpan.textContent = 'Markt';
+      // Click-Handler: Markt-UI toggeln
+      marketBtn.onclick = () => {
+        const marketUI = document.getElementById('bank-trade-ui');
+        if (marketUI) {
+          marketUI.style.display = (marketUI.style.display === 'none' || marketUI.style.display === '') ? 'block' : 'none';
+        }
+      };
+      // Einfügen direkt nach dem Würfeln-Button
+      diceBtn.parentNode.insertBefore(marketBtn, diceBtn.nextSibling);
+    }
   } catch (e) {
     console.error('Fehler beim Erstellen des Dice-UI:', e);
   }
