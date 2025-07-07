@@ -16,7 +16,6 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
   devUI.style.borderRadius = '0.5em';
   devUI.style.padding = '0.5em 1.2em 0.5em 0.8em';
   devUI.style.boxShadow = '0 2px 8px #0001';
-  devUI.style.display = 'flex';
   devUI.style.alignItems = 'center';
   devUI.style.gap = '0.7em';
   devUI.style.fontSize = '1em';
