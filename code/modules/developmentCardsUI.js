@@ -10,6 +10,7 @@ window.ALLOW_ALL_DEV_CARDS_PLAY = true;
 export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, getScene, getTileMeshes } = {}) {
   const devUI = document.createElement('div');
   devUI.id = 'development-cards-ui';
+  devUI.style.display = 'none'; // Standardmäßig ausgeblendet
   devUI.style.marginTop = '0.7em';
   devUI.style.background = 'rgba(255,255,255,0.96)';
   devUI.style.borderRadius = '0.5em';

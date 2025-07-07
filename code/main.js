@@ -239,12 +239,13 @@ async function startGame() {
       emojiSpan.style.fontSize = '1em';
       emojiSpan.style.lineHeight = '1';
       marketBtn.appendChild(emojiSpan);
-      // Click-Handler: Markt-UI toggeln (Bank-Trade-UI + Resource-Boxen)
+      // Click-Handler: Markt-UI toggeln (Bank-Trade-UI + Resource-Boxen + Development-Cards-UI)
       marketBtn.onclick = () => {
         const marketUI = document.getElementById('bank-trade-ui');
         const resourceContainer = document.getElementById('resource-bank-container');
         const playerResourceUI = document.getElementById('ressource-ui');
         const bankResourceUI = document.getElementById('bank-ui');
+        const devCardsUI = document.getElementById('development-cards-ui');
         
         // Bestimme den aktuellen Zustand (alle sollten synchron sein)
         const isCurrentlyHidden = !marketUI || marketUI.style.display === 'none' || marketUI.style.display === '';
@@ -258,6 +259,9 @@ async function startGame() {
         }
         if (bankResourceUI) {
           bankResourceUI.style.display = isCurrentlyHidden ? 'block' : 'none';
+        }
+        if (devCardsUI) {
+          devCardsUI.style.display = isCurrentlyHidden ? 'block' : 'none';
         }
       };
       actionBar.appendChild(marketBtn);
