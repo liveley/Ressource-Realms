@@ -9,17 +9,6 @@ let buildEnabled = false;
 let buildMenu = null;
 
 export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePlayerIdx, setActivePlayerIdx, parent }) {
-  // Build-UI (wie bisher)
-  const ui = document.createElement('div');
-  ui.id = 'build-ui';
-  ui.style.display = 'flex';
-  ui.style.flexDirection = 'column';
-  ui.style.alignItems = 'center';
-  ui.style.justifyContent = 'flex-end';
-  ui.style.margin = '0';
-  ui.style.padding = '0';
-  ui.style.boxSizing = 'border-box';
-
   // Bau-Button (immer sichtbar)
   const buildToggleBtn = document.createElement('button');
   buildToggleBtn.id = 'build-toggle-btn';
@@ -46,6 +35,23 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
       console.log('Build-UI: Menü geschlossen');
     }
   };
+
+  // Build-UI Container
+  const ui = document.createElement('div');
+  ui.id = 'build-ui';
+  ui.style.display = 'flex';
+  ui.style.flexDirection = 'column';
+  ui.style.alignItems = 'center';
+  ui.style.justifyContent = 'flex-end';
+  ui.style.margin = '0';
+  ui.style.marginLeft = '1.2em'; // Fester Abstand von 1.2em zum vorherigen Element
+  ui.style.padding = '0';
+  ui.style.boxSizing = 'border-box';
+  ui.style.position = 'relative';
+  ui.style.width = buildToggleBtn.style.width;
+  ui.style.minWidth = buildToggleBtn.style.width;
+  ui.style.maxWidth = buildToggleBtn.style.width;
+
   ui.appendChild(buildToggleBtn);
 
   // Das eigentliche Baumenü (Buttons für Spielerwahl, Straße, Siedlung, Stadt)
@@ -56,8 +62,14 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildMenu.style.gap = '0.5em';
   buildMenu.style.marginTop = '0.7em';
   buildMenu.style.alignItems = 'stretch';
-  buildMenu.style.bottom = '2em'; // Abstand zum unteren Rand
-  buildMenu.style.right = '6em'; // Abstand zum rechten Rand
+  buildMenu.style.position = 'absolute';
+  buildMenu.style.bottom = '100%'; // Direkt über dem Button
+  buildMenu.style.right = '-1em';
+  buildMenu.style.marginBottom = '0';
+  buildMenu.style.width = buildToggleBtn.style.width; // Nur width, keine min/max
+  buildMenu.style.minWidth = buildToggleBtn.style.width;
+  buildMenu.style.maxWidth = buildToggleBtn.style.width;
+  buildMenu.style.height = 'auto'; // Höhe automatisch anpassen
 
   // Straße bauen
   const roadBtn = document.createElement('button');
@@ -80,7 +92,13 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   cityBtn.onclick = () => setBuildMode('city');
   buildMenu.appendChild(cityBtn);
 
-  ui.appendChild(buildMenu);
+  // ui.appendChild(buildMenu); // <--- Menü komplett auskommentiert, falls du es testen willst
+  //
+  // Alternativ: Nur die Breite exakt auf die des Buttons setzen (ohne min/max)
+  // buildMenu.style.width = buildToggleBtn.style.width;
+  // buildMenu.style.minWidth = '';
+  // buildMenu.style.maxWidth = '';
+  ui.appendChild(buildMenu); // <--- Standard: Menü bleibt erhalten
 
   // In gewünschtes Parent-Element einfügen
   if (parent) {
@@ -107,6 +125,9 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     popup.style.display = 'none';
     document.body.appendChild(popup);
   }
+
+  // Debugging logs for layout issues
+  console.log('Build-Menu: Position and size adjusted for consistent spacing.');
 }
 
 export function isBuildEnabled() {
