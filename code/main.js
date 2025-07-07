@@ -200,25 +200,42 @@ async function startGame() {
       };
     }, actionBar);
     console.log('Dice-UI erstellt:', document.getElementById('dice-ui'));
+  } catch (e) {
+    console.error('Fehler beim Erstellen des Dice-UI:', e);
+  }
 
-    // === UI: Markt-Button (identisch zu Würfeln) ===
-    // Wir kopieren den Würfeln-Button und passen nur das Symbol und die Funktion an
-    const diceBtn = document.getElementById('roll-dice');
-    if (diceBtn) {
-      const marketBtn = diceBtn.cloneNode(false); // Nur das Element, kein Inhalt
+  try {
+    // === UI: Markt-Button (unabhängig vom Würfeln-Button) ===
+    let marketBtn = document.getElementById('market-btn');
+    if (!marketBtn) {
+      marketBtn = document.createElement('button');
       marketBtn.id = 'market-btn';
       marketBtn.title = 'Markt öffnen';
-      // Emoji explizit setzen, kein Label
-      marketBtn.innerHTML = '';
+      marketBtn.style.fontSize = '2.5em';
+      marketBtn.style.padding = '0.4em';
+      marketBtn.style.margin = '0 0.5em';
+      marketBtn.style.cursor = 'pointer';
+      marketBtn.style.borderRadius = '6px';
+      marketBtn.style.aspectRatio = '1 / 1';
+      marketBtn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
+      marketBtn.style.border = 'none';
+      marketBtn.style.boxShadow = '0 2px 8px #0001';
+      marketBtn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s';
+      marketBtn.style.outline = 'none';
+      marketBtn.style.fontFamily = "'Montserrat', Arial, sans-serif";
+      marketBtn.style.fontWeight = '700';
+      marketBtn.style.color = '#222';
+      marketBtn.style.display = 'flex';
+      marketBtn.style.flexDirection = 'column';
+      marketBtn.style.alignItems = 'center';
+      marketBtn.style.justifyContent = 'center';
+      // Emoji
       const emojiSpan = document.createElement('span');
       emojiSpan.textContent = '🏬';
       emojiSpan.style.display = 'block';
       emojiSpan.style.fontSize = '1em';
       emojiSpan.style.lineHeight = '1';
       marketBtn.appendChild(emojiSpan);
-      // Höhe/Größe wie andere Buttons setzen
-      marketBtn.style.height = 'clamp(2.1em, 2.8vw, 2.5em)'; //diceBtn.style.height || 'clamp(2.4em, 3.8vw, 3.4em)';
-
       // Click-Handler: Markt-UI toggeln
       marketBtn.onclick = () => {
         const marketUI = document.getElementById('bank-trade-ui');
@@ -226,13 +243,10 @@ async function startGame() {
           marketUI.style.display = (marketUI.style.display === 'none' || marketUI.style.display === '') ? 'block' : 'none';
         }
       };
-      // Styling wie diceBtn übernehmen
-      marketBtn.style.cssText = diceBtn.style.cssText;
-      // Einfügen direkt nach dem Würfeln-Button
-      diceBtn.parentNode.insertBefore(marketBtn, diceBtn.nextSibling);
+      actionBar.appendChild(marketBtn);
     }
   } catch (e) {
-    console.error('Fehler beim Erstellen des Dice-UI:', e);
+    console.error('Fehler beim Erstellen des Markt-Buttons:', e);
   }
 
   try {
