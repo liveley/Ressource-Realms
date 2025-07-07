@@ -190,8 +190,10 @@ async function startGame() {
     console.error('Fehler beim Erstellen des Build-UI:', e);
   }
 
+  // === UI: Würfeln- und Spielerwechsel-Button (kombiniert) ===
+  // Die alte createDiceUI bleibt auskommentiert erhalten:
+  /*
   try {
-    // === UI: Würfeln-Button ===
     createDiceUI(() => {
       throwPhysicsDice(scene);
       window.setDiceResultFromPhysics = (result) => {
@@ -202,6 +204,130 @@ async function startGame() {
     console.log('Dice-UI erstellt:', document.getElementById('dice-ui'));
   } catch (e) {
     console.error('Fehler beim Erstellen des Dice-UI:', e);
+  }
+  */
+
+  // Kombinierter Button:
+  try {
+    // Entferne evtl. alten Button
+    const oldBtn = document.getElementById('roll-dice-combined');
+    if (oldBtn) oldBtn.remove();
+
+    let state = 0; // 0 = Würfeln, 1 = Spielerwechsel
+    let lastDiceResult = null;
+
+    const btn = document.createElement('button');
+    btn.id = 'roll-dice-combined';
+    btn.style.fontSize = '2.5em';
+    btn.style.padding = '0.4em';
+    btn.style.margin = '0';
+    btn.style.cursor = 'pointer';
+    btn.style.borderRadius = '6px';
+    btn.style.aspectRatio = '1 / 1';
+    btn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
+    btn.style.border = 'none';
+    btn.style.boxShadow = '0 2px 8px #0001';
+    btn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s';
+    btn.style.outline = 'none';
+    btn.style.display = 'flex';
+    btn.style.flexDirection = 'column';
+    btn.style.alignItems = 'center';
+    btn.style.justifyContent = 'center';
+
+    const emoji = document.createElement('span');
+    emoji.textContent = '🎲';
+    emoji.style.fontSize = '1em';
+    emoji.style.lineHeight = '1';
+    btn.appendChild(emoji);
+
+    const label = document.createElement('span');
+    label.textContent = 'Würfeln';
+    label.style.fontSize = '0.32em';
+    label.style.color = '#222';
+    label.style.marginTop = '0.1em';
+    btn.appendChild(label);
+
+    // Dummy-UI für das Würfelergebnis (wie dice-result)
+    const resultDiv = document.createElement('div');
+    resultDiv.id = 'dice-result';
+    resultDiv.style.color = '#fff';
+    resultDiv.style.fontSize = '2em';
+    resultDiv.style.minWidth = '2em';
+    resultDiv.style.minHeight = '1.5em';
+    resultDiv.style.textShadow = '0 2px 8px #000';
+    resultDiv.style.fontFamily = "'Montserrat', Arial, sans-serif";
+    resultDiv.style.display = 'block';
+    resultDiv.style.marginBottom = '0.3em';
+    resultDiv.style.textAlign = 'center';
+    btn.insertBefore(resultDiv, emoji);
+
+    function updateButtonUI() {
+      if (state === 0) {
+        emoji.textContent = '🎲';
+        label.textContent = 'Würfeln';
+      } else {
+        emoji.textContent = '🔄';
+        // Zeige nächsten Spielernamen
+        const idx = activePlayerIdx;
+        const nextIdx = (idx + 1) % window.players.length;
+        label.textContent = window.players[nextIdx].name;
+      }
+    }
+    updateButtonUI();
+
+    btn.onclick = () => {
+      if (state === 0) {
+        // Würfeln
+        if (typeof throwPhysicsDice === 'function' && typeof scene !== 'undefined') {
+          throwPhysicsDice(scene);
+          window.setDiceResultFromPhysics = (result) => {
+            lastDiceResult = result;
+            // Zeige Ergebnis
+            if (resultDiv) resultDiv.textContent = result.sum;
+            // Event feuern wie gehabt
+            window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
+            // Wenn KEIN Räuber (7), Button auf Spielerwechsel
+            if (result.sum !== 7) {
+              state = 1;
+              updateButtonUI();
+            }
+            // Bei 7 bleibt der Button auf Würfeln (Räuber muss platziert werden)
+          };
+        } else {
+          // Fallback: Dummy-Logik
+          const dummy = Math.floor(Math.random()*6+1) + Math.floor(Math.random()*6+1);
+          if (resultDiv) resultDiv.textContent = dummy;
+          window.dispatchEvent(new CustomEvent('diceRolled', { detail: dummy }));
+          if (dummy !== 7) {
+            state = 1;
+            updateButtonUI();
+          }
+        }
+      } else {
+        // Spielerwechsel
+        const idx = activePlayerIdx;
+        const nextIdx = (idx + 1) % window.players.length;
+        if (typeof window.setActivePlayerIdx === 'function') {
+          window.setActivePlayerIdx(nextIdx);
+        } else {
+          activePlayerIdx = nextIdx;
+          window.activePlayerIdx = nextIdx;
+        }
+        // UI updaten
+        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+        updatePlayerOverviews(window.players, () => activePlayerIdx);
+        if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
+        // Button zurück auf Würfeln
+        state = 0;
+        resultDiv.textContent = '';
+        updateButtonUI();
+      }
+    };
+
+    actionBar.appendChild(btn);
+    console.log('Kombinierter Würfeln-/Spielerwechsel-Button erstellt:', btn);
+  } catch (e) {
+    console.error('Fehler beim Erstellen des kombinierten Buttons:', e);
   }
 
   try {
