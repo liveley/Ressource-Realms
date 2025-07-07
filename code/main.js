@@ -209,9 +209,11 @@ async function startGame() {
 
   // Kombinierter Button:
   try {
-    // Entferne evtl. alten Button
+    // Entferne evtl. alten Button UND Wrapper
     const oldBtn = document.getElementById('roll-dice-combined');
+    const oldWrapper = document.getElementById('dice-wrapper');
     if (oldBtn) oldBtn.remove();
+    if (oldWrapper) oldWrapper.remove();
 
     let state = 0; // 0 = Würfeln, 1 = Spielerwechsel
     let lastDiceResult = null;
@@ -249,6 +251,8 @@ async function startGame() {
 
     // Dummy-UI für das Würfelergebnis (wie dice-result), aber außerhalb des Buttons
     let resultDiv = document.getElementById('dice-result');
+    let diceWrapper = document.getElementById('dice-wrapper');
+    
     if (!resultDiv) {
       resultDiv = document.createElement('div');
       resultDiv.id = 'dice-result';
@@ -259,10 +263,31 @@ async function startGame() {
       resultDiv.style.textShadow = '0 2px 8px #000';
       resultDiv.style.fontFamily = "'Montserrat', Arial, sans-serif";
       resultDiv.style.display = 'block';
-      resultDiv.style.marginBottom = '0.3em';
+      resultDiv.style.marginBottom = '0.5em';
       resultDiv.style.textAlign = 'center';
-      // Füge das Ergebnis-Element VOR dem Button in die Action Bar ein
-      actionBar.appendChild(resultDiv);
+      resultDiv.style.border = '2px solid rgba(255,255,255,0.3)';
+      resultDiv.style.borderRadius = '6px';
+      resultDiv.style.backgroundColor = 'rgba(0,0,0,0.5)';
+      resultDiv.style.padding = '0.2em';
+      resultDiv.textContent = '?'; // Platzhalter-Text
+    }
+    
+    if (!diceWrapper) {
+      // Erstelle einen Wrapper für Ergebnis und Button (Flexbox, column)
+      diceWrapper = document.createElement('div');
+      diceWrapper.id = 'dice-wrapper';
+      diceWrapper.style.display = 'flex';
+      diceWrapper.style.flexDirection = 'column';
+      diceWrapper.style.alignItems = 'center';
+      diceWrapper.style.justifyContent = 'center';
+      // Füge Ergebnis und Button in den Wrapper ein
+      diceWrapper.appendChild(resultDiv);
+      diceWrapper.appendChild(btn);
+      // Füge den Wrapper in die Action Bar ein
+      actionBar.appendChild(diceWrapper);
+    } else {
+      // Wrapper existiert bereits, füge nur den Button hinzu
+      diceWrapper.appendChild(btn);
     }
 
     function updateButtonUI() {
@@ -323,12 +348,12 @@ async function startGame() {
         if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
         // Button zurück auf Würfeln
         state = 0;
-        resultDiv.textContent = '';
+        resultDiv.textContent = '?'; // Zurück zum Platzhalter
         updateButtonUI();
       }
     };
 
-    actionBar.appendChild(btn);
+    // Button wird bereits im diceWrapper hinzugefügt, nicht direkt zur actionBar
     console.log('Kombinierter Würfeln-/Spielerwechsel-Button erstellt:', btn);
   } catch (e) {
     console.error('Fehler beim Erstellen des kombinierten Buttons:', e);
