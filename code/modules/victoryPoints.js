@@ -752,4 +752,30 @@ export function getVictoryPointsForDisplay(player, isCurrentPlayer = false) {
   }
 }
 
+/**
+ * Get canonical road representation to prevent duplicates
+ * Roads can be represented from either end, so we normalize to a standard form
+ * @param {Object} road - Road object with q, r, edge
+ * @returns {Object} Canonical road representation
+ */
+export function getCanonicalRoad(road) {
+  const { q, r, edge } = road;
+  
+  // Calculate neighbor tile coordinates
+  const directions = [
+    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+  ];
+  
+  const [nq, nr] = [q + directions[edge][0], r + directions[edge][1]];
+  const neighborEdge = (edge + 3) % 6;
+  
+  // Choose the canonical representation based on tile coordinates
+  // Use lexicographic ordering: smaller q first, then smaller r, then smaller edge
+  if (q < nq || (q === nq && r < nr) || (q === nq && r === nr && edge < neighborEdge)) {
+    return { q, r, edge };
+  } else {
+    return { q: nq, r: nr, edge: neighborEdge };
+  }
+}
+
 

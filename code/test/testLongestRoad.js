@@ -2,9 +2,12 @@
 // Comprehensive test for longest road calculation
 
 import { 
-  calculateLongestRoad, 
-  debugRoadConnections 
+  calculateLongestRoad
 } from '../modules/victoryPoints.js';
+
+import { 
+  debugRoadConnections 
+} from '../modules/debugging/victoryPointsTestingUtils.js';
 
 console.log('=== LONGEST ROAD TESTS ===');
 
