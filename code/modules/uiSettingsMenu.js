@@ -1,6 +1,6 @@
 // modules/uiSettingsMenu.js
 // Settings/Info-Menu mit Tile-Info, Spielregeln, Kostenübersicht und Spiel beenden
-import { isInfoOverlayEnabled } from './uiTileInfo.js';
+import { isInfoOverlayEnabled, toggleInfoOverlay } from './uiTileInfo.js';
 
 let settingsMenuOpen = false;
 let settingsButton = null;
@@ -194,12 +194,9 @@ function createTileInfoSection() {
   updateTileInfoToggle();
   
   toggleBtn.onclick = () => {
-    // Nutze die bestehende Toggle-Funktion vom Original-Button
-    const originalToggleBtn = document.getElementById('toggle-info-overlay');
-    if (originalToggleBtn) {
-      originalToggleBtn.click();
-      setTimeout(updateTileInfoToggle, 50); // Kurz warten, dann UI updaten
-    }
+    // Direkte Toggle-Funktion verwenden
+    const newState = toggleInfoOverlay();
+    updateTileInfoToggle();
   };
   
   section.appendChild(toggleBtn);

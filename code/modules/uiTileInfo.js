@@ -98,3 +98,12 @@ export function createInfoOverlayToggle() {
 export function isInfoOverlayEnabled() {
   return infoOverlayEnabled;
 }
+
+export function toggleInfoOverlay() {
+  infoOverlayEnabled = !infoOverlayEnabled;
+  if (!infoOverlayEnabled) {
+    const overlay = document.getElementById('infoOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+  return infoOverlayEnabled;
+}
