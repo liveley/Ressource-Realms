@@ -1,24 +1,24 @@
 // Erstellt die linke Hexfeld-Sidebar für den Startbildschirm
+let resizeTimeout = null;
+
 export function createMainMenuSidebar() {
   // Vorherige Sidebar entfernen, falls vorhanden
-  let old = document.getElementById('catan-hex-sidebar');
-  if (old) old.remove();
+  removeMainMenuSidebar();
 
   // Hexagon-Koordinaten für die rechte Hälfte eines klassischen Catan-Felds (2,3,4,3,2)
   // Wir nehmen nur die "rechte" Hälfte (q >= 0)
   // Axiale Koordinaten: (q, r)
   const hexCoords = [
-    // q, r
     [0, -2], [1.25, -2],
     [0.5, -0.75], [1.75, -0.75],
     [0, 0.5], [1.25, 0.5], [2.5, 0.5],
     [0.5, 2], [1.75, 2],
     [0, 3.5], [1.25, 3.5]
   ];
+  // Farben auf die Anzahl der Hexes begrenzen
   const colors = [
     "#f4d35e", "#ee964b", "#f95738", "#43aa8b", "#577590",
     "#b5ead7", "#ffdac1", "#ffb7b2", "#b5ead7", "#c7ceea",
-    "#b2f7ef", "#f6abb6", "#d0e6a5", "#ffb7b2"
   ];
 
   // Sidebar-Container
@@ -30,9 +30,12 @@ export function createMainMenuSidebar() {
   sidebar.style.bottom = '0';
   sidebar.style.width = 'min(38vw, 340px)';
   sidebar.style.zIndex = '10';
-  sidebar.style.background = 'none';
+  sidebar.style.background = 'linear-gradient(135deg, #f4e2d8 0%, #ba5370 100%)';
   sidebar.style.pointerEvents = 'none';
   sidebar.style.overflow = 'hidden';
+  sidebar.style.borderTopRightRadius = '32px';
+  sidebar.style.borderBottomRightRadius = '32px';
+  sidebar.style.boxShadow = '2px 0 16px #0002';
 
   // Layout-Parameter
   const gap = 10; // px Abstand zwischen Hexes
@@ -70,8 +73,10 @@ export function createMainMenuSidebar() {
     hex.style.height = `${hexHeight}px`;
     hex.style.background = colors[idx % colors.length];
     hex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
-    hex.style.boxShadow = '0 2px 8px #0002';
+    hex.style.boxShadow = '0 2px 12px #0003';
     hex.style.pointerEvents = 'auto';
+    hex.style.transition = 'box-shadow 0.2s, transform 0.2s';
+    hex.style.borderRadius = '12px';
     // hex.textContent = `${q},${r}`; // Debug
     hexContainer.appendChild(hex);
   });
@@ -79,8 +84,19 @@ export function createMainMenuSidebar() {
   sidebar.appendChild(hexContainer);
   document.body.appendChild(sidebar);
 
-  // Responsiv: Bei Resize neu berechnen
-  window.addEventListener('resize', () => {
+  // Responsiv: Bei Resize neu berechnen (debounced)
+  window.removeEventListener('resize', handleSidebarResize);
+  window.addEventListener('resize', handleSidebarResize);
+}
+
+function handleSidebarResize() {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
     createMainMenuSidebar();
-  }, { once: true });
+  }, 100);
+}
+
+export function removeMainMenuSidebar() {
+  let old = document.getElementById('catan-hex-sidebar');
+  if (old) old.remove();
 }

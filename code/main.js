@@ -309,6 +309,8 @@ window.players.forEach(initPlayerDevCards);
 // === Main-Menu-Start-Button-Handler ===
 window.addEventListener('DOMContentLoaded', () => {
   console.log('DOM geladen, versuche Start-Button-Handler zu setzen...');
+  // Sidebar anzeigen
+  createMainMenuSidebar();
   const menu = document.getElementById('main-menu');
   const startBtn = document.getElementById('start-game');
   if (startBtn) {
@@ -316,6 +318,8 @@ window.addEventListener('DOMContentLoaded', () => {
     startBtn.onclick = () => {
       console.log('Start-Button wurde geklickt!');
       if (menu) menu.style.display = 'none';
+      // Sidebar ausblenden, wenn Spiel startet
+      import('./modules/uiMainMenu.js').then(mod => mod.removeMainMenuSidebar());
       startGame();
     };
   } else {
