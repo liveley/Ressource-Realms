@@ -26,7 +26,7 @@ function createSettingsButton() {
     settingsContainer = document.createElement('div');
     settingsContainer.id = 'settings-ui';
     settingsContainer.style.position = 'absolute';
-    settingsContainer.style.top = '8em';
+    settingsContainer.style.top = '7em';
     settingsContainer.style.left = '2em';
     settingsContainer.style.zIndex = '15';
     document.body.appendChild(settingsContainer);
@@ -37,10 +37,10 @@ function createSettingsButton() {
   settingsButton.id = 'settings-button';
   settingsButton.title = 'Einstellungen & Info';
   settingsButton.textContent = '⚙️'; // Zahnrad-Symbol
-  settingsButton.style.fontSize = '1.8em';
+  settingsButton.style.fontSize = '1.5em';
   settingsButton.style.padding = '0.3em';
-  settingsButton.style.width = '2.4em';
-  settingsButton.style.height = '2.4em';
+  settingsButton.style.width = '2em';
+  settingsButton.style.height = '2em';
   settingsButton.style.borderRadius = '7px';
   settingsButton.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
   settingsButton.style.border = 'none';
