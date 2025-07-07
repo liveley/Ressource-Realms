@@ -4,7 +4,8 @@
 import { 
   initializeVictoryPoints, 
   updateLongestRoad, 
-  getCanonicalRoad
+  getCanonicalRoad,
+  updateAllVictoryPoints
 } from './victoryPoints.js';
 
 // Beispiel-Spielerstruktur (kann später erweitert werden)
