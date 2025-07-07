@@ -5,8 +5,8 @@
 import { showPlayerSwitchButton } from './change_player.js';
 import { canBuild, onPhaseChange } from './turnController.js';
 
-let buildEnabled = false;
-let buildMenu = null;
+// Statt globale Variablen: Pro Instanz speichern
+const buildInstances = new Map();
 
 export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePlayerIdx, setActivePlayerIdx, parent }) {
   // Build-UI (wie bisher)
@@ -16,6 +16,23 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   ui.style.flexDirection = 'column';
   ui.style.alignItems = 'center';
   // Keine absolute Positionierung mehr!
+
+  // Instanz-spezifische Variablen
+  let buildEnabled = false;
+  let buildMenu = null;
+  let phaseChangeListener = null;
+
+  // Instanz in Map speichern für Cleanup
+  const instanceId = 'build-ui-' + Date.now();
+  buildInstances.set(instanceId, {
+    ui,
+    cleanup: () => {
+      if (phaseChangeListener) {
+        // TODO: Wenn turnController removePhaseChange-Funktion hat, hier verwenden
+        console.log('Build-UI: Cleanup für Instanz', instanceId);
+      }
+    }
+  });
 
   // Bau-Button (immer sichtbar)
   const buildToggleBtn = document.createElement('button');
@@ -31,6 +48,11 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     
     buildEnabled = !buildEnabled;
     console.log('Build-UI: buildEnabled =', buildEnabled);
+    updateBuildMenuState();
+  };
+
+  // Funktion zum synchronisierten Update des Menü-States
+  function updateBuildMenuState() {
     buildToggleBtn.textContent = buildEnabled ? '🏗️ AUS' : '🏗️';
     if (buildMenu) buildMenu.style.display = buildEnabled ? 'flex' : 'none';
     // Hintergrund und Rand nur anzeigen, wenn Menü offen ist
@@ -41,12 +63,39 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
       ui.classList.remove('menu-open');
       console.log('Build-UI: Menü geschlossen');
     }
-  };
+  }
+
+  // Verbesserte updateBuildButtonState Funktion
+  function updateBuildButtonState() {
+    if (!buildToggleBtn) return;
+    
+    const canBuildNow = canBuild();
+    
+    if (canBuildNow) {
+      buildToggleBtn.style.opacity = "1";
+      buildToggleBtn.style.cursor = "pointer";
+      buildToggleBtn.disabled = false;
+      buildToggleBtn.title = "Bauen";
+    } else {
+      buildToggleBtn.style.opacity = "0.5";
+      buildToggleBtn.style.cursor = "not-allowed";
+      buildToggleBtn.disabled = true;
+      buildToggleBtn.title = "Nicht in der Bauphase";
+      
+      // ✅ FIX: Build State Reset bei Phasenwechsel
+      if (buildEnabled) {
+        buildEnabled = false;
+        updateBuildMenuState(); // Synchronisiertes Update
+        console.log('Build-UI: Menü automatisch geschlossen (Phase nicht erlaubt)');
+      }
+    }
+  }
 
   // Event-Listener für Phasen-Updates
-  onPhaseChange((phase) => {
+  phaseChangeListener = (phase) => {
     updateBuildButtonState();
-  });
+  };
+  onPhaseChange(phaseChangeListener);
 
   // Initial button state aktualisieren
   updateBuildButtonState();
@@ -111,44 +160,40 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     popup.style.display = 'none';
     document.body.appendChild(popup);
   }
+
+  // ✅ Return UI mit Cleanup-Funktion
+  return {
+    ui,
+    cleanup: () => {
+      buildInstances.delete(instanceId);
+      if (phaseChangeListener) {
+        console.log('Build-UI: Event-Listener cleanup für Instanz', instanceId);
+      }
+    },
+    // Getter für buildEnabled (für isBuildEnabled)
+    isBuildEnabled: () => buildEnabled && canBuild()
+  };
 }
 
+// ✅ Neue isBuildEnabled für Backwards-Kompatibilität
 export function isBuildEnabled() {
   // Prüfe, ob das Build-Menü offen ist (über die Klasse am UI-Element)
   const ui = document.getElementById('build-ui');
   return !!(ui && ui.classList.contains('menu-open')) && canBuild();
 }
 
-/**
- * Aktualisiert den Zustand des Build-Buttons basierend auf der aktuellen Phase
- */
-function updateBuildButtonState() {
-  const buildToggleBtn = document.getElementById('build-toggle-btn');
-  if (!buildToggleBtn) return;
-  
-  const canBuildNow = canBuild();
-  
-  if (canBuildNow) {
-    buildToggleBtn.style.opacity = "1";
-    buildToggleBtn.style.cursor = "pointer";
-    buildToggleBtn.disabled = false;
-    buildToggleBtn.title = "Bauen";
-  } else {
-    buildToggleBtn.style.opacity = "0.5";
-    buildToggleBtn.style.cursor = "not-allowed";
-    buildToggleBtn.disabled = true;
-    buildToggleBtn.title = "Nicht in der Bauphase";
-    
-    // Schließe das Build-Menü wenn Bauen nicht erlaubt ist
-    if (buildEnabled) {
-      buildEnabled = false;
-      buildToggleBtn.textContent = '🏗️';
-      if (buildMenu) buildMenu.style.display = 'none';
-      const ui = document.getElementById('build-ui');
-      if (ui) ui.classList.remove('menu-open');
-    }
+// ✅ Cleanup-Funktion für alle Instanzen
+export function cleanupAllBuildInstances() {
+  for (const [id, instance] of buildInstances) {
+    instance.cleanup();
   }
+  buildInstances.clear();
 }
+
+/**
+ * ✅ Entfernt: Ist jetzt eine lokale Funktion in createBuildUI
+ * Die alte globale updateBuildButtonState-Funktion wird nicht mehr benötigt
+ */
 
 // Pop-up Feedback-Funktion
 export function showBuildPopupFeedback(message, success = true) {
