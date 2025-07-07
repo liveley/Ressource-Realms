@@ -61,9 +61,9 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildMenu.style.alignItems = 'stretch';
   buildMenu.style.gap = '0.3em';
   buildMenu.style.position = 'absolute';
-  // Menü an rechter unterer Ecke des Buttons verankern
-  buildMenu.style.right = '0';
-  buildMenu.style.bottom = '0';
+  // Menü leicht nach rechts/unten verschieben, damit es den Button komplett überdeckt
+  buildMenu.style.right = '-0.15em';
+  buildMenu.style.bottom = '-0.15em';
   // Exakt gewünschte Breite und Höhe laut User-Devtools
   buildMenu.style.width = 'calc(3 * clamp(2.1em, 2.8vw, 2.5em))';
   buildMenu.style.height = 'calc(3 * clamp(2.1em, 2.8vw, 2.5em))';
