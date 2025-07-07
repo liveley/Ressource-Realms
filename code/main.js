@@ -26,7 +26,7 @@ import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
 import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
-import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDisplay, debugRoadConnections, calculateLongestRoad } from './modules/victoryPoints.js';
+import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDisplay, calculateLongestRoad } from './modules/victoryPoints.js';
 import { enableRoadDebug, disableRoadDebug, analyzePlayerRoads, testRoadConnections, toggleRoadDebugTools, isRoadDebugToolsVisible } from './modules/debugging/longestRoadDebug.js';
 import { initRoadTestingUtils } from './modules/debugging/roadTestingUtils.js';
 import { initDebugKeyHandlers } from './modules/debugging/debugKeyHandlers.js';
@@ -63,7 +63,6 @@ initializeVictoryPoints(window.players);
 window.updateAllVictoryPoints = updateAllVictoryPoints;
 window.initializeVictoryPoints = initializeVictoryPoints;
 window.getVictoryPointsForDisplay = getVictoryPointsForDisplay;
-window.debugRoadConnections = debugRoadConnections;
 
 window.updateResourceUI = updateResourceUI;
 
