@@ -202,7 +202,7 @@ export function debugRoadConnections(roads) {
       const connected = areRoadsConnectedVertex(road1, road2);
       console.log(`Road ${getRoadKey(road1)} <-> Road ${getRoadKey(road2)}: ${connected ? 'CONNECTED' : 'not connected'}`);
       
-      if (connected && window.DEBUG_ROAD_CONNECTIONS) {
+      if (connected && typeof window !== 'undefined' && window.DEBUG_ROAD_CONNECTIONS) {
         const vertices1 = getRoadVertices(road1);
         const vertices2 = getRoadVertices(road2);
         console.log(`  Vertices road1:`, vertices1);
@@ -274,9 +274,11 @@ export function testRoadConnections() {
  */
 export function initVictoryPointsTestingUtils() {
   // Make debug functions globally available
-  window.debugRoadConnections = debugRoadConnections;
-  window.getCanonicalRoad = getCanonicalRoad;  // Import from victoryPoints.js
-  window.testRoadConnections = testRoadConnections;
+  if (typeof window !== 'undefined') {
+    window.debugRoadConnections = debugRoadConnections;
+    window.getCanonicalRoad = getCanonicalRoad;  // Import from victoryPoints.js
+    window.testRoadConnections = testRoadConnections;
+  }
   
   console.log('Victory Points Testing Utils initialized. Available functions:');
   console.log('- debugRoadConnections(roads)');
