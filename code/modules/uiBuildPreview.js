@@ -5,10 +5,12 @@ import { getCornerWorldPosition } from './game_board.js';
 import { canPlaceSettlement, canPlaceCity, canPlaceRoad } from './buildLogic.js';
 import { placeRoadMesh } from './gamePieces.js';
 import { isBuildEnabled } from './uiBuild.js';
+import { getActivePlayerIdx } from './turnController.js';
 
 let previewMesh = null;
 
-export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, getBuildMode, getActivePlayerIdx) {
+// ✅ Entfernt getActivePlayerIdx Parameter - verwende direkte Import
+export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, getBuildMode) {
   renderer.domElement.addEventListener('mousemove', (event) => {
     console.log('BuildPreview: mousemove event');
     const menu = document.getElementById('main-menu');

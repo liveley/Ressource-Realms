@@ -2,7 +2,7 @@
 // UI-Komponente für 4:1 Banktausch
 import { resources } from './uiResources.js';
 import { doBankTrade } from './bankTrade.js';
-import { canTrade, onPhaseChange } from './turnController.js';
+import { canTrade, onPhaseChange, getActivePlayerIdx } from './turnController.js';
 
 export function createBankTradeUI() {
   const tradeUI = document.createElement('div');
@@ -74,8 +74,8 @@ export function createBankTradeUI() {
     
     const giveKey = giveSelect.value;
     const getKey = getSelect.value;
-    const idx = (typeof window.activePlayerIdx === 'number' && window.players && window.players.length > window.activePlayerIdx)
-      ? window.activePlayerIdx : 0;
+    // ✅ Verwende Turn-Controller statt direkten window.activePlayerIdx Zugriff
+    const idx = getActivePlayerIdx();
     const player = window.players ? window.players[idx] : null;
     
     if (!player) {

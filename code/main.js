@@ -34,7 +34,8 @@ import {
   getCurrentPhase, 
   getActivePlayerIdx,
   setActivePlayerIdx,
-  resetToStart 
+  resetToStart,
+  initializeTurnController
 } from './modules/turnController.js';
 
 window.players = window.players || [
@@ -56,6 +57,9 @@ window.players = window.players || [
 
 window.updateResourceUI = updateResourceUI;
 
+// ✅ Initialisiere Turn-Controller
+initializeTurnController();
+
 // Renderer
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -68,12 +72,9 @@ let gameInitialized = false;
 let tileMeshes = {};
 let tileNumbers = {};
 let buildMode = 'settlement';
-// Verwende Turn-Controller für activePlayerIdx
-window.activePlayerIdx = getActivePlayerIdx();
-
-// Hide the renderer initially
-renderer.domElement.style.visibility = 'hidden';
-renderer.domElement.classList.add('board-hidden');
+// ✅ Entfernt lokale activePlayerIdx Variable - verwende nur Turn-Controller  // Hide the renderer initially
+  renderer.domElement.style.visibility = 'hidden';
+  renderer.domElement.classList.add('board-hidden');
 
 // === Haupt-Button-Leiste (Action Bar) ===
 let actionBar = document.getElementById('main-action-bar');
@@ -188,7 +189,7 @@ async function startGame() {
       getActivePlayerIdx: () => getActivePlayerIdx(),
       setActivePlayerIdx: (idx) => {
         setActivePlayerIdx(idx);
-        window.activePlayerIdx = idx;
+        // ✅ Entfernt doppelte window.activePlayerIdx Zuweisung - Turn-Controller macht das
         updateResourceUI(window.players[getActivePlayerIdx()], getActivePlayerIdx());
         updatePlayerOverviews(window.players, () => getActivePlayerIdx());
       },
@@ -306,7 +307,7 @@ async function startGame() {
     tileMeshes,
     players: window.players,
     getBuildMode: () => buildMode,
-    getActivePlayerIdx: () => getActivePlayerIdx(),
+    // ✅ Entfernt getActivePlayerIdx Parameter - buildEventHandlers importiert es direkt
     tryBuildSettlement,
     tryBuildCity,
     tryBuildRoad, // <--- HINZUGEFÜGT
@@ -532,36 +533,12 @@ window.addEventListener('diceRolled', (e) => {
 });
 
 
-// === Build Event Handler Setup ===
-setupBuildEventHandler({
-  renderer,
-  scene,
-  camera,
-  tileMeshes,
-  players: window.players,
-  getBuildMode: () => buildMode,
-  getActivePlayerIdx: () => activePlayerIdx,
-  tryBuildSettlement,
-  tryBuildCity,
-  tryBuildRoad, // <--- HINZUGEFÜGT
-  getCornerWorldPosition,
-  updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx) // Always update for current player
-});
+// Globale Hilfsfunktion für Entwicklungskarten-Logik (z.B. Monopol)
+window.getAllPlayers = function() {
+  return window.players;
+};
 
-// === Build Preview Setup ===
-setupBuildPreview(
-  renderer,
-  scene,
-  camera,
-  tileMeshes,
-  window.players,
-  () => buildMode,
-  () => activePlayerIdx,
-  tryBuildSettlement,
-  tryBuildCity
-);
-
-// === Place settlement/city mesh at corner ===
+window.startRobberPlacement = startRobberPlacement;
 
 // === Debug functions ===
 
@@ -581,10 +558,3 @@ window.addEventListener('keydown', (e) => {
         createDebugDiceIndicator(window.debugDiceEnabled, 7);
     }
 });
-
-// Globale Hilfsfunktion für Entwicklungskarten-Logik (z.B. Monopol)
-window.getAllPlayers = function() {
-  return window.players;
-};
-
-window.startRobberPlacement = startRobberPlacement;

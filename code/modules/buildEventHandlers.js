@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { placeBuildingMesh, placeRoadMesh } from './gamePieces.js';
 import { isBuildEnabled } from './uiBuild.js';
 import { showBuildPopupFeedback } from './uiBuild.js';
+import { getActivePlayerIdx } from './turnController.js';
 
 // Build-Event-Handler für das Bauen von Siedlungen und Städten
 // Kapselt die Click-Logik für das Spielfeld
@@ -13,7 +14,7 @@ export function setupBuildEventHandler({
   tileMeshes,
   players,
   getBuildMode,
-  getActivePlayerIdx,
+  // ✅ Entfernt getActivePlayerIdx Parameter - verwende direkte Import
   tryBuildSettlement,
   tryBuildCity,
   tryBuildRoad,

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { loadTile } from '../loader.js'; // Import the function to load a single tile
 import { initializeHighlighting, animateHalos, testBorderHighlighting } from './tileHighlight.js';
 import { getEquivalentCorners } from './buildLogic.js';
+import { getActivePlayerIdx } from './turnController.js';
 
 const HEX_RADIUS = 3;
 const hexGroup = new THREE.Group();
@@ -513,8 +514,9 @@ window.addEventListener('diceRolled', (e) => {
     window.players.forEach(p => console.log(`[Ressourcen nach Verteilung] ${p.name}:`, p.resources));
 
     // UI-Update für aktiven Spieler mit globalem Index
-    if (typeof window.activePlayerIdx === 'number') {
-      window.updateResourceUI(window.players[window.activePlayerIdx], window.activePlayerIdx);
+    // ✅ Verwende Turn-Controller statt direkten window.activePlayerIdx Zugriff
+    if (window.players && getActivePlayerIdx() != null) {
+      window.updateResourceUI(window.players[getActivePlayerIdx()], getActivePlayerIdx());
     } else {
       window.updateResourceUI(window.players[0], 0);
     }
@@ -561,15 +563,17 @@ export function updateNumberTokensForRobber(robberTileKey) {
 
 // === Funktion: Nach Räuberplatzierung einen Rohstoff von einem betroffenen Spieler stehlen ===
 function handleRobberSteal(q, r) {
-  if (!window.players || typeof window.activePlayerIdx !== 'number') return;
-  const activePlayer = window.players[window.activePlayerIdx];
+  // ✅ Verwende Turn-Controller statt direkten window.activePlayerIdx Zugriff
+  if (!window.players) return;
+  const activeIdx = getActivePlayerIdx();
+  const activePlayer = window.players[activeIdx];
   // Prüfe alle 6 Ecken des Hexfelds und sammle alle Opfer
   let allVictims = [];
   let victimSet = new Set();
   for (let corner = 0; corner < 6; corner++) {
     const equivalents = typeof getEquivalentCorners === 'function' ? getEquivalentCorners(q, r, corner) : [{q, r, corner}];
     window.players.forEach((p, idx) => {
-      if (idx === window.activePlayerIdx) return;
+      if (idx === activeIdx) return;
       const isVictim = equivalents.some(eq =>
         (p.settlements && p.settlements.some(s => s.q === eq.q && s.r === eq.r && s.corner === eq.corner)) ||
         (p.cities && p.cities.some(c => c.q === eq.q && c.r === eq.r && c.corner === eq.corner))

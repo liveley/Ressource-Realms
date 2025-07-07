@@ -3,6 +3,7 @@
 
 import { doBankTrade, canBankTrade } from './bankTrade.js';
 import { createBankTradeUI } from './bankTradeUI.js';
+import { getActivePlayerIdx } from './turnController.js';
 
 const resources = [
   { key: 'wheat', symbol: '🌾', name: 'Weizen', color: '#ffe066' },
@@ -69,9 +70,11 @@ export function updateResourceUI(player, idx) {
       gainTrackers[idx] = {};
       resources.forEach(r => gainTrackers[idx][r.key] = 0);
     }
-  } else if (typeof window.activePlayerIdx === 'number' && window.players) {
-    player = window.players[window.activePlayerIdx];
-    idx = window.activePlayerIdx;
+  } else if (window.players) {
+    // ✅ Verwende Turn-Controller statt direkten window.activePlayerIdx Zugriff
+    const activeIdx = getActivePlayerIdx();
+    player = window.players[activeIdx];
+    idx = activeIdx;
     if (!gainTrackers[idx]) {
       gainTrackers[idx] = {};
       resources.forEach(r => gainTrackers[idx][r.key] = 0);
@@ -135,9 +138,8 @@ window.trackResourceGain = function(playerIdx, resourceType, amount) {
 
 // Debug/cheat: allow adding resources to the current player
 export function handleResourceKeydown(e) {
-  // Nutze window.activePlayerIdx für den aktuellen Spieler
-  const idx = (typeof window.activePlayerIdx === 'number' && window.players && window.players.length > window.activePlayerIdx)
-    ? window.activePlayerIdx : 0;
+  // ✅ Verwende Turn-Controller statt direkten window.activePlayerIdx Zugriff
+  const idx = getActivePlayerIdx();
   const player = window.players ? window.players[idx] : null;
   if (!player) return;
   let changed = false;

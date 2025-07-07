@@ -1,5 +1,6 @@
 // turnController.js
 // Zentrale Steuerung für den Ablauf eines Spielerzugs (Phasen, aktiver Spieler, Debug-Modus)
+// Single Source of Truth für alle Spieler- und Phasenverwaltung
 
 export const TURN_PHASES = {
   DICE: 'dice',
@@ -15,6 +16,7 @@ export function setDebugFreeBuild(val) {
   debugFreeBuild = !!val;
 }
 
+// === SINGLE SOURCE OF TRUTH: Aktiver Spieler ===
 // Statt eigener Variable: immer window.activePlayerIdx verwenden
 export function getActivePlayerIdx() {
   return window.activePlayerIdx ?? 0;
@@ -50,46 +52,84 @@ export function setActivePlayerIdx(idx) {
   return true;
 }
 
-// --- Callback-Mechanismus für UI-Updates ---
+// === CALLBACK-MECHANISMUS für UI-Updates ===
 let phaseChangeCallbacks = [];
 let playerSwitchCallbacks = [];
 
 export function onPhaseChange(cb) {
   if (typeof cb === 'function') phaseChangeCallbacks.push(cb);
 }
+
 export function onPlayerSwitch(cb) {
   if (typeof cb === 'function') playerSwitchCallbacks.push(cb);
 }
 
+// Callback-Cleanup-Funktionen (für Memory-Leak-Vermeidung)
+export function removePhaseChangeCallback(cb) {
+  const index = phaseChangeCallbacks.indexOf(cb);
+  if (index > -1) {
+    phaseChangeCallbacks.splice(index, 1);
+  }
+}
+
+export function removePlayerSwitchCallback(cb) {
+  const index = playerSwitchCallbacks.indexOf(cb);
+  if (index > -1) {
+    playerSwitchCallbacks.splice(index, 1);
+  }
+}
+
 function triggerPhaseChange() {
   console.log(`Phase changed to: ${currentPhase}`);
-  for (const cb of phaseChangeCallbacks) cb(currentPhase);
+  for (const cb of phaseChangeCallbacks) {
+    try {
+      cb(currentPhase);
+    } catch (error) {
+      console.error('Error in phase change callback:', error);
+    }
+  }
 }
+
 function triggerPlayerSwitch() {
   const activePlayer = window.players?.[getActivePlayerIdx()];
   console.log(`Player switched to: ${activePlayer?.name || 'Unknown'} (Index: ${getActivePlayerIdx()})`);
-  for (const cb of playerSwitchCallbacks) cb(getActivePlayerIdx());
+  for (const cb of playerSwitchCallbacks) {
+    try {
+      cb(getActivePlayerIdx());
+    } catch (error) {
+      console.error('Error in player switch callback:', error);
+    }
+  }
 }
 
+// === PHASEN-MANAGEMENT ===
 export function getCurrentPhase() {
   return currentPhase;
 }
 
 export function setPhase(phase) {
+  if (!Object.values(TURN_PHASES).includes(phase)) {
+    console.warn(`setPhase: Ungültige Phase ${phase}`);
+    return false;
+  }
   currentPhase = phase;
   triggerPhaseChange();
+  return true;
 }
 
 export function nextPhase() {
-  if (currentPhase === TURN_PHASES.DICE) {
-    setPhase(TURN_PHASES.TRADE); // Nach Würfeln erstmal zu TRADE
-  } else if (currentPhase === TURN_PHASES.TRADE) {
-    setPhase(TURN_PHASES.BUILD); // Von TRADE zu BUILD
-  } else if (currentPhase === TURN_PHASES.BUILD) {
-    setPhase(TURN_PHASES.TRADE); // Von BUILD zurück zu TRADE (flexibles Wechseln)
-  } else if (currentPhase === TURN_PHASES.END) {
-    // Automatisch zum nächsten Spieler wechseln
-    nextPlayer();
+  switch (currentPhase) {
+    case TURN_PHASES.DICE:
+      return setPhase(TURN_PHASES.TRADE); // Nach Würfeln erstmal zu TRADE
+    case TURN_PHASES.TRADE:
+      return setPhase(TURN_PHASES.BUILD); // Von TRADE zu BUILD
+    case TURN_PHASES.BUILD:
+      return setPhase(TURN_PHASES.TRADE); // Von BUILD zurück zu TRADE (flexibles Wechseln)
+    case TURN_PHASES.END:
+      return nextPlayer(); // Automatisch zum nächsten Spieler wechseln
+    default:
+      console.warn(`nextPhase: Unbekannte Phase ${currentPhase}`);
+      return false;
   }
 }
 
@@ -110,80 +150,139 @@ export function nextPlayer() {
   const success = setActivePlayerIdx(nextIdx);
   if (success) {
     setPhase(TURN_PHASES.DICE);
-    triggerPhaseChange(); // Phase-Callback nach Spielerwechsel
   }
   
   return success;
 }
 
-// --- Zentrale Funktion: Nach Würfeln Phase auf TRADE setzen ---
+// === ZENTRALE FUNKTION: Nach Würfeln Phase auf TRADE setzen ===
 export function rollDiceAndAdvancePhase(rollDiceFn) {
-  if (currentPhase !== TURN_PHASES.DICE) return;
-  if (typeof rollDiceFn === 'function') rollDiceFn();
-  setPhase(TURN_PHASES.TRADE); // Nach Würfeln zur TRADE-Phase
+  if (currentPhase !== TURN_PHASES.DICE) {
+    console.warn('rollDiceAndAdvancePhase: Nicht in Würfelphase');
+    return false;
+  }
+  
+  if (typeof rollDiceFn === 'function') {
+    try {
+      rollDiceFn();
+    } catch (error) {
+      console.error('Error in dice roll function:', error);
+      return false;
+    }
+  }
+  
+  return setPhase(TURN_PHASES.TRADE); // Nach Würfeln zur TRADE-Phase
 }
 
-// Hilfsfunktion: Ist Aktion erlaubt?
+// === AKTIONS-VALIDIERUNG ===
 export function isActionAllowed(phase) {
   if (debugFreeBuild) return true;
   return currentPhase === phase;
 }
 
-// --- Neue Funktionen für bessere Turn-Based-Kontrolle ---
-
-// Hilfsfunktion: Validiert Player-Index
+// === HILFSFUNKTIONEN für bessere Turn-Based-Kontrolle ===
 export function isValidPlayerIndex(idx) {
   const playerCount = window.players?.length || 0;
   return typeof idx === 'number' && idx >= 0 && idx < playerCount && playerCount > 0;
 }
 
-// Hilfsfunktion: Gibt die Anzahl der Spieler zurück
 export function getPlayerCount() {
   return window.players?.length || 0;
 }
 
-// Prüft, ob der aktuelle Spieler würfeln darf
 export function canRollDice() {
-  return currentPhase === TURN_PHASES.DICE;
+  return currentPhase === TURN_PHASES.DICE || debugFreeBuild;
 }
 
-// Prüft, ob der aktuelle Spieler handeln darf
 export function canTrade() {
-  return currentPhase === TURN_PHASES.TRADE || currentPhase === TURN_PHASES.BUILD;
+  return currentPhase === TURN_PHASES.TRADE || currentPhase === TURN_PHASES.BUILD || debugFreeBuild;
 }
 
-// Prüft, ob der aktuelle Spieler bauen darf
 export function canBuild() {
   return currentPhase === TURN_PHASES.BUILD || debugFreeBuild;
 }
 
-// Beendet den aktuellen Zug und wechselt zum nächsten Spieler
 export function endTurn() {
   console.log(`Turn ended for player ${getActivePlayerIdx()}`);
-  nextPlayer();
+  return setPhase(TURN_PHASES.END);
 }
 
-// Setzt das Spiel in die Anfangsphase zurück
 export function resetToStart() {
-  setPhase(TURN_PHASES.DICE);
-  const success = setActivePlayerIdx(0); // Verwende sichere Funktion
+  console.log('Resetting game to start');
+  const success = setActivePlayerIdx(0);
   if (success) {
-    triggerPhaseChange();
+    return setPhase(TURN_PHASES.DICE);
   }
+  return false;
 }
 
-// --- ActionBar-UI nach jedem Spieler- und Phasenwechsel updaten ---
-// Diese Funktion wird von main.js registriert, nachdem updateActionBarUI definiert wurde
+// === SICHERHEITS-FUNKTIONEN ===
+export function validateGameState() {
+  const playerCount = getPlayerCount();
+  const activeIdx = getActivePlayerIdx();
+  
+  if (playerCount === 0) {
+    console.error('validateGameState: Keine Spieler vorhanden');
+    return false;
+  }
+  
+  if (!isValidPlayerIndex(activeIdx)) {
+    console.error(`validateGameState: Ungültiger aktiver Spieler-Index ${activeIdx}`);
+    return false;
+  }
+  
+  if (!Object.values(TURN_PHASES).includes(currentPhase)) {
+    console.error(`validateGameState: Ungültige Phase ${currentPhase}`);
+    return false;
+  }
+  
+  return true;
+}
+
+// === INITIALIZATION ===
+export function initializeTurnController() {
+  // Sichere Initialisierung von window.activePlayerIdx
+  if (typeof window.activePlayerIdx !== 'number') {
+    window.activePlayerIdx = 0;
+  }
+  
+  // Validiere Initialisierung
+  if (!validateGameState()) {
+    console.warn('initializeTurnController: Game state validation failed');
+    return false;
+  }
+  
+  console.log('Turn Controller initialized successfully');
+  return true;
+}
+
+// === ACTIONBAR-UI Integration ===
 export function setupActionBarUpdates() {
   onPhaseChange((phase) => {
     if (typeof window.updateActionBarUI === 'function') {
-      window.updateActionBarUI();
+      try {
+        window.updateActionBarUI();
+      } catch (error) {
+        console.error('Error updating action bar UI:', error);
+      }
     }
   });
   
   onPlayerSwitch((playerIdx) => {
     if (typeof window.updateActionBarUI === 'function') {
-      window.updateActionBarUI();
+      try {
+        window.updateActionBarUI();
+      } catch (error) {
+        console.error('Error updating action bar UI:', error);
+      }
     }
   });
+}
+
+// === CLEANUP ===
+export function cleanupTurnController() {
+  phaseChangeCallbacks = [];
+  playerSwitchCallbacks = [];
+  isSettingPlayer = false;
+  console.log('Turn Controller cleanup complete');
 }
