@@ -112,8 +112,8 @@ export function calculateLongestRoad(player) {
     return 0;
   }
   
-  // Use corrected approach: build adjacency list using vertex-based connections
-  const adjacencyList = buildRoadAdjacencyList(player.roads);
+  // Use simplified approach: build adjacency list directly
+  const adjacencyList = buildSimpleRoadAdjacencyList(player.roads);
   
   // Find longest path in the graph
   let maxLength = 0;
@@ -129,11 +129,157 @@ export function calculateLongestRoad(player) {
 }
 
 /**
- * Build road adjacency list using proper vertex-based connections
+ * Build road graph from road segments
+ * @param {Array} roads - Array of road objects {q, r, edge}
+ * @returns {Map} Adjacency graph
+ */
+function buildRoadGraph(roads) {
+  const graph = new Map();
+  
+  roads.forEach(road => {
+    const key = getRoadKey(road);
+    if (!graph.has(key)) {
+      graph.set(key, new Set());
+    }
+  });
+  
+  // Connect adjacent roads
+  roads.forEach(road1 => {
+    const key1 = getRoadKey(road1);
+    roads.forEach(road2 => {
+      if (road1 === road2) return;
+      
+      const key2 = getRoadKey(road2);
+      if (areRoadsConnected(road1, road2)) {
+        graph.get(key1).add(key2);
+        graph.get(key2).add(key1);
+      }
+    });
+  });
+  
+  return graph;
+}
+
+/**
+ * Check if two roads are connected
+ * @param {Object} road1 - First road
+ * @param {Object} road2 - Second road
+ * @returns {boolean} True if roads are connected
+ */
+function areRoadsConnected(road1, road2) {
+  // Roads are connected if they share a vertex (corner)
+  const vertices1 = getRoadVertices(road1);
+  const vertices2 = getRoadVertices(road2);
+  
+  // Debug logging (only if enabled)
+  if (window.DEBUG_ROAD_CONNECTIONS) {
+    console.log(`Checking connection between road ${getRoadKey(road1)} and ${getRoadKey(road2)}`);
+    console.log(`Road 1 vertices:`, vertices1);
+    console.log(`Road 2 vertices:`, vertices2);
+  }
+  
+  const connected = vertices1.some(v1 => 
+    vertices2.some(v2 => {
+      // Check if vertices are at the same physical location
+      const same = areVerticesEqual(v1, v2);
+      if (same && window.DEBUG_ROAD_CONNECTIONS) {
+        console.log(`Connection found at vertex:`, v1);
+      }
+      return same;
+    })
+  );
+  
+  if (window.DEBUG_ROAD_CONNECTIONS) {
+    console.log(`Connected:`, connected);
+  }
+  return connected;
+}
+
+/**
+ * Check if two vertices are at the same location
+ * @param {Object} v1 - First vertex
+ * @param {Object} v2 - Second vertex
+ * @returns {boolean} True if vertices are at the same location
+ */
+function areVerticesEqual(v1, v2) {
+  // Direct match
+  if (v1.q === v2.q && v1.r === v2.r && v1.corner === v2.corner) {
+    return true;
+  }
+  
+  // Check equivalent vertices (same physical location, different coordinate representation)
+  const equivalents1 = getEquivalentVertices(v1);
+  const equivalents2 = getEquivalentVertices(v2);
+  
+  return equivalents1.some(eq1 => 
+    equivalents2.some(eq2 => 
+      eq1.q === eq2.q && eq1.r === eq2.r && eq1.corner === eq2.corner
+    )
+  );
+}
+
+/**
+ * Get all equivalent representations of a vertex (simplified based on axial coordinates)
+ * @param {Object} vertex - Vertex object {q, r, corner}
+ * @returns {Array} Array of equivalent vertex objects
+ */
+function getEquivalentVertices(vertex) {
+  const { q, r, corner } = vertex;
+  
+  // Each vertex is shared by exactly 3 tiles
+  // Using the axial coordinate system with directions: [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+  // For corner N on tile (q,r), the equivalent representations are:
+  // - Current tile: (q, r, corner)
+  // - Neighbor in direction (corner-1)%6: corner becomes (corner+2)%6
+  // - Neighbor in direction corner: corner becomes (corner+4)%6
+  
+  const directions = [
+    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+  ];
+  
+  const equivalents = [{ q, r, corner }];
+  
+  // Add representation from neighbor in direction (corner-1)%6
+  const dir1 = (corner + 5) % 6; // (corner - 1) % 6 with wrap-around
+  const neighbor1 = [q + directions[dir1][0], r + directions[dir1][1]];
+  equivalents.push({ q: neighbor1[0], r: neighbor1[1], corner: (corner + 2) % 6 });
+  
+  // Add representation from neighbor in direction corner
+  const dir2 = corner;
+  const neighbor2 = [q + directions[dir2][0], r + directions[dir2][1]];
+  equivalents.push({ q: neighbor2[0], r: neighbor2[1], corner: (corner + 4) % 6 });
+  
+  return equivalents;
+}
+
+/**
+ * Get vertices of a road
+ * @param {Object} road - Road object {q, r, edge}
+ * @returns {Array} Array of vertex objects
+ */
+function getRoadVertices(road) {
+  const { q, r, edge } = road;
+  
+  // Map edge to the two corners it connects
+  const edgeToCorners = {
+    0: [0, 1], // Top edge: corners 0 and 1
+    1: [1, 2], // Top-right edge: corners 1 and 2
+    2: [2, 3], // Bottom-right edge: corners 2 and 3
+    3: [3, 4], // Bottom edge: corners 3 and 4
+    4: [4, 5], // Bottom-left edge: corners 4 and 5
+    5: [5, 0]  // Top-left edge: corners 5 and 0
+  };
+  
+  const corners = edgeToCorners[edge] || [0, 1];
+  return corners.map(corner => ({ q, r, corner }));
+}
+
+/**
+ * Build simple road adjacency list
  * @param {Array} roads - Array of road objects {q, r, edge}
  * @returns {Map} Adjacency list
  */
-function buildRoadAdjacencyList(roads) {
+function buildSimpleRoadAdjacencyList(roads) {
   const adjacencyList = new Map();
   
   // Initialize adjacency list
@@ -210,186 +356,6 @@ function areRoadsConnectedVertex(road1, road2) {
   }
   
   return false;
-}
-
-/**
- * Check if two roads on adjacent tiles share a vertex
- * @param {Object} road1 - Road on first tile
- * @param {Object} road2 - Road on second tile  
- * @param {number} direction - Direction from road1's tile to road2's tile
- * @returns {boolean} True if they share a vertex
- */
-function getSharedVertexBetweenTiles(road1, road2, direction) {
-  // Map directions to which edges/vertices are shared
-  // This is complex geometry - for now, let's use a simplified approach
-  
-  // Check if the edges are positioned to share a vertex
-  // Edge i connects vertices i and (i+1)%6
-  const vertices1 = [road1.edge, (road1.edge + 1) % 6];
-  const vertices2 = [road2.edge, (road2.edge + 1) % 6];
-  
-  // For adjacent tiles, specific vertex pairs are shared
-  // This mapping depends on which direction the tiles are adjacent
-  const adjacentVertexMappings = {
-    0: { from: [0, 1], to: [3, 4] }, // direction +1,0
-    1: { from: [1, 2], to: [4, 5] }, // direction 0,+1
-    2: { from: [2, 3], to: [5, 0] }, // direction -1,+1
-    3: { from: [3, 4], to: [0, 1] }, // direction -1,0
-    4: { from: [4, 5], to: [1, 2] }, // direction 0,-1
-    5: { from: [5, 0], to: [2, 3] }  // direction +1,-1
-  };
-  
-  const mapping = adjacentVertexMappings[direction];
-  if (!mapping) return false;
-  
-  // Check if road1's vertices overlap with the expected "from" vertices
-  // and road2's vertices overlap with the expected "to" vertices
-  const road1HasSharedVertex = vertices1.some(v => mapping.from.includes(v));
-  const road2HasSharedVertex = vertices2.some(v => mapping.to.includes(v));
-  
-  return road1HasSharedVertex && road2HasSharedVertex;
-}
-
-/**
- * Get vertices of a road (fixed version matching game's coordinate system)
- * @param {Object} road - Road object {q, r, edge}
- * @returns {Array} Array of vertex objects with coordinates
- */
-function getRoadVertices(road) {
-  const { q, r, edge } = road;
-  
-  // Each edge connects two adjacent corners
-  // Edge i connects corner i to corner (i+1)%6
-  const corner1 = edge;
-  const corner2 = (edge + 1) % 6;
-  
-  return [
-    { q, r, corner: corner1 },
-    { q, r, corner: corner2 }
-  ];
-}
-
-/**
- * Normalize a vertex to its canonical representation
- * Each vertex is shared by 3 tiles, we always use the lexicographically smallest (q,r) coordinate
- * @param {Object} vertex - Vertex object {q, r, corner}
- * @returns {Object} Normalized vertex object
- */
-function normalizeVertex(vertex) {
-  const { q, r, corner } = vertex;
-  
-  // Get all equivalent representations of this vertex
-  const equivalents = getEquivalentVertices(vertex);
-  
-  // Find the lexicographically smallest (q, r) coordinate
-  let normalized = equivalents[0];
-  for (const equiv of equivalents) {
-    if (equiv.q < normalized.q || (equiv.q === normalized.q && equiv.r < normalized.r)) {
-      normalized = equiv;
-    }
-  }
-  
-  return normalized;
-}
-
-/**
- * Check if two vertices are at the same physical location
- * @param {Object} v1 - First vertex
- * @param {Object} v2 - Second vertex
- * @returns {boolean} True if vertices are at the same location
- */
-function areVerticesEqual(v1, v2) {
-  // Normalize both vertices and compare
-  const norm1 = normalizeVertex(v1);
-  const norm2 = normalizeVertex(v2);
-  
-  return norm1.q === norm2.q && norm1.r === norm2.r && norm1.corner === norm2.corner;
-}
-
-/**
- * Get all equivalent representations of a vertex (simplified based on axial coordinates)
- * @param {Object} vertex - Vertex object {q, r, corner}
- * @returns {Array} Array of equivalent vertex objects
- */
-function getEquivalentVertices(vertex) {
-  const { q, r, corner } = vertex;
-  
-  // Each vertex is shared by exactly 3 tiles
-  // Using the axial coordinate system with directions: [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  // For corner N on tile (q,r), the equivalent representations are:
-  // - Current tile: (q, r, corner)
-  // - Neighbor in direction (corner-1)%6: corner becomes (corner+2)%6
-  // - Neighbor in direction corner: corner becomes (corner+4)%6
-  
-  const directions = [
-    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  ];
-  
-  const equivalents = [{ q, r, corner }];
-  
-  // Add representation from neighbor in direction (corner-1)%6
-  const dir1 = (corner + 5) % 6; // (corner - 1) % 6 with wrap-around
-  const neighbor1 = [q + directions[dir1][0], r + directions[dir1][1]];
-  equivalents.push({ q: neighbor1[0], r: neighbor1[1], corner: (corner + 2) % 6 });
-  
-  // Add representation from neighbor in direction corner
-  const dir2 = corner;
-  const neighbor2 = [q + directions[dir2][0], r + directions[dir2][1]];
-  equivalents.push({ q: neighbor2[0], r: neighbor2[1], corner: (corner + 4) % 6 });
-  
-  return equivalents;
-}
-
-/**
- * Build simple road adjacency list
- * @param {Array} roads - Array of road objects {q, r, edge}
- * @returns {Map} Adjacency list
- */
-function buildSimpleRoadAdjacencyList(roads) {
-  const adjacencyList = new Map();
-  
-  // Initialize adjacency list
-  roads.forEach(road => {
-    const key = getRoadKey(road);
-    adjacencyList.set(key, []);
-  });
-  
-  // For each road, check if it connects to any other road
-  roads.forEach((road1, i) => {
-    const key1 = getRoadKey(road1);
-    
-    roads.forEach((road2, j) => {
-      if (i === j) return; // Skip self
-      
-      const key2 = getRoadKey(road2);
-      
-      // Check if roads are adjacent (share a vertex)
-      if (areRoadsAdjacent(road1, road2)) {
-        adjacencyList.get(key1).push(key2);
-      }
-    });
-  });
-  
-  return adjacencyList;
-}
-
-/**
- * Simple check if two roads are adjacent (share a vertex)
- * @param {Object} road1 - First road
- * @param {Object} road2 - Second road
- * @returns {boolean} True if roads are adjacent
- */
-function areRoadsAdjacent(road1, road2) {
-  // Get the endpoints of each road
-  const endpoints1 = getRoadEndpoints(road1);
-  const endpoints2 = getRoadEndpoints(road2);
-  
-  // Check if any endpoint of road1 matches any endpoint of road2
-  return endpoints1.some(ep1 => 
-    endpoints2.some(ep2 => 
-      Math.abs(ep1.x - ep2.x) < 0.001 && Math.abs(ep1.y - ep2.y) < 0.001
-    )
-  );
 }
 
 /**
@@ -519,13 +485,27 @@ export function updateLongestRoad(players) {
       }
     });
   } else {
-    // Tie - no one gets the bonus
-    console.log('Longest road tie, no one gets it');
-    players.forEach(player => {
-      if (player.victoryPoints) {
-        player.victoryPoints.longestRoad = 0;
-      }
-    });
+    // Tie - check who currently has the longest road achievement
+    console.log(`Longest road tie at ${maxLength} roads between:`, winners.map(w => w.player.name));
+    const currentHolder = players.find(player => player.victoryPoints?.longestRoad > 0);
+    
+    if (currentHolder && winners.some(w => w.player === currentHolder)) {
+      // Current holder is tied, they keep it
+      console.log(`${currentHolder.name} keeps longest road (tie-breaker rule)`);
+      players.forEach(player => {
+        if (player.victoryPoints) {
+          player.victoryPoints.longestRoad = (player === currentHolder) ? 2 : 0;
+        }
+      });
+    } else {
+      // No current holder among tied players, first tied player gets it
+      console.log(`${winners[0].player.name} gets longest road (first to achieve tie)`);
+      players.forEach(player => {
+        if (player.victoryPoints) {
+          player.victoryPoints.longestRoad = (player === winners[0].player) ? 2 : 0;
+        }
+      });
+    }
   }
   
   // Store road lengths for display
@@ -765,52 +745,6 @@ export function getVictoryPointsForDisplay(player, isCurrentPlayer = false) {
 }
 
 /**
- * Diagnose coordinate system and edge connections
- */
-export function diagnoseCoordinateSystem() {
-  console.log('\n=== COORDINATE SYSTEM DIAGNOSIS ===');
-  
-  // Test the axial coordinate directions
-  const directions = [
-    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  ];
-  
-  console.log('Axial directions:', directions);
-  
-  // Test a simple case: edge 0 of tile (0,0) should connect to edge 3 of tile (1,0)
-  const road1 = { q: 0, r: 0, edge: 0 };
-  const road2 = { q: 1, r: 0, edge: 3 };
-  
-  console.log('\nTesting connection between:', road1, 'and', road2);
-  
-  // Test shared edge detection
-  const sharedEdge = areRoadsSharedEdge(road1, road2);
-  console.log('Shared edge check:', sharedEdge);
-  
-  // Test vertex-based connection
-  const vertices1 = getRoadVertices(road1);
-  const vertices2 = getRoadVertices(road2);
-  
-  console.log('Road 1 vertices:', vertices1);
-  console.log('Road 2 vertices:', vertices2);
-  
-  // Test final connection
-  const connected = areRoadsConnectedVertex(road1, road2);
-  console.log(`\nFinal result: ${connected ? 'CONNECTED' : 'NOT CONNECTED'}`);
-  
-  // Test another case: sequential edges on same tile
-  console.log('\n--- Testing same tile sequential edges ---');
-  const road3 = { q: 0, r: 0, edge: 0 };
-  const road4 = { q: 0, r: 0, edge: 1 };
-  
-  console.log('Testing connection between:', road3, 'and', road4);
-  const connected2 = areRoadsConnectedVertex(road3, road4);
-  console.log(`Result: ${connected2 ? 'CONNECTED' : 'NOT CONNECTED'}`);
-  
-  console.log('=== END DIAGNOSIS ===\n');
-}
-
-/**
  * Debug function to test road connections
  * @param {Array} roads - Array of road objects
  */
@@ -824,7 +758,7 @@ export function debugRoadConnections(roads) {
   }
   
   // Build adjacency list
-  const adjacencyList = buildRoadAdjacencyList(roads);
+  const adjacencyList = buildSimpleRoadAdjacencyList(roads);
   console.log('Road adjacency list:', adjacencyList);
   
   // Test connections
@@ -835,17 +769,17 @@ export function debugRoadConnections(roads) {
       const connected = areRoadsConnectedVertex(road1, road2);
       console.log(`Road ${getRoadKey(road1)} <-> Road ${getRoadKey(road2)}: ${connected ? 'CONNECTED' : 'not connected'}`);
       
-      if (connected) {
-        // Show which vertices are shared
+      if (connected && window.DEBUG_ROAD_CONNECTIONS) {
         const vertices1 = getRoadVertices(road1);
         const vertices2 = getRoadVertices(road2);
         console.log(`  Vertices road1:`, vertices1);
         console.log(`  Vertices road2:`, vertices2);
         
+        // Show which vertex is shared
         for (const v1 of vertices1) {
           for (const v2 of vertices2) {
             if (areVerticesEqual(v1, v2)) {
-              console.log(`  Shared vertex:`, normalizeVertex(v1));
+              console.log(`  Shared vertex: {q: ${v1.q}, r: ${v1.r}, corner: ${v1.corner}}`);
             }
           }
         }

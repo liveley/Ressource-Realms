@@ -27,10 +27,9 @@ import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debuggi
 import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
 import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
 import { createSettingsMenu } from './modules/uiSettingsMenu.js';
-import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDisplay, debugRoadConnections, calculateLongestRoad, diagnoseCoordinateSystem } from './modules/victoryPoints.js';
+import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDisplay, debugRoadConnections, calculateLongestRoad } from './modules/victoryPoints.js';
 import { createVictoryPointsDebugUI } from './modules/victoryPointsDebug.js';
-import './modules/longestRoadDebug.js'; // Import road debug module
-import './test/testLongestRoad.js'; // Import road tests
+import './modules/longestRoadDebug.js';
 
 window.players = window.players || [
   {
@@ -804,86 +803,9 @@ window.getAllPlayers = function() {
   return window.players;
 };
 
-// Debugging and testing utilities
-window.debugRoadConnections = debugRoadConnections;
-window.calculateLongestRoad = calculateLongestRoad;
-window.updateAllVictoryPoints = updateAllVictoryPoints;
-window.getVictoryPointsForDisplay = getVictoryPointsForDisplay;
-window.diagnoseCoordinateSystem = diagnoseCoordinateSystem;
+window.startRobberPlacement = startRobberPlacement;
 
-// Test road connection function
-window.testRoadConnection = function(road1, road2) {
-  console.log('Testing road connection:', road1, road2);
-  
-  // Test shared edge
-  const directions = [
-    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  ];
-  
-  const [nq1, nr1] = [road1.q + directions[road1.edge][0], road1.r + directions[road1.edge][1]];
-  const oppositeEdge1 = (road1.edge + 3) % 6;
-  const sharedEdge = (nq1 === road2.q && nr1 === road2.r && oppositeEdge1 === road2.edge);
-  
-  console.log('Shared edge check:', sharedEdge);
-  console.log(`Road1 neighbor: (${nq1}, ${nr1}), opposite edge: ${oppositeEdge1}`);
-  console.log(`Road2: (${road2.q}, ${road2.r}), edge: ${road2.edge}`);
-  
-  return sharedEdge;
-};
-
-// Add utility to analyze actual road storage in the game
-window.analyzeActualRoads = function() {
-  console.log('\n=== ANALYZING ACTUAL ROADS IN GAME ===');
-  
-  if (!window.players || window.players.length === 0) {
-    console.log('No players found');
-    return;
-  }
-  
-  let totalRoads = 0;
-  window.players.forEach((player, i) => {
-    console.log(`\n--- Player ${i + 1}: ${player.name} ---`);
-    console.log(`Total roads: ${player.roads ? player.roads.length : 0}`);
-    
-    if (player.roads && player.roads.length > 0) {
-      player.roads.forEach((road, j) => {
-        console.log(`Road ${j + 1}: {q: ${road.q}, r: ${road.r}, edge: ${road.edge}}`);
-        
-        // Show the alternative representation
-        const directions = [
-          [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-        ];
-        const [nq, nr] = [road.q + directions[road.edge][0], road.r + directions[road.edge][1]];
-        const oppositeEdge = (road.edge + 3) % 6;
-        console.log(`  Alternative: {q: ${nq}, r: ${nr}, edge: ${oppositeEdge}}`);
-        
-        totalRoads++;
-      });
-      
-      // Test connections between all roads for this player
-      if (player.roads.length > 1) {
-        console.log('\n  Road connections for this player:');
-        for (let i = 0; i < player.roads.length; i++) {
-          for (let j = i + 1; j < player.roads.length; j++) {
-            const road1 = player.roads[i];
-            const road2 = player.roads[j];
-            const connected = testRoadConnectionActual(road1, road2);
-            console.log(`    Road ${i+1} <-> Road ${j+1}: ${connected ? 'CONNECTED' : 'not connected'}`);
-          }
-        }
-        
-        // Calculate longest road for this player using game logic
-        const longestLength = window.calculateLongestRoad ? window.calculateLongestRoad(player) : 'N/A';
-        console.log(`  Longest road length: ${longestLength}`);
-      }
-    }
-  });
-  
-  console.log(`\nTotal roads across all players: ${totalRoads}`);
-  console.log('=== END ANALYSIS ===\n');
-};
-
-// Test road connection using the exact same logic as the game's isRoadOccupied
+// Function to test road connection using the exact logic from victoryPoints.js
 function testRoadConnectionActual(road1, road2) {
   const directions = [
     [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
@@ -907,13 +829,12 @@ function testRoadConnectionActual(road1, road2) {
   // Method 2: Adjacent roads on same tile (share a vertex)
   if (road1.q === road2.q && road1.r === road2.r) {
     const edgeDiff = Math.abs(road1.edge - road2.edge);
-    if (edgeDiff === 1 || edgeDiff === 5) { // Adjacent edges (including wrap-around)
+    if (edgeDiff === 1 || edgeDiff === 5) { // Adjacent edges (including wrap-around 0-5)
       return true;
     }
   }
   
   // Method 3: Roads on different tiles that share a vertex
-  // Check if any vertices of road1 match any vertices of road2
   const vertices1 = getRoadVerticesSimple(road1);
   const vertices2 = getRoadVerticesSimple(road2);
   
@@ -928,257 +849,537 @@ function testRoadConnectionActual(road1, road2) {
   return false;
 }
 
-// Helper function to get road vertices
+// Helper function to get vertices of a road
 function getRoadVerticesSimple(road) {
-  const { q, r, edge } = road;
+  const vertices = [];
   
-  // Each edge connects two adjacent corners
-  // Edge i connects corner i to corner (i+1)%6
-  const corner1 = edge;
-  const corner2 = (edge + 1) % 6;
+  // Each edge connects two vertices (corners of the hex)
+  // Using the same logic as in victoryPoints.js
+  const edgeToVertices = {
+    0: [0, 1], // Top edge: top to top-right
+    1: [1, 2], // Top-right edge: top-right to bottom-right
+    2: [2, 3], // Bottom-right edge: bottom-right to bottom
+    3: [3, 4], // Bottom edge: bottom to bottom-left
+    4: [4, 5], // Bottom-left edge: bottom-left to top-left
+    5: [5, 0]  // Top-left edge: top-left to top
+  };
   
-  return [
-    { q, r, corner: corner1 },
-    { q, r, corner: corner2 }
-  ];
+  const vertexIndices = edgeToVertices[road.edge] || [0, 1];
+  
+  for (const vertexIndex of vertexIndices) {
+    vertices.push({
+      q: road.q,
+      r: road.r,
+      corner: vertexIndex
+    });
+  }
+  
+  return vertices;
 }
 
 // Helper function to check if two vertices are equal
 function areVerticesEqualSimple(v1, v2) {
-  // Get all equivalent representations and check if any match
-  const equivalents1 = getEquivalentVerticesSimple(v1);
-  const equivalents2 = getEquivalentVerticesSimple(v2);
+  // First check if they're exactly the same
+  if (v1.q === v2.q && v1.r === v2.r && v1.corner === v2.corner) {
+    return true;
+  }
   
-  for (const eq1 of equivalents1) {
-    for (const eq2 of equivalents2) {
-      if (eq1.q === eq2.q && eq1.r === eq2.r && eq1.corner === eq2.corner) {
-        return true;
-      }
+  // Check for equivalent vertices (same vertex from different tile perspectives)
+  const equivalents = getEquivalentVerticesSimple(v1);
+  
+  for (const equiv of equivalents) {
+    if (equiv.q === v2.q && equiv.r === v2.r && equiv.corner === v2.corner) {
+      return true;
     }
   }
   
   return false;
 }
 
-// Helper function to get equivalent vertices
+// Helper function to get equivalent vertices (same vertex from different tile perspectives)
 function getEquivalentVerticesSimple(vertex) {
+  const equivalents = [];
   const { q, r, corner } = vertex;
   
-  const directions = [
-    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  ];
+  // Based on axial coordinates, each vertex can be referenced from 3 different tiles
+  // Using simplified logic for vertex equivalence
   
-  const equivalents = [{ q, r, corner }];
-  
-  // Add representation from neighbor in direction (corner-1)%6
-  const dir1 = (corner + 5) % 6; // (corner - 1) % 6 with wrap-around
-  const neighbor1 = [q + directions[dir1][0], r + directions[dir1][1]];
-  equivalents.push({ q: neighbor1[0], r: neighbor1[1], corner: (corner + 2) % 6 });
-  
-  // Add representation from neighbor in direction corner
-  const dir2 = corner;
-  const neighbor2 = [q + directions[dir2][0], r + directions[dir2][1]];
-  equivalents.push({ q: neighbor2[0], r: neighbor2[1], corner: (corner + 4) % 6 });
+  // Corner 0 (top) equivalents
+  if (corner === 0) {
+    equivalents.push({ q: q, r: r - 1, corner: 3 });     // Bottom of tile above
+    equivalents.push({ q: q - 1, r: r, corner: 2 });     // Bottom-right of tile to left
+  }
+  // Corner 1 (top-right) equivalents
+  else if (corner === 1) {
+    equivalents.push({ q: q + 1, r: r - 1, corner: 4 }); // Bottom-left of tile to top-right
+    equivalents.push({ q: q, r: r - 1, corner: 5 });     // Top-left of tile above
+  }
+  // Corner 2 (bottom-right) equivalents
+  else if (corner === 2) {
+    equivalents.push({ q: q + 1, r: r, corner: 5 });     // Top-left of tile to right
+    equivalents.push({ q: q + 1, r: r - 1, corner: 0 }); // Top of tile to top-right
+  }
+  // Corner 3 (bottom) equivalents
+  else if (corner === 3) {
+    equivalents.push({ q: q, r: r + 1, corner: 0 });     // Top of tile below
+    equivalents.push({ q: q + 1, r: r, corner: 4 });     // Bottom-left of tile to right
+  }
+  // Corner 4 (bottom-left) equivalents
+  else if (corner === 4) {
+    equivalents.push({ q: q - 1, r: r + 1, corner: 1 }); // Top-right of tile to bottom-left
+    equivalents.push({ q: q, r: r + 1, corner: 2 });     // Bottom-right of tile below
+  }
+  // Corner 5 (top-left) equivalents
+  else if (corner === 5) {
+    equivalents.push({ q: q - 1, r: r, corner: 1 });     // Top-right of tile to left
+    equivalents.push({ q: q - 1, r: r + 1, corner: 3 }); // Bottom of tile to bottom-left
+  }
   
   return equivalents;
 }
 
-// Test the road connection logic with specific cases
-window.testRoadConnectionLogic = function() {
-  console.log('\n=== TESTING ROAD CONNECTION LOGIC ===');
+// Helper function to calculate longest road from roads array
+function calculateLongestRoadFromArray(roads) {
+  if (!roads || roads.length === 0) return 0;
   
-  // Test case 1: Sequential edges on same tile (should connect)
-  const road1 = { q: 0, r: 0, edge: 0 };
-  const road2 = { q: 0, r: 0, edge: 1 };
-  console.log('Test 1 - Sequential edges on same tile:');
-  console.log('Road 1:', road1);
-  console.log('Road 2:', road2);
-  console.log('Connected:', testRoadConnectionActual(road1, road2));
-  
-  // Test case 2: Same physical edge from different tiles (should connect)
-  const road3 = { q: 0, r: 0, edge: 0 };
-  const road4 = { q: 1, r: 0, edge: 3 };
-  console.log('\nTest 2 - Same physical edge from different tiles:');
-  console.log('Road 3:', road3);
-  console.log('Road 4:', road4);
-  console.log('Connected:', testRoadConnectionActual(road3, road4));
-  
-  // Test case 3: Cross-tile connection at vertex (should connect)
-  const road5 = { q: 0, r: 0, edge: 1 };
-  const road6 = { q: 1, r: 0, edge: 4 };
-  console.log('\nTest 3 - Cross-tile connection at vertex:');
-  console.log('Road 5:', road5);
-  console.log('Road 6:', road6);
-  console.log('Connected:', testRoadConnectionActual(road5, road6));
-  
-  // Test case 4: Non-connected roads (should not connect)
-  const road7 = { q: 0, r: 0, edge: 0 };
-  const road8 = { q: 2, r: 2, edge: 3 };
-  console.log('\nTest 4 - Non-connected roads:');
-  console.log('Road 7:', road7);
-  console.log('Road 8:', road8);
-  console.log('Connected:', testRoadConnectionActual(road7, road8));
-  
-  console.log('\n=== END TEST ===');
-};
+  // Create a temporary player object
+  const tempPlayer = { roads };
+  return calculateLongestRoad(tempPlayer);
+}
 
-// Comprehensive test for 5-road chain detection
-window.testFiveRoadChain = function() {
-  console.log('\n=== TESTING 5-ROAD CHAIN DETECTION ===');
-  
-  // Create a test player with 5 connected roads
-  const testPlayer = {
-    name: 'Test Player',
-    roads: [
-      { q: 0, r: 0, edge: 0 },  // Road 1
-      { q: 0, r: 0, edge: 1 },  // Road 2 - connects to Road 1
-      { q: 1, r: 0, edge: 4 },  // Road 3 - connects to Road 2 across tiles
-      { q: 1, r: 0, edge: 5 },  // Road 4 - connects to Road 3
-      { q: 1, r: 0, edge: 0 }   // Road 5 - connects to Road 4
-    ]
-  };
-  
-  console.log('Test player roads:', testPlayer.roads);
-  
-  // Test all connections
-  console.log('\nTesting individual connections:');
-  for (let i = 0; i < testPlayer.roads.length; i++) {
-    for (let j = i + 1; j < testPlayer.roads.length; j++) {
-      const road1 = testPlayer.roads[i];
-      const road2 = testPlayer.roads[j];
-      const connected = testRoadConnectionActual(road1, road2);
-      console.log(`Road ${i+1} <-> Road ${j+1}: ${connected ? 'CONNECTED' : 'not connected'}`);
-    }
-  }
-  
-  // Calculate longest road
-  if (window.calculateLongestRoad) {
-    const longestLength = window.calculateLongestRoad(testPlayer);
-    console.log(`\nLongest road calculation result: ${longestLength}`);
-    console.log(`Expected: 5 (should be >= 5 for achievement)`);
-    
-    if (longestLength >= 5) {
-      console.log('✅ SUCCESS: 5-road chain detected correctly!');
-    } else {
-      console.log('❌ FAIL: 5-road chain not detected correctly');
-    }
-  } else {
-    console.log('calculateLongestRoad function not available');
-  }
-  
-  console.log('\n=== END TEST ===');
-};
-
-// Function to add test roads to current player and track longest road
-window.addTestRoads = function() {
-  console.log('\n=== ADDING TEST ROADS ===');
-  
+// Enhanced debug function to trace longest road path
+window.debugLongestRoadPath = function(playerIndex = null) {
   if (!window.players || window.players.length === 0) {
     console.log('No players available');
     return;
   }
   
-  const currentPlayer = window.players[window.activePlayerIdx || 0];
-  console.log(`Adding roads to ${currentPlayer.name}`);
+  const player = playerIndex !== null ? window.players[playerIndex] : window.players[window.activePlayerIdx || 0];
+  console.log(`\n=== DEBUG LONGEST ROAD PATH FOR ${player.name} ===`);
   
-  // Clear existing roads first
-  currentPlayer.roads = [];
-  console.log('Cleared existing roads');
+  if (!player.roads || player.roads.length === 0) {
+    console.log('Player has no roads');
+    return;
+  }
   
-  // Add roads one by one and track longest road
-  const testRoads = [
-    { q: 0, r: 0, edge: 0 },  // Road 1
-    { q: 0, r: 0, edge: 1 },  // Road 2 - connects to Road 1
-    { q: 1, r: 0, edge: 4 },  // Road 3 - connects to Road 2 across tiles
-    { q: 1, r: 0, edge: 5 },  // Road 4 - connects to Road 3
-    { q: 1, r: 0, edge: 0 }   // Road 5 - connects to Road 4
-  ];
+  // Build adjacency list
+  const adjacencyList = new Map();
+  player.roads.forEach(road => {
+    const key = `${road.q},${road.r},${road.edge}`;
+    adjacencyList.set(key, []);
+  });
   
-  testRoads.forEach((road, i) => {
-    currentPlayer.roads.push(road);
-    console.log(`Added road ${i+1}: {q: ${road.q}, r: ${road.r}, edge: ${road.edge}}`);
+  // Find connections
+  player.roads.forEach((road1, i) => {
+    const key1 = `${road1.q},${road1.r},${road1.edge}`;
+    player.roads.forEach((road2, j) => {
+      if (i === j) return;
+      const connected = testRoadConnectionActual(road1, road2);
+      if (connected) {
+        const key2 = `${road2.q},${road2.r},${road2.edge}`;
+        adjacencyList.get(key1).push(key2);
+      }
+    });
+  });
+  
+  console.log('Adjacency list:');
+  adjacencyList.forEach((neighbors, road) => {
+    console.log(`  ${road}: [${neighbors.join(', ')}]`);
+  });
+  
+  // Find longest path from each starting point
+  let maxLength = 0;
+  let bestPath = [];
+  
+  adjacencyList.forEach((neighbors, startRoad) => {
+    console.log(`\nStarting DFS from ${startRoad}:`);
+    const visited = new Set();
+    const path = [];
+    const result = dfsWithPath(adjacencyList, startRoad, visited, path);
     
-    // Calculate longest road after each addition
-    if (window.calculateLongestRoad) {
-      const longestLength = window.calculateLongestRoad(currentPlayer);
-      console.log(`  Longest road after ${i+1} roads: ${longestLength}`);
+    console.log(`  Path length: ${result.length}`);
+    console.log(`  Path: ${result.path.join(' -> ')}`);
+    
+    if (result.length > maxLength) {
+      maxLength = result.length;
+      bestPath = result.path;
     }
   });
   
-  // Update victory points
-  if (window.updateAllVictoryPoints) {
-    window.updateAllVictoryPoints(currentPlayer, window.players);
-    console.log('Victory points updated');
-  }
+  console.log(`\nBest path found:`);
+  console.log(`Length: ${maxLength}`);
+  console.log(`Path: ${bestPath.join(' -> ')}`);
   
-  // Update UI
-  if (window.updatePlayerOverviews) {
-    window.updatePlayerOverviews(window.players, () => window.activePlayerIdx || 0);
-    console.log('Player overview UI updated');
-  }
+  console.log(`\n=== END DEBUG ===`);
   
-  console.log('\n=== TEST ROADS ADDED ===');
+  return { maxLength, bestPath };
 };
 
-// Function to clear test roads from current player
-window.clearTestRoads = function() {
-  if (!window.players || window.players.length === 0) {
-    console.log('No players available');
-    return;
-  }
+// Helper function for DFS with path tracking
+function dfsWithPath(adjacencyList, current, visited, path) {
+  visited.add(current);
+  path.push(current);
   
-  const currentPlayer = window.players[window.activePlayerIdx || 0];
-  currentPlayer.roads = [];
-  console.log(`Cleared all roads from ${currentPlayer.name}`);
+  let maxLength = 0;
+  let bestPath = [...path];
   
-  // Update victory points
-  if (window.updateAllVictoryPoints) {
-    window.updateAllVictoryPoints(currentPlayer, window.players);
-  }
+  const neighbors = adjacencyList.get(current) || [];
   
-  // Update UI
-  if (window.updatePlayerOverviews) {
-    window.updatePlayerOverviews(window.players, () => window.activePlayerIdx || 0);
-  }
-};
-
-// Function to check current player's longest road achievement
-window.checkLongestRoadAchievement = function() {
-  if (!window.players || window.players.length === 0) {
-    console.log('No players available');
-    return;
-  }
-  
-  const currentPlayer = window.players[window.activePlayerIdx || 0];
-  console.log(`\n=== LONGEST ROAD ACHIEVEMENT CHECK ===`);
-  console.log(`Player: ${currentPlayer.name}`);
-  console.log(`Roads: ${currentPlayer.roads?.length || 0}`);
-  
-  if (currentPlayer.roads && currentPlayer.roads.length > 0) {
-    console.log('Road details:');
-    currentPlayer.roads.forEach((road, i) => {
-      console.log(`  ${i+1}. {q: ${road.q}, r: ${road.r}, edge: ${road.edge}}`);
-    });
-  }
-  
-  if (window.calculateLongestRoad) {
-    const longestLength = window.calculateLongestRoad(currentPlayer);
-    console.log(`\nLongest road length: ${longestLength}`);
-    
-    const hasAchievement = currentPlayer.victoryPoints?.longestRoad > 0;
-    const shouldHaveAchievement = longestLength >= 5;
-    
-    console.log(`Has longest road achievement: ${hasAchievement}`);
-    console.log(`Should have achievement (≥5 roads): ${shouldHaveAchievement}`);
-    
-    if (hasAchievement && shouldHaveAchievement) {
-      console.log('✅ ACHIEVEMENT CORRECTLY AWARDED!');
-    } else if (!hasAchievement && !shouldHaveAchievement) {
-      console.log('✅ ACHIEVEMENT CORRECTLY NOT AWARDED (need 5+ connected roads)');
-    } else {
-      console.log('❌ ACHIEVEMENT STATUS INCORRECT!');
+  for (const neighbor of neighbors) {
+    if (!visited.has(neighbor)) {
+      const result = dfsWithPath(adjacencyList, neighbor, visited, path);
+      if (result.length > maxLength) {
+        maxLength = result.length;
+        bestPath = result.path;
+      }
     }
   }
   
-  console.log('=== END CHECK ===\n');
+  visited.delete(current);
+  path.pop();
+  
+  return { length: maxLength + 1, path: bestPath };
+}
+
+// Function to simulate building roads one by one and track achievement changes
+window.simulateRoadBuilding = function(playerIndex = null) {
+  if (!window.players || window.players.length === 0) {
+    console.log('No players available');
+    return;
+  }
+  
+  const player = playerIndex !== null ? window.players[playerIndex] : window.players[window.activePlayerIdx || 0];
+  const originalRoads = [...player.roads];
+  
+  console.log(`\n=== SIMULATING ROAD BUILDING FOR ${player.name} ===`);
+  
+  // Clear roads
+  player.roads = [];
+  
+  // Add roads one by one
+  originalRoads.forEach((road, i) => {
+    console.log(`\nBuilding road ${i + 1}: {q: ${road.q}, r: ${road.r}, edge: ${road.edge}}`);
+    player.roads.push(road);
+    
+    // Calculate longest road
+    const longestLength = window.calculateLongestRoad ? window.calculateLongestRoad(player) : 0;
+    console.log(`  Longest road after building: ${longestLength}`);
+    
+    // Update victory points
+    if (window.updateLongestRoad) {
+      window.updateLongestRoad(window.players);
+    }
+    
+    const hasAchievement = player.victoryPoints?.longestRoad > 0;
+    console.log(`  Has achievement: ${hasAchievement}`);
+    
+    if (hasAchievement && longestLength < 5) {
+      console.log(`  ⚠️  WARNING: Has achievement but longest road is only ${longestLength}`);
+    }
+    if (!hasAchievement && longestLength >= 5) {
+      console.log(`  ⚠️  WARNING: No achievement but longest road is ${longestLength}`);
+    }
+  });
+  
+  console.log(`\n=== SIMULATION COMPLETE ===`);
+};
+
+// Function to test specific road connection
+window.testSpecificConnection = function(road1, road2) {
+  console.log(`\n=== TESTING SPECIFIC CONNECTION ===`);
+  console.log(`Road 1: {q: ${road1.q}, r: ${road1.r}, edge: ${road1.edge}}`);
+  console.log(`Road 2: {q: ${road2.q}, r: ${road2.r}, edge: ${road2.edge}}`);
+  
+  const connected = testRoadConnectionActual(road1, road2);
+  console.log(`Connected: ${connected}`);
+  
+  // Show detailed analysis
+  const directions = [
+    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+  ];
+  
+  // Method 1: Same physical edge
+  const [nq1, nr1] = [road1.q + directions[road1.edge][0], road1.r + directions[road1.edge][1]];
+  const oppositeEdge1 = (road1.edge + 3) % 6;
+  const sameEdge1 = (nq1 === road2.q && nr1 === road2.r && oppositeEdge1 === road2.edge);
+  
+  const [nq2, nr2] = [road2.q + directions[road2.edge][0], road2.r + directions[road2.edge][1]];
+  const oppositeEdge2 = (road2.edge + 3) % 6;
+  const sameEdge2 = (nq2 === road1.q && nr2 === road1.r && oppositeEdge2 === road1.edge);
+  
+  console.log(`Same edge check 1: ${sameEdge1} (${road1.q},${road1.r},${road1.edge} -> neighbor (${nq1},${nr1}) vs (${road2.q},${road2.r},${road2.edge}) with opposite edge ${oppositeEdge1})`);
+  console.log(`Same edge check 2: ${sameEdge2} (${road2.q},${road2.r},${road2.edge} -> neighbor (${nq2},${nr2}) vs (${road1.q},${road1.r},${road1.edge}) with opposite edge ${oppositeEdge2})`);
+  
+  // Method 2: Same tile adjacent
+  const sameTile = (road1.q === road2.q && road1.r === road2.r);
+  let adjacent = false;
+  if (sameTile) {
+    const edgeDiff = Math.abs(road1.edge - road2.edge);
+    adjacent = (edgeDiff === 1 || edgeDiff === 5);
+  }
+  console.log(`Same tile adjacent: ${adjacent} (same tile: ${sameTile})`);
+  
+  // Method 3: Vertex sharing
+  const vertices1 = getRoadVerticesSimple(road1);
+  const vertices2 = getRoadVerticesSimple(road2);
+  let sharedVertex = false;
+
+  for (const v1 of vertices1) {
+    for (const v2 of vertices2) {
+      if (areVerticesEqualSimple(v1, v2)) {
+        console.log(`Shared vertex found: {q: ${v1.q}, r: ${v1.r}, corner: ${v1.corner}}`);
+        sharedVertex = true;
+        break;
+      }
+    }
+    if (sharedVertex) break;
+  }
+
+  console.log(`Vertex sharing: ${sharedVertex}`);
+  console.log(`=== END TEST ===`);
+};
+
+// Function to analyze actual roads in the game
+window.analyzeActualRoads = function() {
+  console.log('\n=== ANALYZING ACTUAL ROADS IN GAME ===');
+  
+  if (!window.players || !Array.isArray(window.players)) {
+    console.log('No players array found');
+    return;
+  }
+  
+  window.players.forEach((player, i) => {
+    console.log(`\nPlayer ${i + 1} (${player.name}):`);
+    console.log(`  Roads: ${player.roads ? player.roads.length : 0}`);
+    
+    if (player.roads && player.roads.length > 0) {
+      player.roads.forEach((road, j) => {
+        console.log(`    ${j + 1}. {q: ${road.q}, r: ${road.r}, edge: ${road.edge}}`);
+      });
+    }
+  });
+  
+  console.log('\n=== END ANALYSIS ===');
+};
+
+// Function to test road connection logic
+window.testRoadConnectionLogic = function() {
+  console.log('\n=== TESTING ROAD CONNECTION LOGIC ===');
+  
+  // Test case 1: Same physical edge from different tiles
+  console.log('\n--- Test 1: Same physical edge ---');
+  const road1 = { q: 0, r: 0, edge: 0 };
+  const road2 = { q: 0, r: -1, edge: 3 };
+  console.log(`Road 1: {q: ${road1.q}, r: ${road1.r}, edge: ${road1.edge}}`);
+  console.log(`Road 2: {q: ${road2.q}, r: ${road2.r}, edge: ${road2.edge}}`);
+  console.log(`Should connect: ${testRoadConnectionActual(road1, road2)}`);
+  
+  // Test case 2: Adjacent edges on same tile
+  console.log('\n--- Test 2: Adjacent edges on same tile ---');
+  const road3 = { q: 0, r: 0, edge: 0 };
+  const road4 = { q: 0, r: 0, edge: 1 };
+  console.log(`Road 3: {q: ${road3.q}, r: ${road3.r}, edge: ${road3.edge}}`);
+  console.log(`Road 4: {q: ${road4.q}, r: ${road4.r}, edge: ${road4.edge}}`);
+  console.log(`Should connect: ${testRoadConnectionActual(road3, road4)}`);
+  
+  // Test case 3: Roads that should NOT connect
+  console.log('\n--- Test 3: Roads that should NOT connect ---');
+  const road5 = { q: 0, r: 0, edge: 0 };
+  const road6 = { q: 1, r: 1, edge: 3 };
+  console.log(`Road 5: {q: ${road5.q}, r: ${road5.r}, edge: ${road5.edge}}`);
+  console.log(`Road 6: {q: ${road6.q}, r: ${road6.r}, edge: ${road6.edge}}`);
+  console.log(`Should NOT connect: ${testRoadConnectionActual(road5, road6)}`);
+  
+  console.log('\n=== END CONNECTION LOGIC TEST ===');
+};
+
+// Function to test a 5-road chain
+window.testFiveRoadChain = function() {
+  console.log('\n=== TESTING 5-ROAD CHAIN ===');
+  
+  const testRoads = [
+    { q: 0, r: 0, edge: 0 },  // Starting road
+    { q: 0, r: 0, edge: 1 },  // Adjacent on same tile
+    { q: 0, r: 0, edge: 2 },  // Adjacent on same tile
+    { q: 1, r: 0, edge: 5 },  // Connected to edge 2 from neighbor tile
+    { q: 1, r: 0, edge: 0 }   // Adjacent on same tile
+  ];
+  
+  console.log('Test roads:');
+  testRoads.forEach((road, i) => {
+    console.log(`  ${i + 1}. {q: ${road.q}, r: ${road.r}, edge: ${road.edge}}`);
+  });
+  
+  // Test connections
+  console.log('\nConnection tests:');
+  for (let i = 0; i < testRoads.length - 1; i++) {
+    const connected = testRoadConnectionActual(testRoads[i], testRoads[i + 1]);
+    console.log(`  Road ${i + 1} -> Road ${i + 2}: ${connected}`);
+  }
+  
+  // Calculate longest road
+  const longestLength = calculateLongestRoadFromArray(testRoads);
+  console.log(`\nLongest road length: ${longestLength}`);
+  
+  console.log('\n=== END 5-ROAD CHAIN TEST ===');
+};
+
+// Function to add test roads to current player
+window.addTestRoads = function() {
+  if (!window.currentPlayer) {
+    console.log('No current player found');
+    return;
+  }
+  
+  console.log('\n=== ADDING TEST ROADS ===');
+  
+  const testRoads = [
+    { q: 0, r: 0, edge: 0 },
+    { q: 0, r: 0, edge: 1 },
+    { q: 0, r: 0, edge: 2 },
+    { q: 1, r: 0, edge: 5 },
+    { q: 1, r: 0, edge: 0 }
+  ];
+  
+  if (!window.currentPlayer.roads) {
+    window.currentPlayer.roads = [];
+  }
+  
+  testRoads.forEach((road, i) => {
+    window.currentPlayer.roads.push(road);
+    console.log(`Added road ${i + 1}: {q: ${road.q}, r: ${road.r}, edge: ${road.edge}}`);
+  });
+  
+  console.log(`Total roads for ${window.currentPlayer.name}: ${window.currentPlayer.roads.length}`);
+  console.log('\n=== TEST ROADS ADDED ===');
+};
+
+// Function to clear test roads
+window.clearTestRoads = function() {
+  if (!window.currentPlayer) {
+    console.log('No current player found');
+    return;
+  }
+  
+  console.log('\n=== CLEARING TEST ROADS ===');
+  const originalCount = window.currentPlayer.roads ? window.currentPlayer.roads.length : 0;
+  window.currentPlayer.roads = [];
+  console.log(`Cleared ${originalCount} roads from ${window.currentPlayer.name}`);
+  console.log('\n=== TEST ROADS CLEARED ===');
+};
+
+// Function to check longest road achievement
+window.checkLongestRoadAchievement = function() {
+  console.log('\n=== CHECKING LONGEST ROAD ACHIEVEMENT ===');
+  
+  if (!window.players || !Array.isArray(window.players)) {
+    console.log('No players array found');
+    return;
+  }
+  
+  let longestRoadHolder = null;
+  let maxLength = 0;
+  
+  window.players.forEach((player, i) => {
+    const roads = player.roads || [];
+    const length = calculateLongestRoad(player);
+    
+    console.log(`Player ${i + 1} (${player.name}): ${length} roads`);
+    console.log(`  Roads: ${roads.length}`);
+    
+    if (length > maxLength) {
+      maxLength = length;
+      longestRoadHolder = player;
+    }
+  });
+  
+  console.log(`\nLongest road: ${maxLength} roads`);
+  console.log(`Holder: ${longestRoadHolder ? longestRoadHolder.name : 'None'}`);
+  console.log(`Achievement threshold: 5 roads`);
+  console.log(`Achievement earned: ${maxLength >= 5 ? 'YES' : 'NO'}`);
+  
+  console.log('\n=== END ACHIEVEMENT CHECK ===');
+};
+
+// Function to debug longest road path
+window.debugLongestRoadPath = function() {
+  if (!window.currentPlayer) {
+    console.log('No current player found');
+    return;
+  }
+  
+  console.log('\n=== DEBUGGING LONGEST ROAD PATH ===');
+  
+  const roads = window.currentPlayer.roads || [];
+  console.log(`Player: ${window.currentPlayer.name}`);
+  console.log(`Total roads: ${roads.length}`);
+  
+  if (roads.length === 0) {
+    console.log('No roads to analyze');
+    return;
+  }
+  
+  // Build adjacency list
+  const adjacencyList = {};
+  roads.forEach((road, i) => {
+    adjacencyList[i] = [];
+  });
+  
+  for (let i = 0; i < roads.length; i++) {
+    for (let j = i + 1; j < roads.length; j++) {
+      if (testRoadConnectionActual(roads[i], roads[j])) {
+        adjacencyList[i].push(j);
+        adjacencyList[j].push(i);
+      }
+    }
+  }
+  
+  console.log('\nAdjacency list:');
+  Object.keys(adjacencyList).forEach(i => {
+    const road = roads[i];
+    const connections = adjacencyList[i];
+    console.log(`  Road ${i} {q: ${road.q}, r: ${road.r}, edge: ${road.edge}} -> [${connections.join(', ')}]`);
+  });
+  
+  // Find longest path
+  const longestLength = calculateLongestRoadFromArray(roads);
+  console.log(`\nLongest road length: ${longestLength}`);
+  
+  console.log('\n=== END PATH DEBUG ===');
+};
+
+// Function to simulate road building
+window.simulateRoadBuilding = function() {
+  console.log('\n=== SIMULATING ROAD BUILDING ===');
+  
+  if (!window.currentPlayer) {
+    console.log('No current player found');
+    return;
+  }
+  
+  // Clear existing roads
+  window.currentPlayer.roads = [];
+  
+  const roadSequence = [
+    { q: 0, r: 0, edge: 0 },
+    { q: 0, r: 0, edge: 1 },
+    { q: 0, r: 0, edge: 2 },
+    { q: 1, r: 0, edge: 5 },
+    { q: 1, r: 0, edge: 0 }
+  ];
+  
+  roadSequence.forEach((road, i) => {
+    window.currentPlayer.roads.push(road);
+    const currentLength = calculateLongestRoad(window.currentPlayer);
+    
+    console.log(`Step ${i + 1}: Added road {q: ${road.q}, r: ${road.r}, edge: ${road.edge}}`);
+    console.log(`  Current longest road: ${currentLength}`);
+    console.log(`  Total roads: ${window.currentPlayer.roads.length}`);
+    
+    if (currentLength >= 5) {
+      console.log(`  🏆 ACHIEVEMENT UNLOCKED! Longest road (${currentLength} roads)`);
+    }
+  });
+  
+  console.log('\n=== SIMULATION COMPLETE ===');
 };
