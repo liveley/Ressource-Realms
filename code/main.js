@@ -247,19 +247,23 @@ async function startGame() {
     label.style.marginTop = '0.1em';
     btn.appendChild(label);
 
-    // Dummy-UI für das Würfelergebnis (wie dice-result)
-    const resultDiv = document.createElement('div');
-    resultDiv.id = 'dice-result';
-    resultDiv.style.color = '#fff';
-    resultDiv.style.fontSize = '2em';
-    resultDiv.style.minWidth = '2em';
-    resultDiv.style.minHeight = '1.5em';
-    resultDiv.style.textShadow = '0 2px 8px #000';
-    resultDiv.style.fontFamily = "'Montserrat', Arial, sans-serif";
-    resultDiv.style.display = 'block';
-    resultDiv.style.marginBottom = '0.3em';
-    resultDiv.style.textAlign = 'center';
-    btn.insertBefore(resultDiv, emoji);
+    // Dummy-UI für das Würfelergebnis (wie dice-result), aber außerhalb des Buttons
+    let resultDiv = document.getElementById('dice-result');
+    if (!resultDiv) {
+      resultDiv = document.createElement('div');
+      resultDiv.id = 'dice-result';
+      resultDiv.style.color = '#fff';
+      resultDiv.style.fontSize = '2em';
+      resultDiv.style.minWidth = '2em';
+      resultDiv.style.minHeight = '1.5em';
+      resultDiv.style.textShadow = '0 2px 8px #000';
+      resultDiv.style.fontFamily = "'Montserrat', Arial, sans-serif";
+      resultDiv.style.display = 'block';
+      resultDiv.style.marginBottom = '0.3em';
+      resultDiv.style.textAlign = 'center';
+      // Füge das Ergebnis-Element VOR dem Button in die Action Bar ein
+      actionBar.appendChild(resultDiv);
+    }
 
     function updateButtonUI() {
       if (state === 0) {
