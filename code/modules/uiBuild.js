@@ -25,7 +25,7 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildToggleBtn.onclick = () => {
     buildEnabled = !buildEnabled;
     console.log('Build-UI: buildEnabled =', buildEnabled);
-    buildToggleBtn.textContent = buildEnabled ? '\ud83c\udfd7\ufe0f AUS' : '\ud83c\udfd7\ufe0f';
+    buildToggleBtn.textContent = '\ud83c\udfd7\ufe0f';
     if (buildMenu) buildMenu.style.display = buildEnabled ? 'flex' : 'none';
     // Hintergrund und Rand nur anzeigen, wenn Menü offen ist
     if (buildEnabled) {
@@ -101,11 +101,11 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     return btn;
   }
 
-  buildMenu.appendChild(makeMenuBtn('build-road', 'Straße bauen', () => setBuildMode('road')));
-  buildMenu.appendChild(makeMenuBtn('build-settlement', 'Siedlung bauen', () => setBuildMode('settlement')));
-  buildMenu.appendChild(makeMenuBtn('build-city', 'Stadt bauen', () => setBuildMode('city')));
+  buildMenu.appendChild(makeMenuBtn('build-road', 'Straße', () => setBuildMode('road')));
+  buildMenu.appendChild(makeMenuBtn('build-settlement', 'Siedlung', () => setBuildMode('settlement')));
+  buildMenu.appendChild(makeMenuBtn('build-city', 'Stadt', () => setBuildMode('city')));
   // "Bauen aus" schließt das Menü (nicht mehr setBuildMode(null), sondern Menü schließen)
-  buildMenu.appendChild(makeMenuBtn('build-cancel', 'Bauen aus', () => {
+  buildMenu.appendChild(makeMenuBtn('build-cancel', 'bauen aus', () => {
     buildEnabled = false;
     buildToggleBtn.textContent = '\ud83c\udfd7\ufe0f';
     buildMenu.style.display = 'none';
