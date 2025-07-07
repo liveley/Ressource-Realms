@@ -1,8 +1,9 @@
-// modules/victoryPointsDebug.js
+// moved from modules/victoryPointsDebug.js
 // Debug UI for victory points system
 
+let debugUI = null;
+
 export function createVictoryPointsDebugUI() {
-  let debugUI = document.getElementById('victory-points-debug');
   if (debugUI) {
     debugUI.remove();
   }
@@ -22,25 +23,11 @@ export function createVictoryPointsDebugUI() {
   debugUI.style.maxWidth = '300px';
   debugUI.style.display = 'none'; // Hidden by default
 
-  // Toggle button
-  const toggleBtn = document.createElement('button');
-  toggleBtn.textContent = 'VP Debug';
-  toggleBtn.style.position = 'fixed';
-  toggleBtn.style.top = '10px';
-  toggleBtn.style.right = '10px';
-  toggleBtn.style.zIndex = '10001';
-  toggleBtn.style.padding = '5px 10px';
-  toggleBtn.style.fontSize = '12px';
-  toggleBtn.onclick = () => {
-    debugUI.style.display = debugUI.style.display === 'none' ? 'block' : 'none';
-  };
-
-  document.body.appendChild(toggleBtn);
   document.body.appendChild(debugUI);
 
   // Update function
   function updateDebugUI() {
-    if (!window.players || debugUI.style.display === 'none') return;
+    if (!window.players || !debugUI || debugUI.style.display === 'none') return;
 
     let content = '<h3>Victory Points Debug</h3>';
     
@@ -73,4 +60,24 @@ export function createVictoryPointsDebugUI() {
   setInterval(updateDebugUI, 500);
 
   return { updateDebugUI };
+}
+
+// Function to show VP debug popup (called when road debug is enabled)
+export function showVictoryPointsDebug() {
+  if (!debugUI) {
+    createVictoryPointsDebugUI();
+  }
+  debugUI.style.display = 'block';
+}
+
+// Function to hide VP debug popup (called when road debug is disabled)
+export function hideVictoryPointsDebug() {
+  if (debugUI) {
+    debugUI.style.display = 'none';
+  }
+}
+
+// Function to check if VP debug is currently visible
+export function isVictoryPointsDebugVisible() {
+  return debugUI && debugUI.style.display === 'block';
 }
