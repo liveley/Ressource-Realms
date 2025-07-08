@@ -15,7 +15,6 @@ export function createMainMenuSidebar() {
   const centerOffset = (hexWidth + hexSpacing) / 2;
   const shiftX = -(hexWidth / 2);
 
-  // Ressourcenfarben (gemutet)
   const terrainColors = {
     forest: '#6B8E6E',
     pasture: '#A6C48A',
@@ -79,7 +78,6 @@ export function createMainMenuSidebar() {
       hex.style.justifyContent = 'center';
       hex.style.cursor = 'pointer';
 
-      // Spiel starten
       if (rowIndex === 3 && i === 2) {
         hex.id = 'start-game-hex';
         hex.innerHTML = '<span style="color: white; font-weight: bold; font-size: 40px; line-height: 1; text-align: center; text-shadow: 1px 1px 2px #000;">Spiel<br>starten</span>';
@@ -95,10 +93,7 @@ export function createMainMenuSidebar() {
             });
           }
         };
-      }
-
-      // Spiel beenden
-      else if (rowIndex === 3 && i === 1) {
+      } else if (rowIndex === 3 && i === 1) {
         hex.id = 'quit-game-hex';
         hex.innerHTML = '<span style="color: white; font-weight: bold; font-size: 40px; line-height: 1; text-align: center; text-shadow: 1px 1px 2px #000;">Spiel<br>beenden</span>';
         hex.onclick = () => {
@@ -109,7 +104,7 @@ export function createMainMenuSidebar() {
       sidebar.appendChild(hex);
     });
 
-    // MEERHEXES rechts bis Seitenrand
+    // MEERHEXES bis rechts
     const maxCols = Math.ceil(sidebarWidth / (hexWidth + hexSpacing)) + 2;
     for (let i = row.length; i < maxCols; i++) {
       const hex = document.createElement('div');
@@ -129,6 +124,8 @@ export function createMainMenuSidebar() {
   });
 
   document.body.appendChild(sidebar);
+
+  // 🧹 Überschrift wird nicht per JS beeinflusst, du kannst sie frei im HTML positionieren!
 
   window.removeEventListener('resize', handleSidebarResize);
   window.addEventListener('resize', handleSidebarResize);
