@@ -80,7 +80,7 @@ export function createMainMenuSidebar() {
       // Spiel starten Button in zweite Reihe von unten (rowIndex 3), äußeres Hexagon (i=2)
       if (rowIndex === 3 && i === 2) {
         hex.id = 'start-game-hex';
-        hex.innerHTML = '<span style="color: white; font-weight: bold; font-size: 14px; text-align: center; text-shadow: 1px 1px 2px #000;">Spiel<br>starten</span>';
+        hex.innerHTML = '<span style="color: white; font-weight: bold; font-size: 40px; text-align: center; text-shadow: 1px 1px 2px #000;">Spiel<br>starten</span>';
         hex.onclick = () => {
           console.log('Start-Button wurde geklickt!');
           const menu = document.getElementById('main-menu');
@@ -101,7 +101,7 @@ export function createMainMenuSidebar() {
       // Spiel beenden Button links daneben (rowIndex 3, i=1)
       else if (rowIndex === 3 && i === 1) {
         hex.id = 'quit-game-hex';
-        hex.innerHTML = '<span style="color: white; font-weight: bold; font-size: 14px; text-align: center; text-shadow: 1px 1px 2px #000;">Spiel<br>beenden</span>';
+        hex.innerHTML = '<span style="color: white; font-weight: bold; font-size: 40px; text-align: center; text-shadow: 1px 1px 2px #000;">Spiel<br>beenden</span>';
         hex.onclick = () => {
           window.close();
         };
