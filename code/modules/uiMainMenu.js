@@ -58,6 +58,7 @@ export function createMainMenuSidebar() {
       case 4: yOffset = 2 * verticalOffset; xStart = 0; break;
     }
 
+    // LANDHEXES
     row.forEach((color, i) => {
       const hex = document.createElement('div');
       hex.style.position = 'absolute';
@@ -106,8 +107,8 @@ export function createMainMenuSidebar() {
     // MEERHEXES rechts neben Land
     const maxCols = Math.ceil(sidebarWidth / (hexWidth + hexSpacing)) + 2;
     for (let i = row.length; i < maxCols; i++) {
-      // ❌ Entferne bei Reihe 1 die ersten drei Meerhexes direkt nach den Landfeldern
-      if (rowIndex === 1 && i - row.length < 3) continue;
+      const waterIndex = i - row.length;
+      if (rowIndex === 1 && waterIndex >= 0 && (waterIndex === 0 || waterIndex === 1)) continue;
 
       const hex = document.createElement('div');
       hex.style.position = 'absolute';
@@ -116,8 +117,8 @@ export function createMainMenuSidebar() {
       hex.style.transform = 'translateY(-50%)';
       hex.style.width = `${hexWidth}px`;
       hex.style.height = `${hexHeight}px`;
-      hex.style.background = seaColors[(i - row.length) % seaColors.length];
-      hex.style.opacity = seaOpacity[(i - row.length) % seaOpacity.length];
+      hex.style.background = seaColors[waterIndex % seaColors.length];
+      hex.style.opacity = seaOpacity[waterIndex % seaOpacity.length];
       hex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
       hex.style.pointerEvents = 'none';
       hex.style.borderRadius = '12px';
