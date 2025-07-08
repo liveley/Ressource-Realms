@@ -89,14 +89,14 @@
 /* 6 hexagons in tight formation without center - no gaps between hexagons */
 /* Arranged for circular animation: Top-Left -> Top-Right -> Middle-Right -> Bottom-Right -> Bottom-Left -> Middle-Left */
 
-/* Top row (2 hexagons, touching) */
-.game-loading-spinner .hex:nth-child(1) { left: 36px; top: 18px; }    /* Top-Left (start of circle) */
-.game-loading-spinner .hex:nth-child(2) { left: 64px; top: 18px; }    /* Top-Right */
+/* Top row (2 hexagons, with small gap) */
+.game-loading-spinner .hex:nth-child(1) { left: 35px; top: 18px; }    /* Top-Left (start of circle) */
+.game-loading-spinner .hex:nth-child(2) { left: 65px; top: 18px; }    /* Top-Right */
 
 /* Middle row (2 hexagons, sides only, touching) */
 .game-loading-spinner .hex:nth-child(3) { left: 78px; top: 40px; }    /* Middle-Right */
-.game-loading-spinner .hex:nth-child(4) { left: 64px; top: 62px; }    /* Bottom-Right */
-.game-loading-spinner .hex:nth-child(5) { left: 36px; top: 62px; }    /* Bottom-Left */
+.game-loading-spinner .hex:nth-child(4) { left: 65px; top: 62px; }    /* Bottom-Right */
+.game-loading-spinner .hex:nth-child(5) { left: 35px; top: 62px; }    /* Bottom-Left */
 .game-loading-spinner .hex:nth-child(6) { left: 22px; top: 40px; }    /* Middle-Left */
 
 /* Hide the center hexagon and 8th hexagon - animation only runs on outer ring */
