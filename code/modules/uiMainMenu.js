@@ -58,7 +58,6 @@ export function createMainMenuSidebar() {
       case 4: yOffset = 2 * verticalOffset; xStart = 0; break;
     }
 
-    // LANDHEXES
     row.forEach((color, i) => {
       const hex = document.createElement('div');
       hex.style.position = 'absolute';
@@ -104,9 +103,12 @@ export function createMainMenuSidebar() {
       sidebar.appendChild(hex);
     });
 
-    // MEERHEXES bis rechts
+    // MEERHEXES rechts neben Land
     const maxCols = Math.ceil(sidebarWidth / (hexWidth + hexSpacing)) + 2;
     for (let i = row.length; i < maxCols; i++) {
+      // ❌ Entferne bei Reihe 1 die ersten drei Meerhexes direkt nach den Landfeldern
+      if (rowIndex === 1 && i - row.length < 3) continue;
+
       const hex = document.createElement('div');
       hex.style.position = 'absolute';
       hex.style.left = `${xStart + i * (hexWidth + hexSpacing) + shiftX}px`;
@@ -124,8 +126,6 @@ export function createMainMenuSidebar() {
   });
 
   document.body.appendChild(sidebar);
-
-  // 🧹 Überschrift wird nicht per JS beeinflusst, du kannst sie frei im HTML positionieren!
 
   window.removeEventListener('resize', handleSidebarResize);
   window.addEventListener('resize', handleSidebarResize);
