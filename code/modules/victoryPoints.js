@@ -647,6 +647,12 @@ export function checkWinCondition(player) {
  * @param {number} totalVP - Total victory points
  */
 function triggerGameWin(winner, totalVP) {
+  // Remove any existing win overlay to prevent duplicates/leaks
+  const existingOverlay = document.getElementById('game-win-overlay');
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
+  
   // Create win announcement
   const winOverlay = document.createElement('div');
   winOverlay.id = 'game-win-overlay';
@@ -702,11 +708,36 @@ function triggerGameWin(winner, totalVP) {
   playAgainBtn.style.cursor = 'pointer';
   playAgainBtn.style.fontWeight = 'bold';
   playAgainBtn.onclick = () => {
+    // Clean up overlay before reload to prevent memory leaks
+    cleanup();
+    
     // Reload the page for a new game
     if (typeof window !== 'undefined' && window.location) {
       window.location.reload();
     }
   };
+  
+  // ESC key listener for cleanup
+  const escListener = (event) => {
+    if (event.key === 'Escape') {
+      cleanup();
+    }
+  };
+  
+  // Cleanup function to remove overlay and event listeners
+  const cleanup = () => {
+    document.removeEventListener('keydown', escListener);
+    if (winOverlay.parentNode) {
+      winOverlay.remove();
+    }
+    // Reset game state
+    if (typeof window !== 'undefined') {
+      window.gameWon = false;
+    }
+  };
+  
+  // Add ESC key listener
+  document.addEventListener('keydown', escListener);
   
   winOverlay.appendChild(winMessage);
   winOverlay.appendChild(vpBreakdown);
@@ -722,10 +753,27 @@ function triggerGameWin(winner, totalVP) {
   // Fire custom event
   if (typeof window !== 'undefined' && window.dispatchEvent) {
     const winEvent = new CustomEvent('gameWon', {
-      detail: { winner, totalVP }
+      detail: { winner, totalVP, cleanup }
     });
     window.dispatchEvent(winEvent);
   }
+}
+
+/**
+ * Manually cleanup win overlay (for testing or manual game reset)
+ * @returns {boolean} True if overlay was removed, false if none existed
+ */
+export function cleanupWinOverlay() {
+  const existingOverlay = document.getElementById('game-win-overlay');
+  if (existingOverlay) {
+    existingOverlay.remove();
+    // Reset game state
+    if (typeof window !== 'undefined') {
+      window.gameWon = false;
+    }
+    return true;
+  }
+  return false;
 }
 
 /**
