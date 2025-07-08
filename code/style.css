@@ -93,11 +93,11 @@
 .game-loading-spinner .hex:nth-child(1) { left: 35px; top: 18px; }    /* Top-Left (start of circle) */
 .game-loading-spinner .hex:nth-child(2) { left: 65px; top: 18px; }    /* Top-Right */
 
-/* Middle row (2 hexagons, sides only, touching) */
-.game-loading-spinner .hex:nth-child(3) { left: 78px; top: 40px; }    /* Middle-Right */
+/* Middle row (2 hexagons, sides only, with small gap like other rows) */
+.game-loading-spinner .hex:nth-child(3) { left: 79px; top: 40px; }    /* Middle-Right */
 .game-loading-spinner .hex:nth-child(4) { left: 65px; top: 62px; }    /* Bottom-Right */
 .game-loading-spinner .hex:nth-child(5) { left: 35px; top: 62px; }    /* Bottom-Left */
-.game-loading-spinner .hex:nth-child(6) { left: 22px; top: 40px; }    /* Middle-Left */
+.game-loading-spinner .hex:nth-child(6) { left: 21px; top: 40px; }    /* Middle-Left */
 
 /* Hide the center hexagon and 8th hexagon - animation only runs on outer ring */
 .game-loading-spinner .hex:nth-child(7) { display: none; }    /* Center (desert) - hidden */
