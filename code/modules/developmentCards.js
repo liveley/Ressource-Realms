@@ -50,6 +50,13 @@ export function canBuyDevelopmentCard(player, bank, deck) {
 export function buyDevelopmentCard(player, bank, deck) {
   const check = canBuyDevelopmentCard(player, bank, deck);
   if (!check.success) return check;
+  
+  // Check development card hand limit (maximum 5 cards in Catan)
+  const totalDevCards = (player.developmentCards || []).length + (player.newDevelopmentCards || []).length;
+  if (totalDevCards >= 5) {
+    return { success: false, reason: 'Maximale Anzahl an Entwicklungskarten erreicht (5)' };
+  }
+  
   // Ressourcen abziehen
   player.resources.wheat--;
   player.resources.sheep--;
@@ -57,6 +64,7 @@ export function buyDevelopmentCard(player, bank, deck) {
   bank.wheat++;
   bank.sheep++;
   bank.ore++;
+  
   // Karte ziehen
   const card = deck.pop();
   player.newDevelopmentCards.push(card);
