@@ -12,7 +12,7 @@ import { tileInfo } from './modules/tileInfo.js';
 import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
-import { initTileInfoOverlay, createInfoOverlayToggle } from './modules/uiTileInfo.js';
+import { initTileInfoOverlay } from './modules/uiTileInfo.js';
 import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, handleTileSelection, isInRobberPlacementMode, getTileCenter } from './modules/bandit.js';
 import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
@@ -26,7 +26,17 @@ import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
 import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
+
 import { createMainMenuSidebar } from './modules/uiMainMenu.js';
+
+import { createSettingsMenu } from './modules/uiSettingsMenu.js';
+import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDisplay, calculateLongestRoad } from './modules/victoryPoints.js';
+import { enableRoadDebug, disableRoadDebug, analyzePlayerRoads, testRoadConnections, toggleRoadDebugTools, isRoadDebugToolsVisible } from './modules/debugging/longestRoadDebug.js';
+import { initRoadTestingUtils } from './modules/debugging/roadTestingUtils.js';
+import { initDebugKeyHandlers } from './modules/debugging/debugKeyHandlers.js';
+import { initDebugControls } from './modules/debugging/debugControls.js';
+import { initVictoryPointsTestingUtils } from './modules/debugging/victoryPointsTestingUtils.js';
+
 
 window.players = window.players || [
   {
@@ -34,16 +44,30 @@ window.players = window.players || [
     color: 0xd7263d,
     settlements: [],
     cities: [],
-    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
+    roads: [],
+    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 },
+    knightsPlayed: 0,
+    longestRoadLength: 0
   },
   {
     name: 'Spieler 2',
     color: 0x277da1,
     settlements: [],
     cities: [],
-    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
+    roads: [],
+    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 },
+    knightsPlayed: 0,
+    longestRoadLength: 0
   }
 ];
+
+// Initialize victory points system
+initializeVictoryPoints(window.players);
+
+// Make victory points functions available globally
+window.updateAllVictoryPoints = updateAllVictoryPoints;
+window.initializeVictoryPoints = initializeVictoryPoints;
+window.getVictoryPointsForDisplay = getVictoryPointsForDisplay;
 
 window.updateResourceUI = updateResourceUI;
 
@@ -66,7 +90,7 @@ window.activePlayerIdx = activePlayerIdx;
 renderer.domElement.style.visibility = 'hidden';
 renderer.domElement.classList.add('board-hidden');
 
-// === Haupt-Button-Leiste (Action Bar) ===
+// === UI: Haupt-Button-Leiste (Action Bar) ===
 let actionBar = document.getElementById('main-action-bar');
 if (!actionBar) {
   actionBar = document.createElement('div');
@@ -132,11 +156,14 @@ window.addEventListener('initializeGame', async () => {
   console.log('Game initialization requested...');
   try {
     // First preload the game board
+    console.log('Starting preload...');    
     await preloadGameBoard();
     console.log('Game board preloaded, now starting UI...');
     
     // Then start the game UI
     await startGame();
+    console.log('Game UI started, dispatching gameReady event...');
+    window.dispatchEvent(new CustomEvent('gameReady'));
   } catch (error) {
     console.error('Error during game initialization:', error);
     // Still notify that we're "ready" even if there was an error
@@ -159,7 +186,10 @@ window.addEventListener('startGame', () => {
 let devCardsUI = null;
 
 async function startGame() {
-  if (gameInitialized) return;
+  if (gameInitialized) {
+    console.log('Game already initialized, returning...');
+    return;
+  }
   
   console.log('startGame() wurde aufgerufen!');
   let actionBar = document.getElementById('main-action-bar');
@@ -168,10 +198,13 @@ async function startGame() {
   console.log('Starte Spiel: Initialisiere UI...');
   
   // Show the game board
+  console.log('Zeige Spielfeld...');
   renderer.domElement.style.visibility = 'visible';
   renderer.domElement.classList.remove('board-hidden');
+  console.log('Spielfeld sollte jetzt sichtbar sein...');  
   
   try {
+    // === UI: Build-Menü (Bauen) ===
     createBuildUI({
       players: window.players,
       getBuildMode: () => buildMode,
@@ -190,6 +223,9 @@ async function startGame() {
     console.error('Fehler beim Erstellen des Build-UI:', e);
   }
 
+  // === UI: Würfeln- und Spielerwechsel-Button (kombiniert) ===
+  // Die alte createDiceUI bleibt auskommentiert erhalten:
+  /*
   try {
     createDiceUI(() => {
       throwPhysicsDice(scene);
@@ -202,24 +238,228 @@ async function startGame() {
   } catch (e) {
     console.error('Fehler beim Erstellen des Dice-UI:', e);
   }
+  */
 
   try {
-    placePlayerSwitchButton(window.players, () => activePlayerIdx, (idx) => {
-      activePlayerIdx = idx;
-      window.activePlayerIdx = idx;
-      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
-      updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
-      if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
-    }, actionBar);
-    console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
+    // === UI: Markt-Button (unabhängig vom Würfeln-Button) ===
+    let marketBtn = document.getElementById('market-btn');
+    if (!marketBtn) {
+      marketBtn = document.createElement('button');
+      marketBtn.id = 'market-btn';
+      marketBtn.title = 'Markt öffnen';
+      marketBtn.style.fontSize = '2.5em';
+      marketBtn.style.padding = '0.4em';
+      marketBtn.style.margin = '0 0.5em';
+      marketBtn.style.cursor = 'pointer';
+      marketBtn.style.borderRadius = '6px';
+      marketBtn.style.aspectRatio = '1 / 1';
+      marketBtn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
+      marketBtn.style.border = 'none';
+      marketBtn.style.boxShadow = '0 2px 8px #0001';
+      marketBtn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s';
+      marketBtn.style.outline = 'none';
+      marketBtn.style.fontFamily = "'Montserrat', Arial, sans-serif";
+      marketBtn.style.fontWeight = '700';
+      marketBtn.style.color = '#222';
+      marketBtn.style.display = 'flex';
+      marketBtn.style.flexDirection = 'column';
+      marketBtn.style.alignItems = 'center';
+      marketBtn.style.justifyContent = 'center';
+      // Emoji
+      const emojiSpan = document.createElement('span');
+      emojiSpan.textContent = '🏬';
+      emojiSpan.style.display = 'block';
+      emojiSpan.style.fontSize = '1em';
+      emojiSpan.style.lineHeight = '1';
+      marketBtn.appendChild(emojiSpan);
+      // Click-Handler: Markt-UI toggeln (nur Bank-Trade-UI + Bank-UI + Development-Cards-UI)
+      marketBtn.onclick = () => {
+        const marketUI = document.getElementById('bank-trade-ui');
+        const bankResourceUI = document.getElementById('bank-ui');
+        const devCardsUI = document.getElementById('development-cards-ui');
+        
+        // Bestimme den aktuellen Zustand (alle sollten synchron sein)
+        const isCurrentlyHidden = !marketUI || marketUI.style.display === 'none' || marketUI.style.display === '';
+        
+        // Toggle nur die Markt-spezifischen UI-Elemente (nicht die Spieler-Ressourcen)
+        if (marketUI) {
+          marketUI.style.display = isCurrentlyHidden ? 'flex' : 'none';
+        }
+        if (bankResourceUI) {
+          bankResourceUI.style.display = isCurrentlyHidden ? 'block' : 'none';
+        }
+        if (devCardsUI) {
+          devCardsUI.style.display = isCurrentlyHidden ? 'flex' : 'none';
+        }
+      };
+      actionBar.appendChild(marketBtn);
+    }
   } catch (e) {
-    console.error('Fehler beim Erstellen des Player-Switch-Buttons:', e);
+    console.error('Fehler beim Erstellen des Markt-Buttons:', e);
   }
 
+  // === UI: Kombinierter Würfeln- und Spielerwechsel-Button ===
   try {
+    // Entferne evtl. alten Button UND Wrapper
+    const oldBtn = document.getElementById('roll-dice-combined');
+    const oldWrapper = document.getElementById('dice-wrapper');
+    if (oldBtn) oldBtn.remove();
+    if (oldWrapper) oldWrapper.remove();
+
+    let state = 0; // 0 = Würfeln, 1 = Spielerwechsel
+    let lastDiceResult = null;
+
+    const btn = document.createElement('button');
+    btn.id = 'roll-dice-combined';
+    btn.style.fontSize = '2.5em';
+    btn.style.padding = '0.4em';
+    btn.style.margin = '0';
+    btn.style.cursor = 'pointer';
+    btn.style.borderRadius = '6px';
+    btn.style.aspectRatio = '1 / 1';
+    btn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
+    btn.style.border = 'none';
+    btn.style.boxShadow = '0 2px 8px #0001';
+    btn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s';
+    btn.style.outline = 'none';
+    btn.style.display = 'flex';
+    btn.style.flexDirection = 'column';
+    btn.style.alignItems = 'center';
+    btn.style.justifyContent = 'center';
+
+    const emoji = document.createElement('span');
+    emoji.textContent = '🎲';
+    emoji.style.fontSize = '1em';
+    emoji.style.lineHeight = '1';
+    btn.appendChild(emoji);
+
+    // Label entfernt - nur noch Emoji wird angezeigt
+
+    // Dummy-UI für das Würfelergebnis (wie dice-result), aber außerhalb des Buttons
+    let resultDiv = document.getElementById('dice-result');
+    let diceWrapper = document.getElementById('dice-wrapper');
+    
+    if (!resultDiv) {
+      resultDiv = document.createElement('div');
+      resultDiv.id = 'dice-result';
+      resultDiv.style.color = '#fff';
+      resultDiv.style.fontSize = '2em';
+      resultDiv.style.minWidth = '2em';
+      resultDiv.style.minHeight = '1.5em';
+      resultDiv.style.textShadow = '0 2px 8px #000';
+      resultDiv.style.fontFamily = "'Montserrat', Arial, sans-serif";
+      resultDiv.style.display = 'block';
+      resultDiv.style.marginBottom = '0.5em';
+      resultDiv.style.textAlign = 'center';
+      resultDiv.style.border = '2px solid rgba(255,255,255,0.3)';
+      resultDiv.style.borderRadius = '6px';
+      resultDiv.style.backgroundColor = 'rgba(0,0,0,0.5)';
+      resultDiv.style.padding = '0.2em';
+      resultDiv.textContent = '?'; // Platzhalter-Text
+    }
+    
+    if (!diceWrapper) {
+      // Erstelle einen Wrapper für Ergebnis und Button (Flexbox, column)
+      diceWrapper = document.createElement('div');
+      diceWrapper.id = 'dice-wrapper';
+      diceWrapper.style.display = 'flex';
+      diceWrapper.style.flexDirection = 'column';
+      diceWrapper.style.alignItems = 'center';
+      diceWrapper.style.justifyContent = 'center';
+      // Füge Ergebnis und Button in den Wrapper ein
+      diceWrapper.appendChild(resultDiv);
+      diceWrapper.appendChild(btn);
+      // Füge den Wrapper in die Action Bar ein
+      actionBar.appendChild(diceWrapper);
+    } else {
+      // Wrapper existiert bereits, füge nur den Button hinzu
+      diceWrapper.appendChild(btn);
+    }
+
+    function updateButtonUI() {
+      if (state === 0) {
+        emoji.textContent = '🎲';
+        // Label entfernt - nur Emoji wird geändert
+      } else {
+        emoji.textContent = '🔄';
+        // Spielerwechsel-Emoji, kein Label nötig
+      }
+    }
+    updateButtonUI();
+
+    btn.onclick = () => {
+      if (state === 0) {
+        // Würfeln
+        if (typeof throwPhysicsDice === 'function' && typeof scene !== 'undefined') {
+          throwPhysicsDice(scene);
+          window.setDiceResultFromPhysics = (result) => {
+            lastDiceResult = result;
+            // Zeige Ergebnis
+            if (resultDiv) resultDiv.textContent = result.sum;
+            // Event feuern wie gehabt
+            window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
+            // Wenn KEIN Räuber (7), Button auf Spielerwechsel
+            if (result.sum !== 7) {
+              state = 1;
+              updateButtonUI();
+            }
+            // Bei 7 bleibt der Button auf Würfeln (Räuber muss platziert werden)
+          };
+        } else {
+          // Fallback: Dummy-Logik
+          const dummy = Math.floor(Math.random()*6+1) + Math.floor(Math.random()*6+1);
+          if (resultDiv) resultDiv.textContent = dummy;
+          window.dispatchEvent(new CustomEvent('diceRolled', { detail: dummy }));
+          if (dummy !== 7) {
+            state = 1;
+            updateButtonUI();
+          }
+        }
+      } else {
+        // Spielerwechsel
+        const idx = activePlayerIdx;
+        const nextIdx = (idx + 1) % window.players.length;
+        if (typeof window.setActivePlayerIdx === 'function') {
+          window.setActivePlayerIdx(nextIdx);
+        } else {
+          activePlayerIdx = nextIdx;
+          window.activePlayerIdx = nextIdx;
+        }
+        // UI updaten
+        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+        updatePlayerOverviews(window.players, () => activePlayerIdx);
+        if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
+        // Button zurück auf Würfeln
+        state = 0;
+        resultDiv.textContent = '?'; // Zurück zum Platzhalter
+        updateButtonUI();
+      }
+    };
+
+    // Button wird bereits im diceWrapper hinzugefügt, nicht direkt zur actionBar
+    console.log('Kombinierter Würfeln-/Spielerwechsel-Button erstellt:', btn);
+  } catch (e) {
+    console.error('Fehler beim Erstellen des kombinierten Buttons:', e);
+  }
+
+  // try {
+  //   // === UI: Spielerwechsel-Button ===
+  //   placePlayerSwitchButton(window.players, () => activePlayerIdx, (idx) => {
+  //     activePlayerIdx = idx;
+  //     window.activePlayerIdx = idx;
+  //     updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+  //     updatePlayerOverviews(window.players, () => activePlayerIdx);
+  //     if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
+  //   }, actionBar);
+  //   console.log('Player-Switch-Button erstellt:', document.getElementById('player-switch-btn'));
+  // } catch (e) {
+  //   console.error('Fehler beim Erstellen des Player-Switch-Buttons:', e);
+  // }
+
+  try {
+    // === UI: Ressourcenanzeige & Entwicklungskarten-UI ===
     createResourceUI();
     updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-    // === Entwicklungskarten-UI einbinden (nur einmal anhängen, nach createResourceUI) ===
     if (!devCardsUI) {
       devCardsUI = createDevelopmentCardsUI({
         getPlayer: () => window.players[activePlayerIdx],
@@ -227,6 +467,7 @@ async function startGame() {
         getDeck: () => window.developmentDeck,
         onBuy: () => {
           updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+          updatePlayerOverviews(window.players, () => activePlayerIdx);
         },
         getScene: () => scene,
         getTileMeshes: () => tileMeshes
@@ -241,15 +482,24 @@ async function startGame() {
   }
 
   try {
-    createPlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
-    updatePlayerOverviews(window.players, () => activePlayerIdx); // GITHUB COPILOT: Vereinheitlicht auf window.players
+    // === UI: Spieler-Übersicht (oben links) ===
+    createPlayerOverviews(window.players, () => activePlayerIdx);
+    updatePlayerOverviews(window.players, () => activePlayerIdx);
     console.log('Player-Overviews erstellt:', document.getElementById('player-overview-container'));
   } catch (e) {
     console.error('Fehler beim Erstellen der Player-Overviews:', e);
   }
 
   try {
-    createInfoOverlayToggle();
+    // === UI: Settings-Menu (Einstellungen & Info) ===
+    createSettingsMenu();
+    console.log('Settings-Menu erstellt:', document.getElementById('settings-button'));
+  } catch (e) {
+    console.error('Fehler beim Erstellen des Settings-Menu:', e);
+  }
+
+  try {
+    // === UI: Tile-Info-Overlay (nur das Overlay, kein Button mehr) ===
     initTileInfoOverlay(scene, camera);
     console.log('Info-Overlay erstellt:', document.getElementById('infoOverlay'));
   } catch (e) {
@@ -267,12 +517,15 @@ async function startGame() {
     getActivePlayerIdx: () => activePlayerIdx,
     tryBuildSettlement,
     tryBuildCity,
-    tryBuildRoad, // <--- HINZUGEFÜGT
+    tryBuildRoad,
     getCornerWorldPosition,
-    updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx) // Always update for current player
+    updateResourceUI: () => {
+      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+      updatePlayerOverviews(window.players, () => activePlayerIdx);
+    }
   });
 
-  // === Build Preview Setup ===
+  // === UI: Build-Preview (Vorschau beim Bauen) ===
   setupBuildPreview(
     renderer,
     scene,
@@ -289,8 +542,7 @@ async function startGame() {
   gameInitialized = true;
   console.log('Game initialization complete!');
   
-  // Notify HTML that game is ready
-  window.dispatchEvent(new CustomEvent('gameReady'));
+  // Note: gameReady event is now dispatched by the initializeGame event handler
 }
 
 // === Catan-Bank: Ressourcenlimitierung ===
@@ -306,7 +558,24 @@ window.bank = {
 window.developmentDeck = createDevelopmentDeck();
 window.players.forEach(initPlayerDevCards);
 
+// === Initialize Road Testing Utilities ===
+initRoadTestingUtils();
+console.log('Road testing utilities initialized and available in console.');
+
+// === Initialize Debug Key Handlers ===
+initDebugKeyHandlers();
+
+// === Initialize Debug Controls ===
+initDebugControls();
+console.log('Debug controls initialized. Use enableDebugLogging() / disableDebugLogging() in console.');
+
+// === Initialize Victory Points Testing Utils ===
+initVictoryPointsTestingUtils();
+console.log('Victory Points testing utilities initialized.');
+
 // === Main-Menu-Start-Button-Handler ===
+// NOTE: This is handled by index.js, so commenting out to avoid conflicts
+/*
 window.addEventListener('DOMContentLoaded', () => {
   console.log('DOM geladen, versuche Start-Button-Handler zu setzen...');
   // Sidebar anzeigen
@@ -317,15 +586,24 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log('Start-Button gefunden und Handler gesetzt.');
     startBtn.onclick = () => {
       console.log('Start-Button wurde geklickt!');
+<<<<<<< code/main.js
       if (menu) menu.style.display = 'none';
       // Sidebar ausblenden, wenn Spiel startet
       import('./modules/uiMainMenu.js').then(mod => mod.removeMainMenuSidebar());
+=======
+      if (menu) {
+        console.log('Menu wird ausgeblendet...');
+        menu.style.display = 'none';
+      }
+      console.log('Rufe startGame() auf...');
+>>>>>>> code/main.js
       startGame();
     };
   } else {
     console.error('Start-Button NICHT gefunden!');
   }
 });
+*/
 
 // Debug flags
 window.debugDiceEnabled = false; // Initialize debug mode as disabled
@@ -391,7 +669,7 @@ window.addEventListener('click', (event) => {
             console.log("Successfully placed robber");
         } else {
             console.log("Failed to place robber at the selected location");
-            // Add a visible error message to help with debugging
+            // === UI: Fehler-/Feedback-Popup ===
             const errorMsg = document.createElement('div');
             errorMsg.textContent = "Konnte den Räuber nicht auf diesem Feld platzieren. Versuche ein anderes Feld.";
             errorMsg.style.position = 'fixed';
@@ -490,56 +768,7 @@ window.addEventListener('diceRolled', (e) => {
     }
 });
 
-
-// === Build Event Handler Setup ===
-setupBuildEventHandler({
-  renderer,
-  scene,
-  camera,
-  tileMeshes,
-  players: window.players,
-  getBuildMode: () => buildMode,
-  getActivePlayerIdx: () => activePlayerIdx,
-  tryBuildSettlement,
-  tryBuildCity,
-  tryBuildRoad, // <--- HINZUGEFÜGT
-  getCornerWorldPosition,
-  updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx) // Always update for current player
-});
-
-// === Build Preview Setup ===
-setupBuildPreview(
-  renderer,
-  scene,
-  camera,
-  tileMeshes,
-  window.players,
-  () => buildMode,
-  () => activePlayerIdx,
-  tryBuildSettlement,
-  tryBuildCity
-);
-
 // === Place settlement/city mesh at corner ===
-
-// === Debug functions ===
-
-// Toggle dice debug mode when pressing 'D'
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'd' || e.key === 'D') {
-        // Toggle between debug mode (7) and normal mode (null)
-        window.debugDiceEnabled = toggleDebugDiceMode(7);
-        
-        // Show a message to the user about the current mode
-        const message = window.debugDiceEnabled ? 
-            "Debug mode enabled: Dice will always roll 7" : 
-            "Debug mode disabled: Dice will roll randomly";
-        
-        // Display the debug message and indicator
-        showDebugMessage(message, 3000);
-        createDebugDiceIndicator(window.debugDiceEnabled, 7);
-    }
-});
 
 // Globale Hilfsfunktion für Entwicklungskarten-Logik (z.B. Monopol)
 window.getAllPlayers = function() {

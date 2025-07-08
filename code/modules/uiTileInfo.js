@@ -1,9 +1,10 @@
+// === UI: Tile-Info-Overlay und Toggle-Button ===
 // modules/uiTileInfo.js
 // Info-Overlay und Mousemove-Handling für Tile-Infos
 import * as THREE from 'three';
 import { tileInfo } from './tileInfo.js';
 
-let infoOverlayEnabled = true;
+let infoOverlayEnabled = false;
 let infoToggleBtn = null;
 
 export function initTileInfoOverlay(scene, camera) {
@@ -95,5 +96,14 @@ export function createInfoOverlayToggle() {
 }
 
 export function isInfoOverlayEnabled() {
+  return infoOverlayEnabled;
+}
+
+export function toggleInfoOverlay() {
+  infoOverlayEnabled = !infoOverlayEnabled;
+  if (!infoOverlayEnabled) {
+    const overlay = document.getElementById('infoOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
   return infoOverlayEnabled;
 }

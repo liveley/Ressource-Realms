@@ -1,7 +1,10 @@
-// ui_general.js
+// === UI: Spieler-Übersicht (oben links) ===
+// ui_player_overview.js
 // Zeigt zwei kompakte Spieler-Overviews mit Avatar-Kreis in Spielerfarbe, Name und einer kompakten Wertezeile
 // Wertezeile enthält: Siegpunkte, Straßen, Siedlungen, Städte, Ressourcenkarten, Entwicklungskarten
 // Hebt den aktiven Spieler visuell hervor (goldener Rahmen und Leuchteffekt)
+
+import { getVictoryPointsForDisplay, initializeVictoryPoints, calculateVictoryPoints } from './victoryPoints.js';
 
 export function createPlayerOverviews(players, getActivePlayerIdx) {
   // Container für die Overviews (wird nur einmal erstellt)
@@ -19,12 +22,20 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     document.body.appendChild(container);
   }
 
-  // Vorherige Inhalte löschen (z. B. bei Spielerwechsel)
+  // Achievement-Anzeige erstellen oder aktualisieren
+  createOrUpdateAchievementDisplay(players, getActivePlayerIdx);
+
+  // Vorherige Inhalte löschen (z. B. bei Spielerwechsel)
   container.innerHTML = '';
 
   // Für jeden Spieler eine kompakte Box erzeugen
   players.forEach((player, idx) => {
     const isActive = idx === getActivePlayerIdx();
+    
+    // Initialize victory points if not already done
+    if (!player.victoryPoints) {
+      initializeVictoryPoints([player]);
+    }
 
     const box = document.createElement('div');
     box.className = 'player-overview-box';
@@ -84,16 +95,30 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     stats.style.gap = '0.4em';
     stats.style.fontSize = '0.85em';
 
-    // Siegpunkte (berechnet, falls nicht gesetzt)
-    const vpValue = player.victoryPoints != null
-      ? player.victoryPoints
-      : (player.settlements?.length || 0) + 2 * (player.cities?.length || 0);
+    // Victory Points with new system
+    let vpDisplay;
+    if (!player) {
+      console.warn('Player object is null or undefined in UI overview');
+      vpDisplay = { display: '0', hidden: 0 };
+    } else {
+      vpDisplay = getVictoryPointsForDisplay(player, isActive);
+    }
+    
+    // Check for special achievements
+    const hasLongestRoad = player.victoryPoints?.longestRoad > 0;
+    const hasLargestArmy = player.victoryPoints?.largestArmy > 0;
+    
+    // Calculate total development cards (current + new)
+    const totalDevCards = (player.developmentCards?.length ?? 0) + (player.newDevelopmentCards?.length ?? 0);
+    const knightsPlayed = player.knightsPlayed ?? 0;
 
     stats.innerHTML = `
-      <span title="Siegpunkte">🏆 ${vpValue}</span>
-      <span title="Straßen">🛣️ ${player.roads?.length ?? 0}</span>
+      <span title="Siegpunkte${vpDisplay.hidden > 0 ? ' (inklusive versteckter Punkte)' : ''}" class="victory-points">🏆 ${vpDisplay.display}</span>
+      <span title="Straßen (längste: ${player.longestRoadLength ?? 0})">🛣️ ${player.roads?.length ?? 0}</span>
+      <span title="Siedlungen">🏠 ${player.settlements?.length ?? 0}</span>
+      <span title="Städte">🏛️ ${player.cities?.length ?? 0}</span>
       <span title="Ressourcenkarten">📦 ${player.resources ? Object.values(player.resources).reduce((a,b)=>a+b,0) : 0}</span>
-      <span title="Entwicklungskarten">🎴 ${player.developmentCards?.length ?? 0}</span>
+      <span title="Entwicklungskarten (Ritter gespielt: ${knightsPlayed})">🎴 ${totalDevCards}</span>
     `;
 
     infoBlock.appendChild(stats);
@@ -105,7 +130,69 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
   });
 }
 
-// Aktualisiert die Spielerübersicht (z. B. nach Spielerwechsel oder Bauaktion)
+// Aktualisiert die Spielerübersicht (z. B. nach Spielerwechsel oder Bauaktion)
 export function updatePlayerOverviews(players, getActivePlayerIdx) {
+  // Update victory points for all players first
+  players.forEach(player => {
+    if (typeof window.updateAllVictoryPoints === 'function') {
+      window.updateAllVictoryPoints(player, players);
+    }
+  });
+  
   createPlayerOverviews(players, getActivePlayerIdx);
+}
+
+// Erstellt oder aktualisiert die Achievement-Anzeige
+function createOrUpdateAchievementDisplay(players, getActivePlayerIdx) {
+  let achievementContainer = document.getElementById('achievement-display');
+  
+  if (!achievementContainer) {
+    achievementContainer = document.createElement('div');
+    achievementContainer.id = 'achievement-display';
+    achievementContainer.style.position = 'fixed';
+    achievementContainer.style.top = '20%';
+    achievementContainer.style.left = '2%';
+    achievementContainer.style.background = 'rgba(255, 255, 255, 0.95)';
+    achievementContainer.style.borderRadius = '12px';
+    achievementContainer.style.padding = '1em';
+    achievementContainer.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+    achievementContainer.style.border = '2px solid #ddd';
+    achievementContainer.style.minWidth = '220px';
+    achievementContainer.style.zIndex = '6';
+    achievementContainer.style.fontFamily = 'Montserrat, Arial, sans-serif';
+    document.body.appendChild(achievementContainer);
+  }
+
+  // Achievement-Inhalt aktualisieren
+  let content = '<div style="font-weight: bold; font-size: 1.1em; margin-bottom: 0.8em; color: #333; text-align: center;">🏆 Achievements</div>';
+  
+  // Längste Handelsstraße
+  const longestRoadPlayer = players.find(p => p.victoryPoints?.longestRoad > 0);
+  if (longestRoadPlayer) {
+    content += `<div style="margin-bottom: 0.5em; padding: 0.5em; background: linear-gradient(90deg, #fff3cd, #ffeaa7); border-radius: 6px; border-left: 4px solid #f39c12;">
+      <strong>🛣️ Längste Handelsstraße</strong><br>
+      <span style="color: #e67e22;">${longestRoadPlayer.name}</span> (${longestRoadPlayer.longestRoadLength || 0} Straßen)
+    </div>`;
+  } else {
+    content += `<div style="margin-bottom: 0.5em; padding: 0.5em; background: #f8f9fa; border-radius: 6px; color: #666;">
+      <strong>🛣️ Längste Handelsstraße</strong><br>
+      <span style="font-size: 0.9em;">Noch niemand (min. 5 Straßen)</span>
+    </div>`;
+  }
+  
+  // Größte Rittermacht
+  const largestArmyPlayer = players.find(p => p.victoryPoints?.largestArmy > 0);
+  if (largestArmyPlayer) {
+    content += `<div style="margin-bottom: 0.5em; padding: 0.5em; background: linear-gradient(90deg, #d4edda, #c3e6cb); border-radius: 6px; border-left: 4px solid #28a745;">
+      <strong>⚔️ Größte Rittermacht</strong><br>
+      <span style="color: #155724;">${largestArmyPlayer.name}</span> (${largestArmyPlayer.knightsPlayed || 0} Ritter)
+    </div>`;
+  } else {
+    content += `<div style="margin-bottom: 0.5em; padding: 0.5em; background: #f8f9fa; border-radius: 6px; color: #666;">
+      <strong>⚔️ Größte Rittermacht</strong><br>
+      <span style="font-size: 0.9em;">Noch niemand (min. 3 Ritter)</span>
+    </div>`;
+  }
+  
+  achievementContainer.innerHTML = content;
 }

@@ -3,6 +3,7 @@
 import { buyDevelopmentCard, canBuyDevelopmentCard } from './developmentCards.js';
 import { resources } from './uiResources.js';
 import { showBanditOnTile } from './bandit.js';
+import { playKnight, updateLongestRoad } from './victoryPoints.js';
 
 // Debug: Alle Entwicklungskarten immer spielbar machen
 window.ALLOW_ALL_DEV_CARDS_PLAY = true;
@@ -10,12 +11,12 @@ window.ALLOW_ALL_DEV_CARDS_PLAY = true;
 export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, getScene, getTileMeshes } = {}) {
   const devUI = document.createElement('div');
   devUI.id = 'development-cards-ui';
+  devUI.style.display = 'none'; // Standardmäßig ausgeblendet
   devUI.style.marginTop = '0.7em';
   devUI.style.background = 'rgba(255,255,255,0.96)';
   devUI.style.borderRadius = '0.5em';
   devUI.style.padding = '0.5em 1.2em 0.5em 0.8em';
   devUI.style.boxShadow = '0 2px 8px #0001';
-  devUI.style.display = 'flex';
   devUI.style.alignItems = 'center';
   devUI.style.gap = '0.7em';
   devUI.style.fontSize = '1em';
@@ -47,7 +48,6 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
 
   // Übersicht-Button
   const overviewBtn = document.createElement('button');
-  overviewBtn.textContent = 'Karten-Übersicht';
   overviewBtn.style.fontWeight = 'bold';
   overviewBtn.style.fontSize = '1em';
   overviewBtn.style.height = '2.4em';
@@ -62,6 +62,17 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
   overviewBtn.style.display = 'inline-flex';
   overviewBtn.style.alignItems = 'center';
   overviewBtn.style.marginLeft = '0.3em';
+  
+  // Funktion zum Aktualisieren des Button-Texts
+  function updateOverviewButtonText() {
+    const player = getPlayer();
+    const totalCards = (player.developmentCards || []).length + (player.newDevelopmentCards || []).length;
+    const playedKnights = player.knightsPlayed || 0;
+    overviewBtn.textContent = `🎴 Karten (${totalCards}) ⚔️ (${playedKnights})`;
+  }
+  
+  // Initial button text
+  updateOverviewButtonText();
   overviewBtn.onmouseenter = function() {
     this.style.background = 'linear-gradient(90deg, #7ec0fa 90%, #e6f2ff 100%)';
     this.style.boxShadow = '0 4px 16px #b5d6ff77';
@@ -104,6 +115,25 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
   closeBtn.style.cursor = 'pointer';
   closeBtn.onclick = () => { popup.style.display = 'none'; };
   popup.appendChild(closeBtn);
+
+  // Titel für das Popup
+  const popupTitle = document.createElement('div');
+  popupTitle.textContent = '📊 Entwicklungskarten-Übersicht';
+  popupTitle.style.fontSize = '1.5em';
+  popupTitle.style.fontWeight = 'bold';
+  popupTitle.style.textAlign = 'center';
+  popupTitle.style.marginBottom = '0.5em';
+  popupTitle.style.color = '#2a5aa0';
+  popup.appendChild(popupTitle);
+
+  // Statistiken unter dem Titel
+  const statsSubheader = document.createElement('div');
+  statsSubheader.id = 'dev-cards-stats';
+  statsSubheader.style.fontSize = '0.9em';
+  statsSubheader.style.textAlign = 'center';
+  statsSubheader.style.marginBottom = '1.5em';
+  statsSubheader.style.color = '#666';
+  popup.appendChild(statsSubheader);
 
   // Kartenliste im Pop-Up
   const popupList = document.createElement('div');
@@ -172,7 +202,7 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
     }
     switch(card.type) {
       case 'knight':
-        // Ritter: Räuber verschieben
+        // Ritter: Räuber verschieben + Largest Army tracking
         if (typeof getScene === 'function' && typeof getTileMeshes === 'function') {
           const scene = getScene();
           const tileMeshes = getTileMeshes();
@@ -181,6 +211,12 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
           // Korrekt: tileNumbers als zweites Argument übergeben
           if (typeof window.startRobberPlacement === 'function') {
             window.startRobberPlacement(tileMeshes, window.tileNumbers);
+          }
+          // Update knight count and check for largest army
+          if (window.players && Array.isArray(window.players)) {
+            playKnight(player, window.players);
+            // Update the button text to reflect new knight count
+            updateOverviewButtonText();
           }
         } else {
           showGlobalFeedback('Räuberplatzierung nicht möglich (Szene oder Tiles fehlen)', '#c00', 3000);
@@ -195,6 +231,10 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
             finish: () => {
               window._roadBuildingMode = null;
               showGlobalFeedback('Straßenbau abgeschlossen!', '#2a8c2a', 2500);
+              // Update longest road after road building
+              if (window.players && Array.isArray(window.players)) {
+                updateLongestRoad(window.players);
+              }
             }
           };
           showGlobalFeedback('Straßenbau gespielt! Baue 2 Straßen kostenlos.', '#2a8c2a', 3500);
@@ -422,10 +462,29 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
     // Render die Kartenübersicht
     const player = getPlayer();
     popupList.innerHTML = '';
+    
+    // Update statistics in the subheader
+    const statsSubheader = document.getElementById('dev-cards-stats');
+    const totalCards = (player.developmentCards || []).length + (player.newDevelopmentCards || []).length;
+    const playedKnights = player.knightsPlayed || 0;
+    const hasLargestArmy = player.victoryPoints?.largestArmy > 0;
+    
+    if (statsSubheader) {
+      statsSubheader.innerHTML = `
+        🎴 Karten gesamt: <strong>${totalCards}</strong> | 
+        ⚔️ Ritter gespielt: <strong>${playedKnights}</strong>${hasLargestArmy ? ' (Größte Rittermacht)' : ''}
+      `;
+    }
+    
     const hand = (player.developmentCards || []).concat((player.newDevelopmentCards || []));
     if (!hand.length) {
-      popupList.textContent = 'Keine Entwicklungskarten.';
-      popupList.style.color = '#888';
+      const noCardsDiv = document.createElement('div');
+      noCardsDiv.textContent = 'Keine Entwicklungskarten vorhanden.';
+      noCardsDiv.style.color = '#888';
+      noCardsDiv.style.textAlign = 'center';
+      noCardsDiv.style.fontSize = '1.1em';
+      noCardsDiv.style.marginTop = '2em';
+      popupList.appendChild(noCardsDiv);
     } else {
       hand.forEach((card, idx) => {
         let label = '';
@@ -530,7 +589,7 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
 
   // Update hand on buy or when requested
   function updateAll() {
-    // Keine Handanzeige mehr nötig
+    updateOverviewButtonText();
   }
 
   // Expose update function for outside triggers (e.g. player switch)

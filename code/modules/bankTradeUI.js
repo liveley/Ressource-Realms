@@ -6,6 +6,7 @@ import { doBankTrade } from './bankTrade.js';
 export function createBankTradeUI() {
   const tradeUI = document.createElement('div');
   tradeUI.id = 'bank-trade-ui';
+  tradeUI.style.display = 'none'; // Standardmäßig ausgeblendet
 
   // Dropdowns für Auswahl
   const giveSelect = document.createElement('select');
