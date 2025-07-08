@@ -2,9 +2,19 @@
 // Comprehensive Victory Points System for Catan 3D
 
 /**
- * Victory Points System
- * 
- * Handles all aspects of victory point calculation and tracking:
+ * Victory Points Sexport function addVictoryPointCard(player) {
+  if (!player.victoryPoints) initializeVictoryPoints([player]);
+  
+  // Track VP cards separately for proper counting
+  if (!player.victoryPointCardsCount) player.victoryPointCardsCount = 0;
+  
+  player.victoryPointCardsCount += 1;
+  player.victoryPoints.hiddenVP += 1;
+  
+  console.log(`Player ${player.name || 'Unknown'} received VP card (${player.victoryPointCardsCount} total)`);
+  
+  checkWinCondition(player);
+  return true;les all aspects of victory point calculation and tracking:
  * - Base VP sources (settlements, cities, VP cards)
  * - Special VP sources (Longest Road, Largest Army)
  * - Hidden VP tracking
@@ -31,6 +41,7 @@ export function initializeVictoryPoints(players) {
     if (!player.knightsPlayed) player.knightsPlayed = 0;
     if (!player.roads) player.roads = [];
     if (!player.longestRoadLength) player.longestRoadLength = 0;
+    if (!player.victoryPointCardsCount) player.victoryPointCardsCount = 0;
   });
 }
 
@@ -77,6 +88,10 @@ export function calculatePublicVictoryPoints(player) {
  * @param {Object} player - The player object
  */
 export function updateSettlementVP(player) {
+  if (!player) {
+    console.error('updateSettlementVP: player is null/undefined');
+    return;
+  }
   if (!player.victoryPoints) initializeVictoryPoints([player]);
   player.victoryPoints.settlements = (player.settlements || []).length;
   checkWinCondition(player);
@@ -87,6 +102,10 @@ export function updateSettlementVP(player) {
  * @param {Object} player - The player object
  */
 export function updateCityVP(player) {
+  if (!player) {
+    console.error('updateCityVP: player is null/undefined');
+    return;
+  }
   if (!player.victoryPoints) initializeVictoryPoints([player]);
   player.victoryPoints.cities = (player.cities || []).length * 2;
   checkWinCondition(player);
@@ -95,11 +114,21 @@ export function updateCityVP(player) {
 /**
  * Add victory point card (immediately adds to hidden VP)
  * @param {Object} player - The player object
+ * @returns {boolean} - True if card was added, false if limit reached
  */
 export function addVictoryPointCard(player) {
   if (!player.victoryPoints) initializeVictoryPoints([player]);
+  
+  // Track VP cards separately for proper counting
+  if (!player.victoryPointCardsCount) player.victoryPointCardsCount = 0;
+  
+  player.victoryPointCardsCount += 1;
   player.victoryPoints.hiddenVP += 1;
+  
+  console.log(`Player ${player.name || 'Unknown'} received VP card (${player.victoryPointCardsCount} total)`);
+  
   checkWinCondition(player);
+  return true;
 }
 
 /**
@@ -564,15 +593,20 @@ export function updateLargestArmy(players) {
       }
     });
   } else {
-    // Tie - no one gets the bonus
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log('Largest army tie, no one gets it');
+    // Tie - current holder keeps it, or first player gets it
+    const currentHolder = players.find(player => player.victoryPoints?.largestArmy > 0);
+    
+    if (currentHolder && winners.some(w => w.player === currentHolder)) {
+      // Current holder is tied, they keep it
+      // (keine Änderung nötig)
+    } else {
+      // No current holder among tied players, first tied player gets it
+      players.forEach(player => {
+        if (player.victoryPoints) {
+          player.victoryPoints.largestArmy = (player === winners[0].player) ? 2 : 0;
+        }
+      });
     }
-    players.forEach(player => {
-      if (player.victoryPoints) {
-        player.victoryPoints.largestArmy = 0;
-      }
-    });
   }
 }
 
@@ -595,9 +629,18 @@ export function playKnight(player, allPlayers) {
  * @returns {boolean} True if player has won
  */
 export function checkWinCondition(player) {
+  // Prevent multiple win triggers
+  if (typeof window !== 'undefined' && window.gameWon) {
+    return false;
+  }
+  
   const totalVP = calculateVictoryPoints(player, true);
   
   if (totalVP >= 10) {
+    // Set immediately to prevent race conditions
+    if (typeof window !== 'undefined') {
+      window.gameWon = true;
+    }
     // Player has won!
     triggerGameWin(player, totalVP);
     return true;
