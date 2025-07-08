@@ -78,31 +78,70 @@ export function createMainMenuSidebar() {
       hex.style.justifyContent = 'center';
       hex.style.cursor = 'pointer';
 
-      if (rowIndex === 3 && i === 2) {
-        hex.id = 'start-game-hex';
-        hex.innerHTML = '<span style="color: white; font-weight: bold; font-size: 40px; line-height: 1; text-align: center; text-shadow: 1px 1px 2px #000;">Spiel<br>starten</span>';
-        hex.onclick = () => {
-          const menu = document.getElementById('main-menu');
-          if (menu) menu.style.display = 'none';
-          removeMainMenuSidebar();
-          if (window.startGameFromMenu) {
-            window.startGameFromMenu();
-          } else {
-            import('../main.js').then(() => {
-              window.dispatchEvent(new CustomEvent('initializeGame'));
-            });
-          }
-        };
-      } else if (rowIndex === 3 && i === 1) {
-        hex.id = 'quit-game-hex';
-        hex.innerHTML = '<span style="color: white; font-weight: bold; font-size: 40px; line-height: 1; text-align: center; text-shadow: 1px 1px 2px #000;">Spiel<br>beenden</span>';
-        hex.onclick = () => {
-          window.close();
-        };
-      }
-
       sidebar.appendChild(hex);
     });
+
+    // ZUSÄTZLICHE HEXAGONS FÜR BUTTONS (um 2 Positionen nach rechts verschoben)
+    if (rowIndex === 3) {
+      // Quit Game Button (Position 3)
+      const quitHex = document.createElement('div');
+      quitHex.style.position = 'absolute';
+      quitHex.style.left = `${xStart + 3 * (hexWidth + hexSpacing) + shiftX}px`;
+      quitHex.style.top = `calc(50% + ${yOffset}px)`;
+      quitHex.style.transform = 'translateY(-50%)';
+      quitHex.style.width = `${hexWidth}px`;
+      quitHex.style.height = `${hexHeight}px`;
+      quitHex.style.background = terrainColors.hill;
+      quitHex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
+      quitHex.style.boxShadow = '0 2px 12px #0002';
+      quitHex.style.pointerEvents = 'auto';
+      quitHex.style.transition = 'box-shadow 0.2s, transform 0.2s';
+      quitHex.style.borderRadius = '12px';
+      quitHex.style.display = 'flex';
+      quitHex.style.alignItems = 'center';
+      quitHex.style.justifyContent = 'center';
+      quitHex.style.cursor = 'pointer';
+      quitHex.id = 'quit-game-hex';
+      quitHex.innerHTML = '<span style="color: white; font-family: \'Montserrat\', sans-serif; font-weight: bold; font-size: 40px; line-height: 1; text-align: center;">Spiel<br>beenden</span>';
+      quitHex.onclick = () => {
+        window.close();
+      };
+      sidebar.appendChild(quitHex);
+
+      // Start Game Button (Position 4)
+      const startHex = document.createElement('div');
+      startHex.style.position = 'absolute';
+      startHex.style.left = `${xStart + 4 * (hexWidth + hexSpacing) + shiftX}px`;
+      startHex.style.top = `calc(50% + ${yOffset}px)`;
+      startHex.style.transform = 'translateY(-50%)';
+      startHex.style.width = `${hexWidth}px`;
+      startHex.style.height = `${hexHeight}px`;
+      startHex.style.background = terrainColors.forest;
+      startHex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
+      startHex.style.boxShadow = '0 2px 12px #0002';
+      startHex.style.pointerEvents = 'auto';
+      startHex.style.transition = 'box-shadow 0.2s, transform 0.2s';
+      startHex.style.borderRadius = '12px';
+      startHex.style.display = 'flex';
+      startHex.style.alignItems = 'center';
+      startHex.style.justifyContent = 'center';
+      startHex.style.cursor = 'pointer';
+      startHex.id = 'start-game-hex';
+      startHex.innerHTML = '<span style="color: white; font-family: \'Montserrat\', sans-serif; font-weight: bold; font-size: 40px; line-height: 1; text-align: center;">Spiel<br>starten</span>';
+      startHex.onclick = () => {
+        const menu = document.getElementById('main-menu');
+        if (menu) menu.style.display = 'none';
+        removeMainMenuSidebar();
+        if (window.startGameFromMenu) {
+          window.startGameFromMenu();
+        } else {
+          import('../main.js').then(() => {
+            window.dispatchEvent(new CustomEvent('initializeGame'));
+          });
+        }
+      };
+      sidebar.appendChild(startHex);
+    }
 
     // MEERHEXES rechts neben Land
     const maxCols = Math.ceil(sidebarWidth / (hexWidth + hexSpacing)) + 2;
@@ -128,6 +167,73 @@ export function createMainMenuSidebar() {
 
   document.body.appendChild(sidebar);
 
+  // PROJEKTINFORMATIONS-CONTAINER (rechtes Drittel)
+  const infoContainer = document.createElement('div');
+  infoContainer.id = 'project-info-container';
+  infoContainer.style.position = 'fixed';
+  infoContainer.style.top = '20vh';
+  infoContainer.style.right = '5vw';
+  infoContainer.style.width = '25vw';
+  infoContainer.style.height = '60vh';
+  infoContainer.style.zIndex = '10000';
+  infoContainer.style.pointerEvents = 'auto';
+  
+  // Glasmorphismus-Effekt
+  infoContainer.style.background = 'rgba(255, 255, 255, 0.1)';
+  infoContainer.style.backdropFilter = 'blur(10px)';
+  infoContainer.style.webkitBackdropFilter = 'blur(10px)';
+  infoContainer.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+  infoContainer.style.borderRadius = '20px';
+  infoContainer.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+  
+  // Container-Inhalt
+  infoContainer.style.padding = '30px';
+  infoContainer.style.display = 'flex';
+  infoContainer.style.flexDirection = 'column';
+  infoContainer.style.justifyContent = 'center';
+  infoContainer.style.alignItems = 'center';
+  infoContainer.style.textAlign = 'center';
+  
+  // Projektinformationen hinzufügen
+  infoContainer.innerHTML = `
+    <h2 style="
+      color: white; 
+      font-family: 'Montserrat', sans-serif; 
+      font-weight: bold; 
+      font-size: 2.2em; 
+      margin: 0 0 20px 0;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    ">Catan 3D</h2>
+    
+    <div style="
+      color: rgba(255, 255, 255, 0.9); 
+      font-family: 'Montserrat', sans-serif; 
+      font-size: 1.1em; 
+      line-height: 1.6;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    ">
+      <p style="margin: 15px 0;">
+        <strong>Projektmodul Prozesse</strong><br>
+        Hochschule München<br>
+        Studiengang Informatik & Design
+      </p>
+      
+      <p style="margin: 15px 0;">
+        <strong>Gruppe 4</strong>
+      </p>
+      
+      <p style="margin: 15px 0;">
+        Eine 3D-Implementierung des beliebten Brettspiels Catan, entwickelt mit <strong>Three.js</strong> und modernen Webtechnologien.
+      </p>
+      
+      <p style="margin: 15px 0; font-size: 0.9em; opacity: 0.8;">
+        Interaktives Spielfeld • Dynamische Kamerasteuerung • Realistische 3D-Modelle
+      </p>
+    </div>
+  `;
+  
+  document.body.appendChild(infoContainer);
+
   window.removeEventListener('resize', handleSidebarResize);
   window.addEventListener('resize', handleSidebarResize);
 }
@@ -142,4 +248,7 @@ function handleSidebarResize() {
 export function removeMainMenuSidebar() {
   const oldSidebar = document.getElementById('catan-hex-sidebar');
   if (oldSidebar) oldSidebar.remove();
+  
+  const oldInfoContainer = document.getElementById('project-info-container');
+  if (oldInfoContainer) oldInfoContainer.remove();
 }
