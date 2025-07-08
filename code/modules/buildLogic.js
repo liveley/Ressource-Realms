@@ -46,10 +46,13 @@ export function canBuildRoad(player) {
 
 // Siedlung bauen (ohne Platzierungslogik)
 export function buildSettlement(player, q, r, corner) {
+  // Defensive programming: ensure settlements array exists
+  if (!player.settlements) player.settlements = [];
+  
   // Nur Spielfeld-Update, KEIN Ressourcenabzug mehr!
   player.settlements.push({ q, r, corner });
   
-  // Update victory points
+  // Update victory points - use global players array with proper checks
   if (window.players && Array.isArray(window.players)) {
     updateAllVictoryPoints(player, window.players);
   }
@@ -59,13 +62,17 @@ export function buildSettlement(player, q, r, corner) {
 
 // Stadt bauen (Upgrade)
 export function buildCity(player, q, r, corner) {
+  // Defensive programming: ensure arrays exist
+  if (!player.settlements) player.settlements = [];
+  if (!player.cities) player.cities = [];
+  
   // Nur Spielfeld-Update, KEIN Ressourcenabzug mehr!
   const idx = player.settlements.findIndex(s => s.q === q && s.r === r && s.corner === corner);
   if (idx === -1) return false;
   player.settlements.splice(idx, 1);
   player.cities.push({ q, r, corner });
   
-  // Update victory points
+  // Update victory points - use global players array with proper checks
   if (window.players && Array.isArray(window.players)) {
     updateAllVictoryPoints(player, window.players);
   }
@@ -396,13 +403,9 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
   const canonicalRoad = getCanonicalRoad({ q, r, edge });
   player.roads.push(canonicalRoad);
   
-  // Use canonical coordinates to prevent duplicates
-  const canonicalRoad = getCanonicalRoad({ q, r, edge });
-  player.roads.push(canonicalRoad);
-  
-  // Update longest road after building
-  if (window.players && Array.isArray(window.players)) {
-    updateLongestRoad(window.players);
+  // Update longest road after building - use proper parameter passed to function
+  if (allPlayers && Array.isArray(allPlayers)) {
+    updateLongestRoad(allPlayers);
   }
   
   return { success: true };
