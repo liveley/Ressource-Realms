@@ -25,10 +25,10 @@ export function createMainMenuSidebar() {
   const sidebar = document.createElement('div');
   sidebar.id = 'catan-hex-sidebar';
   sidebar.style.position = 'fixed';
-  sidebar.style.left = '0';
+  sidebar.style.left = 'clamp(5px, 1vw, 16px)';
   sidebar.style.top = '0';
   sidebar.style.bottom = '0';
-  sidebar.style.width = 'min(38vw, 340px)';
+  sidebar.style.width = 'min(50vw, 480px)';
   sidebar.style.zIndex = '9999';
   sidebar.style.background = 'linear-gradient(135deg, #f4e2d8 0%, #ba5370 100%)';
   sidebar.style.pointerEvents = 'none';
@@ -38,11 +38,12 @@ export function createMainMenuSidebar() {
   sidebar.style.boxShadow = '2px 0 16px #0002';
 
   // Layout-Parameter
-  const gap = 10; // px Abstand zwischen Hexes
+  const gap = 5; // px Abstand zwischen Hexes
   const hexCountVert = 5; // Maximale Anzahl Hexes vertikal (wie beim Catan-Feld)
   const sidebarHeight = window.innerHeight;
   // Berechne die maximale Hexhöhe so, dass alles reinpasst (inkl. Gaps)
-  const hexHeight = Math.floor((sidebarHeight - (hexCountVert - 1) * gap) / hexCountVert);
+  let hexHeight = Math.floor((sidebarHeight - (hexCountVert - 1) * gap) / hexCountVert);
+  hexHeight = Math.round(hexHeight * 1.5); // 15% größer
   const hexWidth = Math.round(hexHeight * Math.sqrt(3) / 2);
 
   // Offset für die Sidebar, damit alles mittig ist
@@ -67,7 +68,12 @@ export function createMainMenuSidebar() {
   function axialToPixel(q, r) {
     // Pointy-top Hexes
     const x = (q - minQ) * (hexWidth + gap * 0.5);
-    const y = (r - minR) * (hexHeight * 0.75 + gap * 0.25);
+    // Vertikale Zentrierung: mittlere Reihe (r=0.5) soll exakt mittig im Container liegen
+    // Berechne Offset, sodass y=0 für r=0.5 in der Mitte des Containers ist
+    const centerR = 0.5;
+    const centerY = (hexContainer.offsetHeight || layoutHeight) / 2;
+    const y0 = (centerR - minR) * (hexHeight * 0.95 + gap * 0.25);  //liegt mittig
+    const y = (r - minR) * (hexHeight * 0.75 + gap * 0.25) - y0 + centerY;
     return { x, y };
   }
 
