@@ -72,6 +72,41 @@ export function createMainMenuSidebar() {
       hex.style.pointerEvents = 'auto';
       hex.style.transition = 'box-shadow 0.2s, transform 0.2s';
       hex.style.borderRadius = '12px';
+      hex.style.display = 'flex';
+      hex.style.alignItems = 'center';
+      hex.style.justifyContent = 'center';
+      hex.style.cursor = 'pointer';
+
+      // Spiel starten Button in zweite Reihe von unten (rowIndex 3), äußeres Hexagon (i=2)
+      if (rowIndex === 3 && i === 2) {
+        hex.id = 'start-game-hex';
+        hex.innerHTML = '<span style="color: white; font-weight: bold; font-size: 14px; text-align: center; text-shadow: 1px 1px 2px #000;">Spiel<br>starten</span>';
+        hex.onclick = () => {
+          console.log('Start-Button wurde geklickt!');
+          const menu = document.getElementById('main-menu');
+          if (menu) menu.style.display = 'none';
+          removeMainMenuSidebar();
+          
+          // Verwende die existierende Logik aus index.js für den Ladebildschirm
+          if (window.startGameFromMenu) {
+            window.startGameFromMenu();
+          } else {
+            // Fallback: direkt das Game starten
+            import('../main.js').then(() => {
+              window.dispatchEvent(new CustomEvent('initializeGame'));
+            });
+          }
+        };
+      }
+      // Spiel beenden Button links daneben (rowIndex 3, i=1)
+      else if (rowIndex === 3 && i === 1) {
+        hex.id = 'quit-game-hex';
+        hex.innerHTML = '<span style="color: white; font-weight: bold; font-size: 14px; text-align: center; text-shadow: 1px 1px 2px #000;">Spiel<br>beenden</span>';
+        hex.onclick = () => {
+          window.close();
+        };
+      }
+
       sidebar.appendChild(hex);
     });
   });

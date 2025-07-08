@@ -59,19 +59,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   console.log('DOM geladen, initialisiere Spiel...');
   
   const menu = document.getElementById('main-menu');
-  const startBtn = document.getElementById('start-game');
-  const quitBtn = document.getElementById('quit-game');
-  
-  // Set up quit button
-  quitBtn.onclick = () => {
-    window.close();
-  };
   
   // Load configuration
   gameConfig = await loadGameConfig();
   
-  // Set up start button
-  startBtn.onclick = async () => {
+  // Funktion für Start-Button (sowohl HTML als auch Hexagon)
+  window.startGameFromMenu = async () => {
     if (isGameInitialized) return;
     
     console.log('Start-Button wurde geklickt!');
