@@ -2,19 +2,7 @@
 // Comprehensive Victory Points System for Catan 3D
 
 /**
- * Victory Points Sexport function addVictoryPointCard(player) {
-  if (!player.victoryPoints) initializeVictoryPoints([player]);
-  
-  // Track VP cards separately for proper counting
-  if (!player.victoryPointCardsCount) player.victoryPointCardsCount = 0;
-  
-  player.victoryPointCardsCount += 1;
-  player.victoryPoints.hiddenVP += 1;
-  
-  console.log(`Player ${player.name || 'Unknown'} received VP card (${player.victoryPointCardsCount} total)`);
-  
-  checkWinCondition(player);
-  return true;les all aspects of victory point calculation and tracking:
+ * Victory Points System - Handles all aspects of victory point calculation and tracking:
  * - Base VP sources (settlements, cities, VP cards)
  * - Special VP sources (Longest Road, Largest Army)
  * - Hidden VP tracking
@@ -86,29 +74,35 @@ export function calculatePublicVictoryPoints(player) {
 /**
  * Update settlement VP count
  * @param {Object} player - The player object
+ * @param {boolean} skipWinCheck - Skip win condition check for performance
  */
-export function updateSettlementVP(player) {
+export function updateSettlementVP(player, skipWinCheck = false) {
   if (!player) {
     console.error('updateSettlementVP: player is null/undefined');
     return;
   }
   if (!player.victoryPoints) initializeVictoryPoints([player]);
   player.victoryPoints.settlements = (player.settlements || []).length;
-  checkWinCondition(player);
+  if (!skipWinCheck) {
+    checkWinCondition(player);
+  }
 }
 
 /**
  * Update city VP count
  * @param {Object} player - The player object
+ * @param {boolean} skipWinCheck - Skip win condition check for performance
  */
-export function updateCityVP(player) {
+export function updateCityVP(player, skipWinCheck = false) {
   if (!player) {
     console.error('updateCityVP: player is null/undefined');
     return;
   }
   if (!player.victoryPoints) initializeVictoryPoints([player]);
   player.victoryPoints.cities = (player.cities || []).length * 2;
-  checkWinCondition(player);
+  if (!skipWinCheck) {
+    checkWinCondition(player);
+  }
 }
 
 /**
@@ -738,14 +732,16 @@ function triggerGameWin(winner, totalVP) {
  * Update all victory points for a player
  * @param {Object} player - The player object
  * @param {Array} allPlayers - Array of all players for special achievements
+ * @param {boolean} skipSpecialAchievements - Skip longest road/largest army updates for performance
  */
-export function updateAllVictoryPoints(player, allPlayers) {
+export function updateAllVictoryPoints(player, allPlayers, skipSpecialAchievements = false) {
   if (!player.victoryPoints) initializeVictoryPoints([player]);
   
-  updateSettlementVP(player);
-  updateCityVP(player);
+  updateSettlementVP(player, skipSpecialAchievements);
+  updateCityVP(player, skipSpecialAchievements);
   
-  if (allPlayers) {
+  // Only update special achievements if explicitly requested
+  if (allPlayers && !skipSpecialAchievements) {
     updateLongestRoad(allPlayers);
     updateLargestArmy(allPlayers);
   }
@@ -828,6 +824,37 @@ export function getCanonicalRoad(road) {
   } else {
     return { q: nq, r: nr, edge: neighborEdge };
   }
+}
+
+/**
+ * Efficiently update victory points when only basic VP sources change
+ * Use this for settlement/city building when roads/knights don't change
+ * @param {Object} player - The player object
+ */
+export function updateBasicVictoryPoints(player) {
+  if (!player.victoryPoints) initializeVictoryPoints([player]);
+  
+  // Only update basic VP sources (no expensive calculations)
+  player.victoryPoints.settlements = (player.settlements || []).length;
+  player.victoryPoints.cities = (player.cities || []).length * 2;
+  
+  // Check win condition with current VP state
+  checkWinCondition(player);
+}
+
+/**
+ * Update special achievements for all players (call sparingly)
+ * Use this only when roads are built or knights are played
+ * @param {Array} allPlayers - Array of all players
+ */
+export function updateSpecialAchievements(allPlayers) {
+  if (!allPlayers || allPlayers.length === 0) return;
+  
+  updateLongestRoad(allPlayers);
+  updateLargestArmy(allPlayers);
+  
+  // Check win conditions for all players after special achievements update
+  allPlayers.forEach(player => checkWinCondition(player));
 }
 
 
