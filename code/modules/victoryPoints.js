@@ -10,6 +10,13 @@
  * - Real-time updates
  */
 
+// Game constants
+const VICTORY_POINTS_TO_WIN = 10;
+const MIN_ROAD_LENGTH_FOR_LONGEST_ROAD = 5;
+const MIN_KNIGHTS_FOR_LARGEST_ARMY = 3;
+const LONGEST_ROAD_VICTORY_POINTS = 2;
+const LARGEST_ARMY_VICTORY_POINTS = 2;
+
 // Initialize VP tracking for all players
 export function initializeVictoryPoints(players) {
   players.forEach(player => {
@@ -131,7 +138,7 @@ export function addVictoryPointCard(player) {
  * @returns {number} Length of longest road
  */
 export function calculateLongestRoad(player) {
-  if (!player.roads || player.roads.length === 0) {
+  if (!player || !player.roads || !Array.isArray(player.roads) || player.roads.length === 0) {
     return 0;
   }
   
@@ -466,12 +473,12 @@ export function updateLongestRoad(players) {
   }
   
   // Find the longest road (must be at least 5)
-  const validRoads = roadLengths.filter(item => item.length >= 5);
+  const validRoads = roadLengths.filter(item => item.length >= MIN_ROAD_LENGTH_FOR_LONGEST_ROAD);
   
   if (validRoads.length === 0) {
     // No one has longest road
     if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log('No player has 5+ roads for longest road');
+      console.log(`No player has ${MIN_ROAD_LENGTH_FOR_LONGEST_ROAD}+ roads for longest road`);
     }
     players.forEach(player => {
       if (player.victoryPoints) {
@@ -495,7 +502,7 @@ export function updateLongestRoad(players) {
     }
     players.forEach(player => {
       if (player.victoryPoints) {
-        player.victoryPoints.longestRoad = (player === winners[0].player) ? 2 : 0;
+        player.victoryPoints.longestRoad = (player === winners[0].player) ? LONGEST_ROAD_VICTORY_POINTS : 0;
       }
     });
   } else {
@@ -512,7 +519,7 @@ export function updateLongestRoad(players) {
       }
       players.forEach(player => {
         if (player.victoryPoints) {
-          player.victoryPoints.longestRoad = (player === currentHolder) ? 2 : 0;
+          player.victoryPoints.longestRoad = (player === currentHolder) ? LONGEST_ROAD_VICTORY_POINTS : 0;
         }
       });
     } else {
@@ -522,7 +529,7 @@ export function updateLongestRoad(players) {
       }
       players.forEach(player => {
         if (player.victoryPoints) {
-          player.victoryPoints.longestRoad = (player === winners[0].player) ? 2 : 0;
+          player.victoryPoints.longestRoad = (player === winners[0].player) ? LONGEST_ROAD_VICTORY_POINTS : 0;
         }
       });
     }
@@ -549,7 +556,7 @@ export function updateLargestArmy(players) {
   
   // Find players with at least 3 knights played
   const validArmies = players
-    .filter(player => (player.knightsPlayed || 0) >= 3)
+    .filter(player => (player.knightsPlayed || 0) >= MIN_KNIGHTS_FOR_LARGEST_ARMY)
     .map(player => ({ player, knights: player.knightsPlayed || 0 }));
     
   if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
@@ -559,7 +566,7 @@ export function updateLargestArmy(players) {
   if (validArmies.length === 0) {
     // No one has largest army
     if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log('No player has 3+ knights for largest army');
+      console.log(`No player has ${MIN_KNIGHTS_FOR_LARGEST_ARMY}+ knights for largest army`);
     }
     players.forEach(player => {
       if (player.victoryPoints) {
@@ -583,7 +590,7 @@ export function updateLargestArmy(players) {
     }
     players.forEach(player => {
       if (player.victoryPoints) {
-        player.victoryPoints.largestArmy = (player === winners[0].player) ? 2 : 0;
+        player.victoryPoints.largestArmy = (player === winners[0].player) ? LARGEST_ARMY_VICTORY_POINTS : 0;
       }
     });
   } else {
@@ -597,7 +604,7 @@ export function updateLargestArmy(players) {
       // No current holder among tied players, first tied player gets it
       players.forEach(player => {
         if (player.victoryPoints) {
-          player.victoryPoints.largestArmy = (player === winners[0].player) ? 2 : 0;
+          player.victoryPoints.largestArmy = (player === winners[0].player) ? LARGEST_ARMY_VICTORY_POINTS : 0;
         }
       });
     }
@@ -625,7 +632,7 @@ export function playKnight(player, allPlayers) {
 export function checkWinCondition(player) {
   const totalVP = calculateVictoryPoints(player, true);
   
-  if (totalVP >= 10) {
+  if (totalVP >= VICTORY_POINTS_TO_WIN) {
     // Atomically check and set to prevent race conditions
     if (typeof window !== 'undefined') {
       if (window.gameWon) {
