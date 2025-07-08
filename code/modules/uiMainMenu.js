@@ -170,13 +170,15 @@ export function createMainMenuSidebar() {
   // PROJEKTINFORMATIONS-CONTAINER (rechtes Drittel)
   const infoContainer = document.createElement('div');
   infoContainer.id = 'project-info-container';
-  infoContainer.style.position = 'fixed';
-  infoContainer.style.top = '20vh';
+  infoContainer.style.position = 'fixed'
+  ;infoContainer.style.top = '50%';
+  infoContainer.style.transform = 'translateY(-50%)';
   infoContainer.style.right = '5vw';
-  infoContainer.style.width = '25vw';
+  infoContainer.style.width = '28vw';
   infoContainer.style.height = '60vh';
   infoContainer.style.zIndex = '10000';
   infoContainer.style.pointerEvents = 'auto';
+  infoContainer.style.overflowY = 'hidden'; // Kein Scrollen mehr, da Inhalt fixiert ist
   
   // Glasmorphismus-Effekt
   infoContainer.style.background = 'rgba(255, 255, 255, 0.1)';
@@ -203,32 +205,42 @@ export function createMainMenuSidebar() {
       font-size: 2.2em; 
       margin: 0 0 20px 0;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-    ">Catan 3D</h2>
+    "></h2>
     
     <div style="
-      color: rgba(255, 255, 255, 0.9); 
+      color: #256D9B; 
       font-family: 'Montserrat', sans-serif; 
       font-size: 1.1em; 
       line-height: 1.6;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
     ">
-      <p style="margin: 15px 0;">
-        <strong>Projektmodul Prozesse</strong><br>
-        Hochschule München<br>
-        Studiengang Informatik & Design
-      </p>
+      <p style="margin: 15px 0; font-size: 1.25em;">
+      Dieses Projekt ist als Teil des <strong>Projektmoduls Prozesse 2025</strong> an der <strong>Hochschule München</strong> im Studiengang Studiengang Informatik & Design entstanden.<strong> Gebaut von Gruppe 4</strong><br>
       
-      <p style="margin: 15px 0;">
-        <strong>Gruppe 4</strong>
+    <p style="margin: 15px 0;">
+      Eine 3D-Implementierung des beliebten Brettspiels 
+      <a href="https://www.catan.de/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">
+        Catan
+      </a>, entwickelt mit 
+      <a href="https://threejs.org/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">
+        Three.js
+      </a> und 
+      <a href="https://www.blender.org/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">
+        Blender
+      </a>.
+    </p>
+
+      <p>
+        Weitere Informationen
+        <a 
+          href="https://gitlab.lrz.de/ab-2025sose/pp/groupprojects/projektrepo-gruppe4" 
+          target="_blank"
+          style="color: #4B94C2; font-weight: bold; text-decoration: underline;"
+        >
+          auf Gitlab.
+        </a>
       </p>
-      
-      <p style="margin: 15px 0;">
-        Eine 3D-Implementierung des beliebten Brettspiels Catan, entwickelt mit <strong>Three.js</strong> und modernen Webtechnologien.
-      </p>
-      
-      <p style="margin: 15px 0; font-size: 0.9em; opacity: 0.8;">
-        Interaktives Spielfeld • Dynamische Kamerasteuerung • Realistische 3D-Modelle
-      </p>
+
     </div>
   `;
   
