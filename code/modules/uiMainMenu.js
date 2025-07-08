@@ -103,10 +103,13 @@ export function createMainMenuSidebar() {
       quitHex.style.alignItems = 'center';
       quitHex.style.justifyContent = 'center';
       quitHex.style.cursor = 'pointer';
+      quitHex.style.isolation = 'isolate'; // Isoliert das Element vom Stacking Context
+      quitHex.style.zIndex = '10000'; // Höher als main-menu backdrop-filter
       quitHex.id = 'quit-game-hex';
       quitHex.innerHTML = `
         <span style="
           color: #ffffff;
+          opacity: 1;
           font-family: 'Montserrat', sans-serif;
           font-weight: 800;
           font-size: 28px;
@@ -114,6 +117,8 @@ export function createMainMenuSidebar() {
           text-align: center;
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
           user-select: none;
+          -webkit-font-smoothing: antialiased;
+          text-rendering: optimizeLegibility;
         ">Spiel<br>beenden</span>
       `;
       quitHex.onclick = () => {
@@ -150,10 +155,13 @@ export function createMainMenuSidebar() {
       startHex.style.alignItems = 'center';
       startHex.style.justifyContent = 'center';
       startHex.style.cursor = 'pointer';
+      startHex.style.isolation = 'isolate'; // Isoliert das Element vom Stacking Context
+      startHex.style.zIndex = '10000'; // Höher als main-menu backdrop-filter
       startHex.id = 'start-game-hex';
       startHex.innerHTML = `
         <span style="
           color: #ffffff;
+          opacity: 1;
           font-family: 'Montserrat', sans-serif;
           font-weight: 800;
           font-size: 32px;
@@ -161,6 +169,8 @@ export function createMainMenuSidebar() {
           text-align: center;
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
           user-select: none;
+          -webkit-font-smoothing: antialiased;
+          text-rendering: optimizeLegibility;
         ">Spiel<br>starten</span>
       `;      
       startHex.onclick = () => {
