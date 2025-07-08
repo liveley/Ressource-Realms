@@ -1,6 +1,6 @@
 /* Enhanced main menu styles */
 #main-menu {
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 50%, rgba(15, 52, 96, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(15, 52, 96, 0.95) 0%, rgba(22, 33, 62, 0.95) 50%, rgba(15, 52, 96, 0.95) 100%);
   backdrop-filter: blur(10px);
 }
 
@@ -71,8 +71,8 @@
 }
 
 .game-loading-spinner {
-  width: 130px;
-  height: 100px;
+  width: 100px;
+  height: 80px;
   position: relative;
   margin-bottom: 2em;
 }
@@ -86,21 +86,21 @@
   transition: background 0.18s;
 }
 
-/* 7 hexagons in authentic Catan board layout: 2-3-2 formation with offset rows and spacing */
-/* Arranged for circular animation: Top-Left -> Top-Right -> Middle-Right -> Bottom-Right -> Bottom-Left -> Middle-Left -> Center */
+/* 6 hexagons in tight formation without center - no gaps between hexagons */
+/* Arranged for circular animation: Top-Left -> Top-Right -> Middle-Right -> Bottom-Right -> Bottom-Left -> Middle-Left */
 
-/* Top row (2 hexagons, offset) */
-.game-loading-spinner .hex:nth-child(1) { left: 30px; top: 10px; }    /* Top-Left (start of circle) */
-.game-loading-spinner .hex:nth-child(2) { left: 70px; top: 10px; }    /* Top-Right */
+/* Top row (2 hexagons, touching) */
+.game-loading-spinner .hex:nth-child(1) { left: 36px; top: 18px; }    /* Top-Left (start of circle) */
+.game-loading-spinner .hex:nth-child(2) { left: 64px; top: 18px; }    /* Top-Right */
 
-/* Middle row (3 hexagons, center line) */
-.game-loading-spinner .hex:nth-child(3) { left: 90px; top: 40px; }    /* Middle-Right */
-.game-loading-spinner .hex:nth-child(4) { left: 70px; top: 70px; }    /* Bottom-Right */
-.game-loading-spinner .hex:nth-child(5) { left: 30px; top: 70px; }    /* Bottom-Left */
-.game-loading-spinner .hex:nth-child(6) { left: 10px; top: 40px; }    /* Middle-Left */
-.game-loading-spinner .hex:nth-child(7) { left: 50px; top: 40px; }    /* Center (desert) - last in circle */
+/* Middle row (2 hexagons, sides only, touching) */
+.game-loading-spinner .hex:nth-child(3) { left: 78px; top: 40px; }    /* Middle-Right */
+.game-loading-spinner .hex:nth-child(4) { left: 64px; top: 62px; }    /* Bottom-Right */
+.game-loading-spinner .hex:nth-child(5) { left: 36px; top: 62px; }    /* Bottom-Left */
+.game-loading-spinner .hex:nth-child(6) { left: 22px; top: 40px; }    /* Middle-Left */
 
-/* Hide the 8th hexagon as we only need 7 for authentic Catan layout */
+/* Hide the center hexagon and 8th hexagon - animation only runs on outer ring */
+.game-loading-spinner .hex:nth-child(7) { display: none; }    /* Center (desert) - hidden */
 .game-loading-spinner .hex:nth-child(8) { display: none; }
 
 .game-loading-text {
