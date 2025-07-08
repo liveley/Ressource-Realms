@@ -91,7 +91,7 @@ export function createMainMenuSidebar() {
       quitHex.style.transform = 'translateY(-50%)';
       quitHex.style.width = `${hexWidth}px`;
       quitHex.style.height = `${hexHeight}px`;
-      quitHex.style.background = seaColors[2]; // Meerhex-Farbe
+      quitHex.style.background = seaColors[0]; // Meerhex-Farbe
       quitHex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
       quitHex.style.boxShadow = '0 2px 12px #0002';
       quitHex.style.pointerEvents = 'auto';
@@ -130,7 +130,7 @@ export function createMainMenuSidebar() {
       startHex.style.transform = 'translateY(-50%)';
       startHex.style.width = `${hexWidth}px`;
       startHex.style.height = `${hexHeight}px`;
-      startHex.style.background = seaColors[4]; // Meerhex-Farbe
+      startHex.style.background = seaColors[1]; // Meerhex-Farbe
       startHex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
       startHex.style.boxShadow = '0 2px 12px #0002';
       startHex.style.pointerEvents = 'auto';
