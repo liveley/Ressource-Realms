@@ -37,6 +37,14 @@ export function createMainMenuSidebar() {
   const seaColors = ['#387FAC', '#2F7AA8', '#4B94C2', '#6BB1D5', '#91CBE8', '#B2E1F6'];
   const seaOpacity = [0.8, 0.6, 0.5, 0.4, 0.3, 0.2];
 
+  // Funktion um Hex zu RGBA zu konvertieren
+  function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   const sidebar = document.createElement('div');
   sidebar.id = 'catan-hex-sidebar';
   sidebar.style.position = 'fixed';
@@ -93,7 +101,7 @@ export function createMainMenuSidebar() {
       quitHex.style.transform = 'translateY(-50%)';
       quitHex.style.width = `${hexWidth}px`;
       quitHex.style.height = `${hexHeight}px`;
-      quitHex.style.background = seaColors[0]; // Meerhex-Farbe
+      quitHex.style.background = hexToRgba(seaColors[2], seaOpacity[2]); // RGBA für Transparenz nur am Hintergrund
       quitHex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
       quitHex.style.boxShadow = '0 2px 12px #0002';
       quitHex.style.pointerEvents = 'auto';
@@ -111,11 +119,11 @@ export function createMainMenuSidebar() {
           color: #ffffff;
           opacity: 1;
           font-family: 'Montserrat', sans-serif;
-          font-weight: 800;
+          font-weight: 900;
           font-size: 28px;
           line-height: 1.1;
           text-align: center;
-          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+          text-shadow: 3px 3px 6px rgba(0, 0, 0, 1), 0 0 8px rgba(0, 0, 0, 0.8), 1px 1px 0 rgba(0, 0, 0, 1);
           user-select: none;
           -webkit-font-smoothing: antialiased;
           text-rendering: optimizeLegibility;
@@ -145,7 +153,7 @@ export function createMainMenuSidebar() {
       startHex.style.transform = 'translateY(-50%)';
       startHex.style.width = `${hexWidth}px`;
       startHex.style.height = `${hexHeight}px`;
-      startHex.style.background = seaColors[1]; // Meerhex-Farbe
+      startHex.style.background = hexToRgba(seaColors[3], seaOpacity[3]); // RGBA für Transparenz nur am Hintergrund
       startHex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
       startHex.style.boxShadow = '0 2px 12px #0002';
       startHex.style.pointerEvents = 'auto';
@@ -163,11 +171,11 @@ export function createMainMenuSidebar() {
           color: #ffffff;
           opacity: 1;
           font-family: 'Montserrat', sans-serif;
-          font-weight: 800;
+          font-weight: 900;
           font-size: 32px;
           line-height: 1.1;
           text-align: center;
-          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+          text-shadow: 3px 3px 6px rgba(0, 0, 0, 1), 0 0 8px rgba(0, 0, 0, 0.8), 1px 1px 0 rgba(0, 0, 0, 1);
           user-select: none;
           -webkit-font-smoothing: antialiased;
           text-rendering: optimizeLegibility;
