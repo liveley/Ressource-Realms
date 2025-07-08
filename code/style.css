@@ -71,7 +71,7 @@
 }
 
 .game-loading-spinner {
-  width: 110px;
+  width: 120px;
   height: 85px;
   position: relative;
   margin-bottom: 2em;
@@ -86,19 +86,19 @@
   transition: background 0.18s;
 }
 
-/* 7 hexagons in authentic Catan board layout: 2-3-2 formation with offset rows */
+/* 7 hexagons in authentic Catan board layout: 2-3-2 formation with offset rows and spacing */
 /* Top row (2 hexagons, offset) */
-.game-loading-spinner .hex:nth-child(1) { left: 32px; top: 5px; }     /* Top-Left */
-.game-loading-spinner .hex:nth-child(2) { left: 60px; top: 5px; }     /* Top-Right */
+.game-loading-spinner .hex:nth-child(1) { left: 27px; top: 5px; }     /* Top-Left */
+.game-loading-spinner .hex:nth-child(2) { left: 65px; top: 5px; }     /* Top-Right */
 
 /* Middle row (3 hexagons, center line) */
-.game-loading-spinner .hex:nth-child(3) { left: 18px; top: 30px; }    /* Middle-Left */
+.game-loading-spinner .hex:nth-child(3) { left: 8px; top: 30px; }     /* Middle-Left */
 .game-loading-spinner .hex:nth-child(4) { left: 46px; top: 30px; }    /* Middle-Center (desert) */
-.game-loading-spinner .hex:nth-child(5) { left: 74px; top: 30px; }    /* Middle-Right */
+.game-loading-spinner .hex:nth-child(5) { left: 84px; top: 30px; }    /* Middle-Right */
 
 /* Bottom row (2 hexagons, offset like top row) */
-.game-loading-spinner .hex:nth-child(6) { left: 32px; top: 55px; }    /* Bottom-Left */
-.game-loading-spinner .hex:nth-child(7) { left: 60px; top: 55px; }    /* Bottom-Right */
+.game-loading-spinner .hex:nth-child(6) { left: 27px; top: 55px; }    /* Bottom-Left */
+.game-loading-spinner .hex:nth-child(7) { left: 65px; top: 55px; }    /* Bottom-Right */
 
 /* Hide the 8th hexagon as we only need 7 for authentic Catan layout */
 .game-loading-spinner .hex:nth-child(8) { display: none; }
