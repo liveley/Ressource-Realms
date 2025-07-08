@@ -120,14 +120,25 @@ export function tryBuildCity(player, q, r, corner) {
 // === Platzierungsregel: Siedlungen müssen mindestens 2 Ecken Abstand haben ===
 export function isSettlementPlacementValid(q, r, corner, allPlayers) {
   // Jede Siedlung/Stadt eines beliebigen Spielers darf nicht direkt benachbart sein
+  // Wichtig: Wir müssen die äquivalenten Ecken sowohl der neuen Position als auch der bestehenden Siedlungen berücksichtigen
+  const newEquivalents = getEquivalentCorners(q, r, corner);
+  
   for (const player of allPlayers) {
     for (const s of [...player.settlements, ...player.cities]) {
-      if (areCornersAdjacent(q, r, corner, s.q, s.r, s.corner)) {
-        return false;
-      }
-      // Auch exakt gleiche Ecke ist verboten
-      if (q === s.q && r === s.r && corner === s.corner) {
-        return false;
+      const existingEquivalents = getEquivalentCorners(s.q, s.r, s.corner);
+      
+      // Prüfe alle Kombinationen von äquivalenten Ecken auf Adjacenz
+      for (const newEq of newEquivalents) {
+        for (const existingEq of existingEquivalents) {
+          // Exakt gleiche Ecke ist verboten
+          if (newEq.q === existingEq.q && newEq.r === existingEq.r && newEq.corner === existingEq.corner) {
+            return false;
+          }
+          // Benachbarte Ecken sind verboten
+          if (areCornersAdjacent(newEq.q, newEq.r, newEq.corner, existingEq.q, existingEq.r, existingEq.corner)) {
+            return false;
+          }
+        }
       }
     }
   }
@@ -318,20 +329,13 @@ export function canPlaceSettlement(player, q, r, corner, allPlayers, {requireRoa
     return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
   }
   
-  // Prüfe alle äquivalenten Ecken auf bestehende Siedlung/Stadt
-  const equivalents = getEquivalentCorners(q, r, corner);
-  for (const other of allPlayers) {
-    for (const eq of equivalents) {
-      if (
-        other.settlements.some(s => s.q === eq.q && s.r === eq.r && s.corner === eq.corner) ||
-        other.cities.some(c => c.q === eq.q && c.r === eq.r && c.corner === eq.corner)
-      ) {
-        return { success: false, reason: 'Hier steht bereits eine Siedlung/Stadt (egal von welchem Feld)' };
-      }
-    }
-  }
+  // Ressourcen prüfen
   if (!ignoreResourceRule && !canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
+  
+  // Abstandsregel prüfen (isSettlementPlacementValid prüft bereits alle äquivalenten Ecken und bestehende Siedlungen/Städte)
   if (!ignoreDistanceRule && !isSettlementPlacementValid(q, r, corner, allPlayers)) return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+  
+  // Straßenanbindung prüfen (außer bei Startaufstellung)
   if (requireRoad && !isSettlementConnectedToOwnRoad(player, q, r, corner)) return { success: false, reason: 'Keine eigene Straße an dieser Ecke' };
   
   return { success: true };
