@@ -171,11 +171,24 @@ function getNeighborCorner(q, r, corner) {
 
 // === Platzierungsregel: Siedlung muss an eigene Straße angrenzen (außer bei Startaufstellung) ===
 export function isSettlementConnectedToOwnRoad(player, q, r, corner) {
+  // Debug-Ausgabe
+  console.log(`Prüfe Straßenanbindung für Siedlung an (${q},${r}) Ecke ${corner}`);
+  console.log(`Spieler hat ${player.roads ? player.roads.length : 0} Straßen:`, player.roads);
+  
   // Für jede eigene Straße prüfen, ob sie an diese Ecke angrenzt
+  // Prüfe alle äquivalenten Ecken (physische Ecke!)
+  const equivalents = getEquivalentCorners(q, r, corner);
+  console.log(`Äquivalente Ecken:`, equivalents);
+  
   if (!player.roads || player.roads.length === 0) return false;
-  for (const road of player.roads) {
-    if (isRoadAdjacentToCorner(road, q, r, corner)) {
-      return true;
+  
+  for (const eq of equivalents) {
+    for (const road of player.roads) {
+      const isAdjacent = isRoadAdjacentToCorner(road, eq.q, eq.r, eq.corner);
+      console.log(`Straße ${JSON.stringify(road)} an Ecke (${eq.q},${eq.r}):${eq.corner}? ${isAdjacent}`);
+      if (isAdjacent) {
+        return true;
+      }
     }
   }
   return false;
@@ -183,12 +196,51 @@ export function isSettlementConnectedToOwnRoad(player, q, r, corner) {
 
 // Hilfsfunktion: Prüft, ob eine Straße an eine bestimmte Ecke angrenzt
 function isRoadAdjacentToCorner(road, q, r, corner) {
-  // Eine Straße verbindet immer zwei Ecken (A und B)
-  // Wir prüfen, ob die gewünschte Ecke eine der beiden ist
-  return (
-    (road.q1 === q && road.r1 === r && road.corner1 === corner) ||
-    (road.q2 === q && road.r2 === r && road.corner2 === corner)
-  );
+  // Eine Straße entlang der Kante 'edge' verbindet die Ecken 'edge' und '(edge + 1) % 6'
+  // Wir müssen prüfen, ob die gewünschte Ecke eine der beiden ist (oder deren Äquivalente)
+  
+  console.log(`  Prüfe Straße ${JSON.stringify(road)} gegen Ecke (${q},${r}):${corner}`);
+  
+  // Straße hat das Format {q, r, edge, ...}
+  if (road.q !== undefined && road.r !== undefined && road.edge !== undefined) {
+    // Die Straße verbindet zwei Ecken auf dem Straßen-Tile
+    const roadCorner1 = road.edge;
+    const roadCorner2 = (road.edge + 1) % 6;
+    
+    console.log(`    Straße verbindet Ecken (${road.q},${road.r}):${roadCorner1} und (${road.q},${road.r}):${roadCorner2}`);
+    
+    // Prüfe, ob die gewünschte Ecke eine der beiden Straßen-Ecken ist (mit Äquivalenz)
+    const equivalentsCorner1 = getEquivalentCorners(road.q, road.r, roadCorner1);
+    const equivalentsCorner2 = getEquivalentCorners(road.q, road.r, roadCorner2);
+    
+    for (const eq1 of equivalentsCorner1) {
+      if (eq1.q === q && eq1.r === r && eq1.corner === corner) {
+        console.log(`    Match: Ecke (${q},${r}):${corner} ist äquivalent zu (${road.q},${road.r}):${roadCorner1}`);
+        return true;
+      }
+    }
+    
+    for (const eq2 of equivalentsCorner2) {
+      if (eq2.q === q && eq2.r === r && eq2.corner === corner) {
+        console.log(`    Match: Ecke (${q},${r}):${corner} ist äquivalent zu (${road.q},${road.r}):${roadCorner2}`);
+        return true;
+      }
+    }
+    
+    console.log(`    Keine Übereinstimmung gefunden`);
+    return false;
+  }
+  
+  // Fallback für neue Datenstruktur mit q1,r1,corner1 und q2,r2,corner2
+  if (road.q1 !== undefined && road.r1 !== undefined && road.corner1 !== undefined) {
+    const match1 = (road.q1 === q && road.r1 === r && road.corner1 === corner);
+    const match2 = (road.q2 === q && road.r2 === r && road.corner2 === corner);
+    console.log(`    Endpunkt 1: (${road.q1},${road.r1}):${road.corner1} -> ${match1}`);
+    console.log(`    Endpunkt 2: (${road.q2},${road.r2}):${road.corner2} -> ${match2}`);
+    return match1 || match2;
+  }
+  
+  return false;
 }
 
 // Helper: Prüft, ob ein Tile ein Landfeld ist (kein Wasser, keine Wüste)
@@ -303,8 +355,15 @@ export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoa
   }
   // Ressourcen prüfen
   if (!ignoreResourceRule && !canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
-  // Abstand zu anderen Siedlungen/Städten prüfen
-  if (!ignoreDistanceRule && !isSettlementPlacementValid(q, r, corner, allPlayers)) return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+  // Abstand zu anderen Siedlungen/Städten prüfen (für alle äquivalenten Ecken!)
+  if (!ignoreDistanceRule) {
+    const equivalents = getEquivalentCorners(q, r, corner);
+    for (const eq of equivalents) {
+      if (!isSettlementPlacementValid(eq.q, eq.r, eq.corner, allPlayers)) {
+        return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+      }
+    }
+  }
   // Straßenanbindung prüfen (außer bei Startaufstellung)
   if (requireRoad && !isSettlementConnectedToOwnRoad(player, q, r, corner)) return { success: false, reason: 'Keine eigene Straße an dieser Ecke' };
   // Bauen & Ressourcen abziehen
@@ -332,8 +391,15 @@ export function canPlaceSettlement(player, q, r, corner, allPlayers, {requireRoa
   // Ressourcen prüfen
   if (!ignoreResourceRule && !canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
   
-  // Abstandsregel prüfen (isSettlementPlacementValid prüft bereits alle äquivalenten Ecken und bestehende Siedlungen/Städte)
-  if (!ignoreDistanceRule && !isSettlementPlacementValid(q, r, corner, allPlayers)) return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+  // Abstandsregel prüfen (für alle äquivalenten Ecken!)
+  if (!ignoreDistanceRule) {
+    const equivalents = getEquivalentCorners(q, r, corner);
+    for (const eq of equivalents) {
+      if (!isSettlementPlacementValid(eq.q, eq.r, eq.corner, allPlayers)) {
+        return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+      }
+    }
+  }
   
   // Straßenanbindung prüfen (außer bei Startaufstellung)
   if (requireRoad && !isSettlementConnectedToOwnRoad(player, q, r, corner)) return { success: false, reason: 'Keine eigene Straße an dieser Ecke' };
@@ -409,8 +475,16 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
   }
   if (!player.roads) player.roads = [];
   
+  // Speichere beide Endpunkte der Straße für die Adjazenzprüfung
+  // Eine Straße entlang der Kante 'edge' verbindet die Ecken 'edge' und '(edge + 1) % 6' auf demselben Tile
+  const roadData = {
+    q1: q, r1: r, corner1: edge,                    // Erste Ecke der Straße
+    q2: q, r2: r, corner2: (edge + 1) % 6,         // Zweite Ecke der Straße (gleiche Tile)
+    q, r, edge // optional, falls noch woanders genutzt
+  };
+  
   // Use canonical coordinates to prevent duplicates
-  const canonicalRoad = getCanonicalRoad({ q, r, edge });
+  const canonicalRoad = getCanonicalRoad(roadData);
   player.roads.push(canonicalRoad);
   
   // Update longest road after building - use proper parameter passed to function
