@@ -67,8 +67,8 @@ export function setupBuildEventHandler({
     let result;
     let meshPlaced = false;
     if (getBuildMode() === 'settlement') {
-      // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
-      result = tryBuildSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
+      // Use proper Catan rules for settlement placement
+      result = tryBuildSettlement(player, q, r, nearest, players);
       if (result.success) {
         placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'settlement', player.color);
         meshPlaced = true;
