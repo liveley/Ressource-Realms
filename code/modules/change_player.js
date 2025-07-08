@@ -1,3 +1,4 @@
+// === UI: Spielerwechsel-Button ===
 // change_player.js
 // Modul für das Umschalten des aktiven Spielers und Anzeige des Wechsel-Buttons
 
@@ -96,52 +97,88 @@ export function showPlayerSwitchButton(players, getActivePlayerIdx, setActivePla
  * @param {Function} setActivePlayerIdx - Funktion, die den neuen Spielerindex setzt.
  */
 export function placePlayerSwitchButton(players, getActivePlayerIdx, setActivePlayerIdx, parent) {
-  // Prüfe, ob der Button schon existiert
-  if (document.getElementById('player-switch-btn')) return;
-  // Button im Stil des Würfeln- und Bauen-Buttons
+  // Vorherigen Button entfernen, falls vorhanden
+  const oldBtn = document.getElementById('player-switch-btn');
+  if (oldBtn) oldBtn.remove();
+
+  // Button erstellen
   const btn = document.createElement('button');
   btn.id = 'player-switch-btn';
-  btn.style.display = 'flex';
-  btn.style.flexDirection = 'column';
-  btn.style.alignItems = 'center';
-  btn.style.justifyContent = 'center';
+  btn.classList.add('main-action-btn', 'player-switch-btn');
+  btn.style.fontSize = 'clamp(1.5em, 2.5vw, 2.5em)';
+  btn.style.padding = 'clamp(0.3em, 0.5vw, 0.4em)';
+  btn.style.margin = 'clamp(0.1em, 0.2vw, 0)';
+  btn.style.borderRadius = 'clamp(4px, 0.5vw, 6px)';
+  btn.style.aspectRatio = '1 / 1';
+  btn.style.width = 'clamp(2.4em, 3.8vw, 3.4em)';
+  btn.style.height = 'clamp(2.4em, 3.8vw, 3.4em)';
   btn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
   btn.style.border = 'none';
-  btn.style.borderRadius = '0.5em';
   btn.style.boxShadow = '0 2px 8px #0001';
-  btn.style.cursor = 'pointer';
   btn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s';
   btn.style.outline = 'none';
   btn.style.fontFamily = "'Montserrat', Arial, sans-serif";
   btn.style.fontWeight = '700';
   btn.style.color = '#222';
-  btn.style.fontSize = '2.5em';
-  btn.style.minWidth = 'clamp(100px, 14vw, 180px)';
-  btn.style.minHeight = 'clamp(56px, 3.5em, 80px)';
-  btn.style.padding = 'clamp(0.3em, 1vw, 0.7em) clamp(1.2em, 3vw, 2.2em)';
-  btn.style.boxSizing = 'border-box';
+  btn.style.display = 'flex';
+  btn.style.flexDirection = 'column';
+  btn.style.alignItems = 'center';
+  btn.style.justifyContent = 'center';
 
-  // Emoji (gleiche Größe wie Würfeln)
+  // Emoji: Dynamisch je nach State
   const emoji = document.createElement('span');
-  emoji.textContent = '🔄';
   emoji.style.fontSize = '1em';
   emoji.style.lineHeight = '1';
+  emoji.style.flex = '0 0 auto';
   btn.appendChild(emoji);
 
-  // Text "Spieler" darunter, kleiner
+  // Label für nächsten Spieler oder Würfeln
   const label = document.createElement('span');
-  label.textContent = 'Spieler';
-  label.style.fontSize = '0.32em';
-  label.style.color = '#222';
+  label.id = 'player-switch-label';
+  label.style.fontSize = '0.85em';
   label.style.marginTop = '0.1em';
+  label.style.lineHeight = '1';
   btn.appendChild(label);
 
-  // Klick-Handler: Wechselt zum nächsten Spieler
+  // State: 0 = Würfeln, 1 = Spielerwechsel
+  let state = 0;
+  function updatePlayerSwitchLabel() {
+    if (state === 0) {
+      emoji.textContent = '🎲';
+      label.textContent = 'Würfeln';
+    } else {
+      emoji.textContent = '🔄';
+      const idx = getActivePlayerIdx();
+      const nextIdx = (idx + 1) % players.length;
+      label.textContent = players[nextIdx].name;
+    }
+  }
+  updatePlayerSwitchLabel();
+
+  // Klick-Handler: Erst würfeln, dann Spielerwechsel
   btn.onclick = () => {
-    const idx = getActivePlayerIdx();
-    const nextIdx = (idx + 1) % players.length;
-    setActivePlayerIdx(nextIdx);
+    if (state === 0) {
+      // RICHTIGE Würfelfunktion wie im Würfeln-Button aus main.js
+      if (typeof window.throwPhysicsDice === 'function' && typeof window.scene !== 'undefined') {
+        window.throwPhysicsDice(window.scene);
+        if (typeof window.setDiceResultFromPhysics === 'function') {
+          // Ergebnis-Callback bleibt wie gehabt
+        }
+      } else {
+        // Fallback: Dummy-Logik
+        console.log('Würfeln! (Hier eigene Würfelfunktion einbauen)');
+      }
+      state = 1;
+      updatePlayerSwitchLabel();
+    } else {
+      const idx = getActivePlayerIdx();
+      const nextIdx = (idx + 1) % players.length;
+      setActivePlayerIdx(nextIdx);
+      state = 0;
+      updatePlayerSwitchLabel();
+    }
   };
+
   // Button in das gewünschte Parent-Element einfügen (z.B. Action Bar)
   if (parent) {
     parent.appendChild(btn);

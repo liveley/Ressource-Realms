@@ -1,3 +1,4 @@
+// === UI: Würfeln-Button ===
 // modules/uiDice.js
 // Würfel-UI für Catan 3D
 
@@ -13,19 +14,46 @@ export function createDiceUI(onRoll, parent) {
   diceUI.style.display = 'flex';
   diceUI.style.flexDirection = 'column';
   diceUI.style.alignItems = 'center';
-  // Kein position: absolute mehr!
+  diceUI.style.justifyContent = 'flex-end';
+  diceUI.style.margin = '0';
+  diceUI.style.padding = '0';
+  diceUI.style.boxSizing = 'border-box';
 
-  diceUI.innerHTML = `
-    <button id="roll-dice" style="
-      font-size: 2.5em;
-      padding: 0.4em;
-      margin-bottom: 0.5em;
-      cursor: pointer;
-      border-radius: 6px;
-      aspect-ratio: auto;
-    ">🎲</button>
-    <div id="dice-result" style="color: #fff; font-size: 2em; min-width: 2em; min-height: 1.5em; text-shadow: 0 2px 8px #000; font-family: 'Montserrat', Arial, sans-serif; display: inline-block; margin-left: 1em; vertical-align: middle;"></div>
-  `;
+  // Ergebnis über dem Button
+  const resultDiv = document.createElement('div');
+  resultDiv.id = 'dice-result';
+  resultDiv.style.color = '#fff';
+  resultDiv.style.fontSize = '2em';
+  resultDiv.style.minWidth = '2em';
+  resultDiv.style.minHeight = '1.5em';
+  resultDiv.style.textShadow = '0 2px 8px #000';
+  resultDiv.style.fontFamily = "'Montserrat', Arial, sans-serif";
+  resultDiv.style.display = 'block';
+  resultDiv.style.marginBottom = '0.3em';
+  resultDiv.style.textAlign = 'center';
+
+  // Button wie die anderen Action-Buttons
+  const diceButton = document.createElement('button');
+  diceButton.id = 'roll-dice';
+  diceButton.style.fontSize = '2.5em';
+  diceButton.style.padding = '0.4em';
+  diceButton.style.margin = '0';
+  diceButton.style.cursor = 'pointer';
+  diceButton.style.borderRadius = '6px';
+  diceButton.style.aspectRatio = 'auto';
+  diceButton.textContent = '🎲';
+
+  diceUI.appendChild(resultDiv);
+  diceUI.appendChild(diceButton);
+
+  if (parent) {
+    parent.appendChild(diceUI);
+  } else {
+    document.body.appendChild(diceUI);
+  }
+
+  diceBtn = diceButton;
+  diceResult = resultDiv;
 
   // ZUERST ins DOM einfügen, dann erst getElementById!
   if (parent) {

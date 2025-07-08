@@ -1,3 +1,4 @@
+// === UI: Spieler-Übersicht (oben links) ===
 // ui_general.js
 // Zeigt zwei kompakte Spieler-Overviews mit Avatar-Kreis in Spielerfarbe, Name und einer kompakten Wertezeile
 // Wertezeile enthält: Siegpunkte, Straßen, Siedlungen, Städte, Ressourcenkarten, Entwicklungskarten
