@@ -29,7 +29,7 @@ export function createMainMenuSidebar() {
   sidebar.style.top = '0';
   sidebar.style.bottom = '0';
   sidebar.style.width = 'min(38vw, 340px)';
-  sidebar.style.zIndex = '10';
+  sidebar.style.zIndex = '9999';
   sidebar.style.background = 'linear-gradient(135deg, #f4e2d8 0%, #ba5370 100%)';
   sidebar.style.pointerEvents = 'none';
   sidebar.style.overflow = 'hidden';
@@ -51,9 +51,17 @@ export function createMainMenuSidebar() {
 
   // Container für alle Hexes (absolute Positionierung)
   const hexContainer = document.createElement('div');
-  hexContainer.style.position = 'relative';
+  hexContainer.style.position = 'absolute';
+  // Berechne die benötigte Höhe für das Hexfeld-Layout
+  const maxQ = Math.max(...hexCoords.map(([q, _]) => q));
+  const maxR = Math.max(...hexCoords.map(([_, r]) => r));
+  const layoutHeight = (maxR - minR) * (hexHeight * 0.75 + gap * 0.25) + hexHeight;
+  hexContainer.style.height = layoutHeight + 'px';
   hexContainer.style.width = '100%';
-  hexContainer.style.height = '100%';
+  hexContainer.style.left = '0';
+  hexContainer.style.top = '50%';
+  hexContainer.style.transform = 'translateY(-50%)';
+  // Kein margin, keine Zentrierung mehr, Hexfeld beginnt links
 
   // Hilfsfunktion: axiale Koordinaten zu Pixel
   function axialToPixel(q, r) {
