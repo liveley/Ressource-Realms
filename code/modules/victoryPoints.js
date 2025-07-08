@@ -629,16 +629,14 @@ export function playKnight(player, allPlayers) {
  * @returns {boolean} True if player has won
  */
 export function checkWinCondition(player) {
-  // Prevent multiple win triggers
-  if (typeof window !== 'undefined' && window.gameWon) {
-    return false;
-  }
-  
   const totalVP = calculateVictoryPoints(player, true);
   
   if (totalVP >= 10) {
-    // Set immediately to prevent race conditions
+    // Atomically check and set to prevent race conditions
     if (typeof window !== 'undefined') {
+      if (window.gameWon) {
+        return false; // Another player already won
+      }
       window.gameWon = true;
     }
     // Player has won!
