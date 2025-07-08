@@ -32,7 +32,7 @@ export function createMainMenuSidebar() {
     [terrainColors.field, terrainColors.mountain]
   ];
 
-  const seaColors = ['#256D9B', '#2F7AA8', '#4B94C2', '#6BB1D5', '#91CBE8', '#B2E1F6'];
+  const seaColors = ['#387FAC', '#2F7AA8', '#4B94C2', '#6BB1D5', '#91CBE8', '#B2E1F6'];
   const seaOpacity = [0.8, 0.6, 0.5, 0.4, 0.3, 0.2];
 
   const sidebar = document.createElement('div');
@@ -91,7 +91,7 @@ export function createMainMenuSidebar() {
       quitHex.style.transform = 'translateY(-50%)';
       quitHex.style.width = `${hexWidth}px`;
       quitHex.style.height = `${hexHeight}px`;
-      quitHex.style.background = terrainColors.hill;
+      quitHex.style.background = seaColors[2]; // Meerhex-Farbe
       quitHex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
       quitHex.style.boxShadow = '0 2px 12px #0002';
       quitHex.style.pointerEvents = 'auto';
@@ -102,7 +102,21 @@ export function createMainMenuSidebar() {
       quitHex.style.justifyContent = 'center';
       quitHex.style.cursor = 'pointer';
       quitHex.id = 'quit-game-hex';
-      quitHex.innerHTML = '<span style="color: white; font-family: \'Montserrat\', sans-serif; font-weight: bold; font-size: 40px; line-height: 1; text-align: center;">Spiel<br>beenden</span>';
+      quitHex.innerHTML = `
+        <span style="
+          color: #ffffff !important;
+          font-family: 'Montserrat', sans-serif;
+          font-weight: bold;
+          font-size: 32px;
+          line-height: 1;
+          text-align: center;
+          background: transparent !important;
+          text-shadow: none !important;
+          border: none !important;
+          outline: none !important;
+          text-decoration: none !important;
+        ">Spiel<br>beenden</span>
+      `;
       quitHex.onclick = () => {
         window.close();
       };
@@ -116,7 +130,7 @@ export function createMainMenuSidebar() {
       startHex.style.transform = 'translateY(-50%)';
       startHex.style.width = `${hexWidth}px`;
       startHex.style.height = `${hexHeight}px`;
-      startHex.style.background = terrainColors.forest;
+      startHex.style.background = seaColors[4]; // Meerhex-Farbe
       startHex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
       startHex.style.boxShadow = '0 2px 12px #0002';
       startHex.style.pointerEvents = 'auto';
@@ -127,7 +141,21 @@ export function createMainMenuSidebar() {
       startHex.style.justifyContent = 'center';
       startHex.style.cursor = 'pointer';
       startHex.id = 'start-game-hex';
-      startHex.innerHTML = '<span style="color: white; font-family: \'Montserrat\', sans-serif; font-weight: bold; font-size: 40px; line-height: 1; text-align: center;">Spiel<br>starten</span>';
+      startHex.innerHTML = `
+        <span style="
+          color: #ffffff !important;
+          font-family: 'Montserrat', sans-serif;
+          font-weight: bold;
+          font-size: 40px;
+          line-height: 1;
+          text-align: center;
+          background: transparent !important;
+          text-shadow: none !important;
+          border: none !important;
+          outline: none !important;
+          text-decoration: none !important;
+        ">Spiel<br>starten</span>
+      `;      
       startHex.onclick = () => {
         const menu = document.getElementById('main-menu');
         if (menu) menu.style.display = 'none';
