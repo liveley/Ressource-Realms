@@ -97,11 +97,11 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
 
     // Victory Points with new system
     let vpDisplay;
-    try {
-      vpDisplay = getVictoryPointsForDisplay(player, isActive);
-    } catch (e) {
-      console.warn('Error getting victory points display:', e);
+    if (!player) {
+      console.warn('Player object is null or undefined in UI overview');
       vpDisplay = { display: '0', hidden: 0 };
+    } else {
+      vpDisplay = getVictoryPointsForDisplay(player, isActive);
     }
     
     // Check for special achievements

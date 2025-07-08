@@ -778,6 +778,11 @@ export function getVictoryPointsBreakdown(player) {
  * Export functions for updating UI
  */
 export function getVictoryPointsForDisplay(player, isCurrentPlayer = false) {
+  if (!player) {
+    console.warn('getVictoryPointsForDisplay called with null/undefined player');
+    return { display: '0', total: 0, public: 0, hidden: 0 };
+  }
+  
   const breakdown = getVictoryPointsBreakdown(player);
   
   if (isCurrentPlayer) {

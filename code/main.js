@@ -26,6 +26,7 @@ import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
 import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
+import { createSettingsMenu } from './modules/uiSettingsMenu.js';
 import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDisplay, calculateLongestRoad } from './modules/victoryPoints.js';
 import { enableRoadDebug, disableRoadDebug, analyzePlayerRoads, testRoadConnections, toggleRoadDebugTools, isRoadDebugToolsVisible } from './modules/debugging/longestRoadDebug.js';
 import { initRoadTestingUtils } from './modules/debugging/roadTestingUtils.js';
@@ -512,7 +513,7 @@ async function startGame() {
     getActivePlayerIdx: () => activePlayerIdx,
     tryBuildSettlement,
     tryBuildCity,
-    tryBuildRoad, // <--- HINZUGEFÜGT
+    tryBuildRoad,
     getCornerWorldPosition,
     updateResourceUI: () => {
       updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
@@ -754,36 +755,6 @@ window.addEventListener('diceRolled', (e) => {
         blockDiceRolls("Platziere zuerst den Räuber");
     }
 });
-
-
-// === Build Event Handler Setup ===
-setupBuildEventHandler({
-  renderer,
-  scene,
-  camera,
-  tileMeshes,
-  players: window.players,
-  getBuildMode: () => buildMode,
-  getActivePlayerIdx: () => activePlayerIdx,
-  tryBuildSettlement,
-  tryBuildCity,
-  tryBuildRoad, // <--- HINZUGEFÜGT
-  getCornerWorldPosition,
-  updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx) // Always update for current player
-});
-
-// === Build Preview Setup ===
-setupBuildPreview(
-  renderer,
-  scene,
-  camera,
-  tileMeshes,
-  window.players,
-  () => buildMode,
-  () => activePlayerIdx,
-  tryBuildSettlement,
-  tryBuildCity
-);
 
 // === Place settlement/city mesh at corner ===
 
