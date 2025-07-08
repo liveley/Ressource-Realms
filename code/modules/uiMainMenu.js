@@ -25,22 +25,23 @@ export function createMainMenuSidebar() {
 
   const verticalOffset = hexHeight * 0.85;
   const centerOffset = (hexWidth + hexSpacing) / 2;
+  const shiftX = -(hexWidth / 2); // ganze Layout nach links verschoben
 
   // Gemutete Farbtöne für die Ressourcen
   const terrainColors = {
-    forest: '#6B8E6E',     // Wald – gedämpftes Grün
-    pasture: '#A6C48A',    // Weide – weiches Grasgrün
-    field: '#D0B763',      // Ackerland – mattes Gold
-    hill: '#C48B68',       // Hügel – warmer Sandton
-    mountain: '#888888',   // Gebirge – mittelgrau
-    desert: '#C6B198'      // Wüste – dezentes Beige
+    forest: '#6B8E6E',
+    pasture: '#A6C48A',
+    field: '#D0B763',
+    hill: '#C48B68',
+    mountain: '#888888',
+    desert: '#C6B198'
   };
 
   // Verteilung in 2-3-4-3-2 Layout (Wüste ganz links in der Mitte)
   const layout = [
     [terrainColors.field, terrainColors.mountain],
     [terrainColors.hill, terrainColors.forest, terrainColors.pasture],
-    [terrainColors.desert, terrainColors.mountain, terrainColors.field, terrainColors.pasture], // Wüste ganz links
+    [terrainColors.desert, terrainColors.mountain, terrainColors.field], // Mitte gekürzt
     [terrainColors.hill, terrainColors.forest, terrainColors.pasture],
     [terrainColors.field, terrainColors.mountain]
   ];
@@ -60,14 +61,14 @@ export function createMainMenuSidebar() {
     row.forEach((color, i) => {
       const hex = document.createElement('div');
       hex.style.position = 'absolute';
-      hex.style.left = `${xStart + i * (hexWidth + hexSpacing)}px`;
+      hex.style.left = `${xStart + i * (hexWidth + hexSpacing) + shiftX}px`;
       hex.style.top = `calc(50% + ${yOffset}px)`;
       hex.style.transform = 'translateY(-50%)';
       hex.style.width = `${hexWidth}px`;
       hex.style.height = `${hexHeight}px`;
       hex.style.background = color;
       hex.style.clipPath = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
-      hex.style.boxShadow = '0 2px 12px #0002'; // leicht reduziert für dezenteren Schatten
+      hex.style.boxShadow = '0 2px 12px #0002';
       hex.style.pointerEvents = 'auto';
       hex.style.transition = 'box-shadow 0.2s, transform 0.2s';
       hex.style.borderRadius = '12px';
