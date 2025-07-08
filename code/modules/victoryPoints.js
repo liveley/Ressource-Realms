@@ -17,6 +17,10 @@ const MIN_KNIGHTS_FOR_LARGEST_ARMY = 3;
 const LONGEST_ROAD_VICTORY_POINTS = 2;
 const LARGEST_ARMY_VICTORY_POINTS = 2;
 
+// Coordinate system constants
+const FLOAT_TOLERANCE = 0.001; // For floating point comparisons in world coordinates
+const HEX_SIZE = 1.0; // Hex tile size for world coordinate conversion
+
 // Debug logging helper
 function debugLog(...args) {
   if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
@@ -215,13 +219,13 @@ function areRoadsConnected(road1, road2) {
 }
 
 /**
- * Check if two vertices are at the same location
- * @param {Object} v1 - First vertex
- * @param {Object} v2 - Second vertex
+ * Check if two vertices are at the same location (hex coordinates)
+ * @param {Object} v1 - First vertex {q, r, corner}
+ * @param {Object} v2 - Second vertex {q, r, corner}
  * @returns {boolean} True if vertices are at the same location
  */
 function areVerticesEqual(v1, v2) {
-  // Direct match
+  // Direct match for hex coordinates (exact integer comparison)
   if (v1.q === v2.q && v1.r === v2.r && v1.corner === v2.corner) {
     return true;
   }
@@ -235,6 +239,17 @@ function areVerticesEqual(v1, v2) {
       eq1.q === eq2.q && eq1.r === eq2.r && eq1.corner === eq2.corner
     )
   );
+}
+
+/**
+ * Check if two points are equal in world coordinates (with floating point tolerance)
+ * @param {Object} p1 - First point {x, y}
+ * @param {Object} p2 - Second point {x, y}
+ * @returns {boolean} True if points are approximately equal
+ */
+function areWorldPointsEqual(p1, p2) {
+  return Math.abs(p1.x - p2.x) < FLOAT_TOLERANCE && 
+         Math.abs(p1.y - p2.y) < FLOAT_TOLERANCE;
 }
 
 /**
@@ -400,10 +415,9 @@ function getRoadEndpoints(road) {
   ];
   
   // Scale vertices to match hex size
-  const hexSize = 1.0;
   vertices.forEach(v => {
-    v.x *= hexSize;
-    v.y *= hexSize;
+    v.x *= HEX_SIZE;
+    v.y *= HEX_SIZE;
   });
   
   // Map edge to the two vertices it connects
