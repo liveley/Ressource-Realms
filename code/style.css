@@ -71,30 +71,37 @@
 }
 
 .game-loading-spinner {
-  width: 100px;
-  height: 100px;
+  width: 110px;
+  height: 85px;
   position: relative;
   margin-bottom: 2em;
 }
 
 .game-loading-spinner .hex {
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   background: rgba(255, 224, 102, 0.3);
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   transition: background 0.18s;
 }
 
-/* 8 hexagons positioned in a mathematically perfect circle, center-corrected for 24x24px */
-.game-loading-spinner .hex:nth-child(1) { left: 38px; top: -4px; }
-.game-loading-spinner .hex:nth-child(2) { left: 68px; top: 8px; }
-.game-loading-spinner .hex:nth-child(3) { left: 80px; top: 38px; }
-.game-loading-spinner .hex:nth-child(4) { left: 68px; top: 68px; }
-.game-loading-spinner .hex:nth-child(5) { left: 38px; top: 80px; }
-.game-loading-spinner .hex:nth-child(6) { left: 8px; top: 68px; }
-.game-loading-spinner .hex:nth-child(7) { left: -4px; top: 38px; }
-.game-loading-spinner .hex:nth-child(8) { left: 8px; top: 8px; }
+/* 7 hexagons in authentic Catan board layout: 2-3-2 formation with offset rows */
+/* Top row (2 hexagons, offset) */
+.game-loading-spinner .hex:nth-child(1) { left: 32px; top: 5px; }     /* Top-Left */
+.game-loading-spinner .hex:nth-child(2) { left: 60px; top: 5px; }     /* Top-Right */
+
+/* Middle row (3 hexagons, center line) */
+.game-loading-spinner .hex:nth-child(3) { left: 18px; top: 30px; }    /* Middle-Left */
+.game-loading-spinner .hex:nth-child(4) { left: 46px; top: 30px; }    /* Middle-Center (desert) */
+.game-loading-spinner .hex:nth-child(5) { left: 74px; top: 30px; }    /* Middle-Right */
+
+/* Bottom row (2 hexagons, offset like top row) */
+.game-loading-spinner .hex:nth-child(6) { left: 32px; top: 55px; }    /* Bottom-Left */
+.game-loading-spinner .hex:nth-child(7) { left: 60px; top: 55px; }    /* Bottom-Right */
+
+/* Hide the 8th hexagon as we only need 7 for authentic Catan layout */
+.game-loading-spinner .hex:nth-child(8) { display: none; }
 
 .game-loading-text {
   font-size: 1.3em;
