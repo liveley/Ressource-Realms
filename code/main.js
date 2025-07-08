@@ -14,7 +14,7 @@ import { createResourceUI, updateResourceUI, handleResourceKeydown } from './mod
 import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
 import { initTileInfoOverlay } from './modules/uiTileInfo.js';
 import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, handleTileSelection, isInRobberPlacementMode, getTileCenter } from './modules/bandit.js';
-import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad, initializeInitialPlacement, getGamePhaseInfo, getCurrentPlayerPlacementInfo } from './modules/buildLogic.js';
+import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad, initializeInitialPlacement, getGamePhaseInfo, getCurrentPlayerPlacementInfo, undoLastInitialPlacement, getInitialPlacementUIState, getPlacementWarning } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import CardManager from './modules/cards.js';
@@ -75,6 +75,8 @@ window.getVictoryPointsForDisplay = getVictoryPointsForDisplay;
 // Make game phase functions available globally
 window.getGamePhaseInfo = getGamePhaseInfo;
 window.getCurrentPlayerPlacementInfo = getCurrentPlayerPlacementInfo;
+window.undoLastInitialPlacement = undoLastInitialPlacement;
+window.getInitialPlacementUIState = getInitialPlacementUIState;
 
 window.updateResourceUI = updateResourceUI;
 
@@ -130,6 +132,19 @@ function updateGameStatusDisplay() {
     html += `<strong>Aktueller Spieler:</strong><br>`;
     html += `Siedlungen: ${currentPlayerInfo.settlements}<br>`;
     html += `Straßen: ${currentPlayerInfo.roads}`;
+    
+    // Add undo button if available
+    if (currentPlayerInfo.canUndo) {
+      const lastAction = currentPlayerInfo.lastAction;
+      const actionName = lastAction ? 
+        (lastAction.type === 'settlements' ? 'Siedlung' : 'Straße') : 
+        'letzte Aktion';
+      
+      html += `<br><button onclick="performUndo()" style="margin-top: 5px; background-color: #ff6b6b; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">`;
+      html += `🔄 ${actionName} rückgängig`;
+      html += `</button>`;
+    }
+    
     html += `</div>`;
   }
   
@@ -385,7 +400,7 @@ async function startGame() {
     emoji.style.lineHeight = '1';
     btn.appendChild(emoji);
 
-    // Label entfernt - nur noch Emoji wird angezeigt
+    // Label entfernt - nur noch Emoji
 
     // Dummy-UI für das Würfelergebnis (wie dice-result), aber außerhalb des Buttons
     let resultDiv = document.getElementById('dice-result');
@@ -821,3 +836,31 @@ window.getAllPlayers = function() {
 };
 
 window.startRobberPlacement = startRobberPlacement;
+
+// === Undo Functionality ===
+function performUndo() {
+  if (typeof undoLastInitialPlacement === 'function') {
+    const result = undoLastInitialPlacement(activePlayerIdx, players);
+    
+    if (result.success) {
+      console.log('Undo successful:', result.message);
+      showBuildPopupFeedback(result.message, 'success');
+      
+      // Update all visual elements
+      updateAllUI();
+      
+      // Refresh the game board to reflect changes
+      if (typeof window.refreshGameBoard === 'function') {
+        window.refreshGameBoard();
+      }
+    } else {
+      console.log('Undo failed:', result.reason);
+      showBuildPopupFeedback(result.reason, 'error');
+    }
+  } else {
+    showBuildPopupFeedback('Undo-Funktion nicht verfügbar', 'error');
+  }
+}
+
+// Make undo function globally available
+window.performUndo = performUndo;
