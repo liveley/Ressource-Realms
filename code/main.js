@@ -26,6 +26,9 @@ import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
 import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
 import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
+
+import { createMainMenuSidebar } from './modules/uiMainMenu.js';
+
 import { createSettingsMenu } from './modules/uiSettingsMenu.js';
 import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDisplay, calculateLongestRoad } from './modules/victoryPoints.js';
 import { enableRoadDebug, disableRoadDebug, analyzePlayerRoads, testRoadConnections, toggleRoadDebugTools, isRoadDebugToolsVisible } from './modules/debugging/longestRoadDebug.js';
@@ -33,6 +36,7 @@ import { initRoadTestingUtils } from './modules/debugging/roadTestingUtils.js';
 import { initDebugKeyHandlers } from './modules/debugging/debugKeyHandlers.js';
 import { initDebugControls } from './modules/debugging/debugControls.js';
 import { initVictoryPointsTestingUtils } from './modules/debugging/victoryPointsTestingUtils.js';
+
 
 window.players = window.players || [
   {
@@ -574,17 +578,25 @@ console.log('Victory Points testing utilities initialized.');
 /*
 window.addEventListener('DOMContentLoaded', () => {
   console.log('DOM geladen, versuche Start-Button-Handler zu setzen...');
+  // Sidebar anzeigen
+  createMainMenuSidebar();
   const menu = document.getElementById('main-menu');
   const startBtn = document.getElementById('start-game');
   if (startBtn) {
     console.log('Start-Button gefunden und Handler gesetzt.');
     startBtn.onclick = () => {
       console.log('Start-Button wurde geklickt!');
+<<<<<<< code/main.js
+      if (menu) menu.style.display = 'none';
+      // Sidebar ausblenden, wenn Spiel startet
+      import('./modules/uiMainMenu.js').then(mod => mod.removeMainMenuSidebar());
+=======
       if (menu) {
         console.log('Menu wird ausgeblendet...');
         menu.style.display = 'none';
       }
       console.log('Rufe startGame() auf...');
+>>>>>>> code/main.js
       startGame();
     };
   } else {

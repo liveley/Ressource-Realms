@@ -8,7 +8,7 @@
   ...
 }/* Enhanced main menu styles */
 #main-menu {
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 50%, rgba(15, 52, 96, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(15, 52, 96, 0.95) 0%, rgba(22, 33, 62, 0.95) 50%, rgba(15, 52, 96, 0.95) 100%);
   backdrop-filter: blur(10px);
 }
 
@@ -80,29 +80,36 @@
 
 .game-loading-spinner {
   width: 100px;
-  height: 100px;
+  height: 80px;
   position: relative;
   margin-bottom: 2em;
 }
 
 .game-loading-spinner .hex {
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   background: rgba(255, 224, 102, 0.3);
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   transition: background 0.18s;
 }
 
-/* 8 hexagons positioned in a mathematically perfect circle, center-corrected for 24x24px */
-.game-loading-spinner .hex:nth-child(1) { left: 38px; top: -4px; }
-.game-loading-spinner .hex:nth-child(2) { left: 68px; top: 8px; }
-.game-loading-spinner .hex:nth-child(3) { left: 80px; top: 38px; }
-.game-loading-spinner .hex:nth-child(4) { left: 68px; top: 68px; }
-.game-loading-spinner .hex:nth-child(5) { left: 38px; top: 80px; }
-.game-loading-spinner .hex:nth-child(6) { left: 8px; top: 68px; }
-.game-loading-spinner .hex:nth-child(7) { left: -4px; top: 38px; }
-.game-loading-spinner .hex:nth-child(8) { left: 8px; top: 8px; }
+/* 6 hexagons in tight formation without center - no gaps between hexagons */
+/* Arranged for circular animation: Top-Left -> Top-Right -> Middle-Right -> Bottom-Right -> Bottom-Left -> Middle-Left */
+
+/* Top row (2 hexagons, with small gap) */
+.game-loading-spinner .hex:nth-child(1) { left: 35px; top: 18px; }    /* Top-Left (start of circle) */
+.game-loading-spinner .hex:nth-child(2) { left: 65px; top: 18px; }    /* Top-Right */
+
+/* Middle row (2 hexagons, sides only, with small gap like other rows) */
+.game-loading-spinner .hex:nth-child(3) { left: 79px; top: 40px; }    /* Middle-Right */
+.game-loading-spinner .hex:nth-child(4) { left: 65px; top: 62px; }    /* Bottom-Right */
+.game-loading-spinner .hex:nth-child(5) { left: 35px; top: 62px; }    /* Bottom-Left */
+.game-loading-spinner .hex:nth-child(6) { left: 21px; top: 40px; }    /* Middle-Left */
+
+/* Hide the center hexagon and 8th hexagon - animation only runs on outer ring */
+.game-loading-spinner .hex:nth-child(7) { display: none; }    /* Center (desert) - hidden */
+.game-loading-spinner .hex:nth-child(8) { display: none; }
 
 .game-loading-text {
   font-size: 1.3em;
