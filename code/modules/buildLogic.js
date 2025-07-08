@@ -46,6 +46,8 @@ export function canBuildRoad(player) {
 
 // Siedlung bauen (ohne Platzierungslogik)
 export function buildSettlement(player, q, r, corner) {
+  // Ensure VP system is initialized for this player
+  initializeVictoryPoints([player]);
   // Defensive programming: ensure settlements array exists
   if (!player.settlements) player.settlements = [];
   
@@ -62,6 +64,8 @@ export function buildSettlement(player, q, r, corner) {
 
 // Stadt bauen (Upgrade)
 export function buildCity(player, q, r, corner) {
+  // Ensure VP system is initialized for this player
+  initializeVictoryPoints([player]);
   // Defensive programming: ensure arrays exist
   if (!player.settlements) player.settlements = [];
   if (!player.cities) player.cities = [];
@@ -375,6 +379,8 @@ function neighborAxial(q, r, edge) {
 }
 
 export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
+  // Ensure VP system is initialized for this player
+  initializeVictoryPoints([player]);
   // Limit: Maximal 15 Straßen pro Spieler
   if (player.roads && player.roads.length >= 15) {
     return { success: false, reason: 'Du hast keine Straßen mehr übrig (Limit: 15)' };
