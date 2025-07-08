@@ -295,6 +295,10 @@ async function startGame() {
     });
     
     console.log('Turn-Controller Setup abgeschlossen');
+    
+    // Initialize game in setup phase
+    resetToStart();
+    console.log('Game initialized in setup phase');
   } catch (e) {
     console.error('Fehler beim Erstellen der Turn-UI:', e);
   }

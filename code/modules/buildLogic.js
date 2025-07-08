@@ -8,6 +8,7 @@ export const players = [
     color: 0xd7263d,
     settlements: [], // {q, r, corner}
     cities: [],      // {q, r, corner}
+    roads: [],       // {q, r, edge}
     resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
   },
   {
@@ -15,6 +16,7 @@ export const players = [
     color: 0x277da1,
     settlements: [],
     cities: [],
+    roads: [],       // {q, r, edge}
     resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
   }
 ];
@@ -408,4 +410,210 @@ export function canPlaceRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
   return { success: true };
 }
 
-// TODO: UI-Integration
+// === SETUP PHASE LOGIC ===
+import { 
+  isInSetupPhase, 
+  getCurrentSetupRound, 
+  recordSetupAction, 
+  canBuildInSetupPhase,
+  isSetupPhaseSecondRound 
+} from './turnController.js';
+
+// Check if settlement placement follows setup rules
+export function isValidSetupSettlementPlacement(player, q, r, corner, allPlayers) {
+  if (!isInSetupPhase()) {
+    // Regular game rules apply
+    return canPlaceSettlement(player, q, r, corner, allPlayers, {
+      requireRoad: true,
+      ignoreDistanceRule: false,
+      ignoreResourceRule: false
+    });
+  }
+  
+  // Setup phase rules:
+  // 1. No resource cost
+  // 2. No road requirement
+  // 3. Distance rule still applies
+  // 4. Must be on land
+  
+  if (!hasAtLeastOneLandTileAdjacent(q, r, corner)) {
+    return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
+  }
+  
+  // Check if position is occupied
+  const equivalents = getEquivalentCorners(q, r, corner);
+  for (const other of allPlayers) {
+    for (const eq of equivalents) {
+      if (
+        other.settlements.some(s => s.q === eq.q && s.r === eq.r && s.corner === eq.corner) ||
+        other.cities.some(c => c.q === eq.q && c.r === eq.r && c.corner === eq.corner)
+      ) {
+        return { success: false, reason: 'Hier steht bereits eine Siedlung/Stadt' };
+      }
+    }
+  }
+  
+  // Distance rule applies in setup phase
+  if (!isSettlementPlacementValid(q, r, corner, allPlayers)) {
+    return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+  }
+  
+  return { success: true };
+}
+
+// Check if road placement follows setup rules  
+export function isValidSetupRoadPlacement(player, q, r, edge, allPlayers) {
+  if (!isInSetupPhase()) {
+    // Regular game rules apply
+    return canPlaceRoad(player, q, r, edge, allPlayers, { ignoreResourceRule: false });
+  }
+  
+  // Setup phase rules:
+  // 1. No resource cost
+  // 2. Must connect to player's most recently placed settlement
+  // 3. Must be on land
+  // 4. Cannot be occupied
+  
+  // Check if on land
+  const [nq, nr] = neighborAxial(q, r, edge);
+  if (!isLandTile(q, r) && !isLandTile(nq, nr)) {
+    return { success: false, reason: 'Straßenbau auf Wasser nicht erlaubt' };
+  }
+  
+  // Check if occupied
+  if (isRoadOccupied(q, r, edge, allPlayers)) {
+    return { success: false, reason: 'Hier liegt schon eine Straße' };
+  }
+  
+  // Check connectivity to player's latest settlement
+  if (!isRoadConnectedToLatestSettlement(player, q, r, edge)) {
+    return { success: false, reason: 'Straße muss an deine letzte Siedlung anschließen' };
+  }
+  
+  return { success: true };
+}
+
+// Helper: Check if road connects to player's most recently placed settlement
+function isRoadConnectedToLatestSettlement(player, q, r, edge) {
+  if (!player.settlements || player.settlements.length === 0) {
+    return false;
+  }
+  
+  // Get the most recently placed settlement
+  const latestSettlement = player.settlements[player.settlements.length - 1];
+  
+  // Check if the road connects to this settlement
+  const roadCorners = [
+    { q, r, corner: edge },
+    { q, r, corner: (edge + 1) % 6 }
+  ];
+  
+  // Get all equivalent corners for the latest settlement
+  const settlementEquivalents = getEquivalentCorners(
+    latestSettlement.q, 
+    latestSettlement.r, 
+    latestSettlement.corner
+  );
+  
+  // Check if any road corner matches any settlement equivalent
+  for (const roadCorner of roadCorners) {
+    for (const settlementEq of settlementEquivalents) {
+      if (roadCorner.q === settlementEq.q && 
+          roadCorner.r === settlementEq.r && 
+          roadCorner.corner === settlementEq.corner) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+// Setup-specific settlement building function
+export function tryBuildSetupSettlement(player, q, r, corner, allPlayers) {
+  // Validate build action is allowed in current phase
+  if (!canBuildInSetupPhase('settlement')) {
+    return { success: false, reason: 'Siedlungen können in dieser Phase nicht gebaut werden' };
+  }
+  
+  // Check settlement limit
+  if (player.settlements && player.settlements.length >= 5) {
+    return { success: false, reason: 'Du hast keine Siedlungen mehr übrig (Limit: 5)' };
+  }
+  
+  // Validate placement
+  const validation = isValidSetupSettlementPlacement(player, q, r, corner, allPlayers);
+  if (!validation.success) {
+    return validation;
+  }
+  
+  // Build the settlement (no resource cost in setup)
+  buildSettlement(player, q, r, corner);
+  
+  // In second round, player gets resources from adjacent tiles
+  if (isSetupPhaseSecondRound()) {
+    giveInitialResources(player, q, r, corner);
+  }
+  
+  // Record the action and advance the phase
+  recordSetupAction('settlement');
+  
+  return { success: true };
+}
+
+// Setup-specific road building function
+export function tryBuildSetupRoad(player, q, r, edge, allPlayers) {
+  // Validate build action is allowed in current phase
+  if (!canBuildInSetupPhase('road')) {
+    return { success: false, reason: 'Straßen können in dieser Phase nicht gebaut werden' };
+  }
+  
+  // Check road limit
+  if (player.roads && player.roads.length >= 15) {
+    return { success: false, reason: 'Du hast keine Straßen mehr übrig (Limit: 15)' };
+  }
+  
+  // Validate placement
+  const validation = isValidSetupRoadPlacement(player, q, r, edge, allPlayers);
+  if (!validation.success) {
+    return validation;
+  }
+  
+  // Build the road (no resource cost in setup)
+  if (!player.roads) player.roads = [];
+  
+  const [nq_road, nr_road] = neighborAxial(q, r, edge);
+  player.roads.push({
+    q1: q, r1: r, corner1: edge,
+    q2: nq_road, r2: nr_road, corner2: (edge + 3) % 6,
+    q, r, edge // optional, falls noch woanders genutzt
+  });
+  
+  // Record the action and advance the phase
+  recordSetupAction('road');
+  
+  return { success: true };
+}
+
+// Give initial resources for second settlement placement
+function giveInitialResources(player, q, r, corner) {
+  // Get all tiles adjacent to this corner
+  const adjacentTiles = getTilesAdjacentToCorner(q, r, corner);
+  
+  for (const tile of adjacentTiles) {
+    // Check if tile exists and has a resource type
+    if (window.tileMeshes && window.tileMeshes[`${tile.q},${tile.r}`]) {
+      const mesh = window.tileMeshes[`${tile.q},${tile.r}`];
+      const resourceType = mesh.userData?.type;
+      
+      // Give resource if it's a valid resource type (not water, desert, etc.)
+      if (resourceType && ['wood', 'clay', 'wheat', 'sheep', 'ore'].includes(resourceType)) {
+        if (window.bank && window.bank[resourceType] > 0) {
+          player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
+          window.bank[resourceType]--;
+          console.log(`Player ${player.name} received ${resourceType} from initial settlement`);
+        }
+      }
+    }
+  }
+}

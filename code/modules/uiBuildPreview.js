@@ -2,10 +2,10 @@
 // Vorschau-Piece für Siedlung/Stadt beim Hover auf dem Spielfeld
 import * as THREE from 'three';
 import { getCornerWorldPosition } from './game_board.js';
-import { canPlaceSettlement, canPlaceCity, canPlaceRoad } from './buildLogic.js';
+import { canPlaceSettlement, canPlaceCity, canPlaceRoad, isValidSetupSettlementPlacement, isValidSetupRoadPlacement } from './buildLogic.js';
 import { placeRoadMesh } from './gamePieces.js';
 import { isBuildEnabled } from './uiBuild.js';
-import { getActivePlayerIdx } from './turnController.js';
+import { getActivePlayerIdx, getCurrentPhase, TURN_PHASES } from './turnController.js';
 
 let previewMesh = null;
 
@@ -69,6 +69,14 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
     }
     const buildMode = getBuildMode();
     const player = players[getActivePlayerIdx()];
+    const currentPhase = getCurrentPhase();
+    const isSetupPhase = [
+      TURN_PHASES.SETUP_SETTLEMENT_1,
+      TURN_PHASES.SETUP_SETTLEMENT_2,
+      TURN_PHASES.SETUP_ROAD_1,
+      TURN_PHASES.SETUP_ROAD_2
+    ].includes(currentPhase);
+    
     let canBuild = false;
     let previewType = buildMode;
     let previewParams = {};
@@ -76,8 +84,14 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
     let shouldShowPreview = true; // New flag to control preview visibility
     
     if (buildMode === 'settlement') {
-      // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
-      const res = canPlaceSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: false });
+      let res;
+      if (isSetupPhase) {
+        // Use setup-specific validation
+        res = isValidSetupSettlementPlacement(player, q, r, nearest, players);
+      } else {
+        // Regular settlement validation
+        res = canPlaceSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: false });
+      }
       canBuild = res.success;
       
       // Don't show preview if no land tile adjacent
@@ -85,12 +99,18 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
         shouldShowPreview = false;
       }
     } else if (buildMode === 'city') {
-      const res = canPlaceCity(player, q, r, nearest);
-      canBuild = res.success;
-      
-      // Don't show preview if no land tile adjacent
-      if (res.reason === 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)') {
+      if (isSetupPhase) {
+        // Cities can't be built in setup phase
+        canBuild = false;
         shouldShowPreview = false;
+      } else {
+        const res = canPlaceCity(player, q, r, nearest);
+        canBuild = res.success;
+        
+        // Don't show preview if no land tile adjacent
+        if (res.reason === 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)') {
+          shouldShowPreview = false;
+        }
       }
     } else if (buildMode === 'road') {
       // Finde die nächste Kante (edge) zur Mausposition
@@ -106,7 +126,15 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
         removePreviewMesh(scene, renderer, camera);
         return;
       }
-      const res = canPlaceRoad(player, q, r, nearestEdge, players);
+      
+      let res;
+      if (isSetupPhase) {
+        // Use setup-specific validation
+        res = isValidSetupRoadPlacement(player, q, r, nearestEdge, players);
+      } else {
+        // Regular road validation
+        res = canPlaceRoad(player, q, r, nearestEdge, players);
+      }
       canBuild = res.success;
       previewType = 'road';
       previewParams = { q, r, edge: nearestEdge };

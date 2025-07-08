@@ -3,7 +3,7 @@
 // Übergibt buildMode- und activePlayerIdx-Setter als Callback-Parameter
 
 import { showPlayerSwitchButton } from './change_player.js';
-import { canBuild, onPhaseChange } from './turnController.js';
+import { canBuild, onPhaseChange, getCurrentPhase, TURN_PHASES } from './turnController.js';
 
 // Statt globale Variablen: Pro Instanz speichern
 const buildInstances = new Map();
@@ -65,6 +65,60 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     }
   }
 
+  // Update button state based on current phase
+  function updateBuildMenuButtons() {
+    if (!buildMenu) return;
+    
+    const currentPhase = getCurrentPhase();
+    const isSetupPhase = [
+      TURN_PHASES.SETUP_SETTLEMENT_1,
+      TURN_PHASES.SETUP_SETTLEMENT_2,
+      TURN_PHASES.SETUP_ROAD_1,
+      TURN_PHASES.SETUP_ROAD_2
+    ].includes(currentPhase);
+    
+    const roadBtn = buildMenu.querySelector('#build-road');
+    const settlementBtn = buildMenu.querySelector('#build-settlement');
+    const cityBtn = buildMenu.querySelector('#build-city');
+    
+    if (isSetupPhase) {
+      // In setup phase, only allow building what's required for current phase
+      const isSettlementPhase = currentPhase === TURN_PHASES.SETUP_SETTLEMENT_1 || 
+                               currentPhase === TURN_PHASES.SETUP_SETTLEMENT_2;
+      const isRoadPhase = currentPhase === TURN_PHASES.SETUP_ROAD_1 || 
+                         currentPhase === TURN_PHASES.SETUP_ROAD_2;
+      
+      if (roadBtn) {
+        roadBtn.disabled = !isRoadPhase;
+        roadBtn.style.opacity = isRoadPhase ? '1' : '0.5';
+      }
+      if (settlementBtn) {
+        settlementBtn.disabled = !isSettlementPhase;
+        settlementBtn.style.opacity = isSettlementPhase ? '1' : '0.5';
+      }
+      if (cityBtn) {
+        cityBtn.disabled = true;
+        cityBtn.style.opacity = '0.5';
+        cityBtn.title = 'Städte können nicht in der Aufbauphase gebaut werden';
+      }
+    } else {
+      // Regular play - all buttons enabled
+      if (roadBtn) {
+        roadBtn.disabled = false;
+        roadBtn.style.opacity = '1';
+      }
+      if (settlementBtn) {
+        settlementBtn.disabled = false;
+        settlementBtn.style.opacity = '1';
+      }
+      if (cityBtn) {
+        cityBtn.disabled = false;
+        cityBtn.style.opacity = '1';
+        cityBtn.title = '';
+      }
+    }
+  }
+
   // Verbesserte updateBuildButtonState Funktion
   function updateBuildButtonState() {
     if (!buildToggleBtn) return;
@@ -89,6 +143,9 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
         console.log('Build-UI: Menü automatisch geschlossen (Phase nicht erlaubt)');
       }
     }
+    
+    // Update menu buttons when build state changes
+    updateBuildMenuButtons();
   }
 
   // Event-Listener für Phasen-Updates
@@ -116,21 +173,39 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   const roadBtn = document.createElement('button');
   roadBtn.id = 'build-road';
   roadBtn.textContent = 'Straße bauen';
-  roadBtn.onclick = () => setBuildMode('road');
+  roadBtn.onclick = () => {
+    if (roadBtn.disabled) {
+      showBuildPopupFeedback('Straßen können in dieser Phase nicht gebaut werden', false);
+      return;
+    }
+    setBuildMode('road');
+  };
   buildMenu.appendChild(roadBtn);
 
   // Siedlung bauen
   const settlementBtn = document.createElement('button');
   settlementBtn.id = 'build-settlement';
   settlementBtn.textContent = 'Siedlung bauen';
-  settlementBtn.onclick = () => setBuildMode('settlement');
+  settlementBtn.onclick = () => {
+    if (settlementBtn.disabled) {
+      showBuildPopupFeedback('Siedlungen können in dieser Phase nicht gebaut werden', false);
+      return;
+    }
+    setBuildMode('settlement');
+  };
   buildMenu.appendChild(settlementBtn);
 
   // Stadt bauen
   const cityBtn = document.createElement('button');
   cityBtn.id = 'build-city';
   cityBtn.textContent = 'Stadt bauen';
-  cityBtn.onclick = () => setBuildMode('city');
+  cityBtn.onclick = () => {
+    if (cityBtn.disabled) {
+      showBuildPopupFeedback('Städte können nicht in der Aufbauphase gebaut werden', false);
+      return;
+    }
+    setBuildMode('city');
+  };
   buildMenu.appendChild(cityBtn);
 
   ui.appendChild(buildMenu);
