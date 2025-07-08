@@ -2,6 +2,8 @@ let resizeTimeout = null;
 
 export function createMainMenuSidebar() {
   removeMainMenuSidebar();
+  
+  // HTML-Titel ist bereits unsichtbar (opacity: 0) - kein zusätzliches Verstecken nötig
 
   const gap = 5;
   const hexSpacing = 20;
@@ -104,22 +106,30 @@ export function createMainMenuSidebar() {
       quitHex.id = 'quit-game-hex';
       quitHex.innerHTML = `
         <span style="
-          color: #ffffff !important;
+          color: #ffffff;
           font-family: 'Montserrat', sans-serif;
-          font-weight: bold;
-          font-size: 32px;
-          line-height: 1;
+          font-weight: 800;
+          font-size: 28px;
+          line-height: 1.1;
           text-align: center;
-          background: transparent !important;
-          text-shadow: none !important;
-          border: none !important;
-          outline: none !important;
-          text-decoration: none !important;
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+          user-select: none;
         ">Spiel<br>beenden</span>
       `;
       quitHex.onclick = () => {
         window.close();
       };
+      
+      // Hover-Effekte für bessere Sichtbarkeit
+      quitHex.addEventListener('mouseenter', () => {
+        quitHex.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+        quitHex.style.transform = 'translateY(-50%) scale(1.05)';
+      });
+      quitHex.addEventListener('mouseleave', () => {
+        quitHex.style.boxShadow = '0 2px 12px #0002';
+        quitHex.style.transform = 'translateY(-50%) scale(1)';
+      });
+      
       sidebar.appendChild(quitHex);
 
       // Start Game Button (Position 4)
@@ -143,17 +153,14 @@ export function createMainMenuSidebar() {
       startHex.id = 'start-game-hex';
       startHex.innerHTML = `
         <span style="
-          color: #ffffff !important;
+          color: #ffffff;
           font-family: 'Montserrat', sans-serif;
-          font-weight: bold;
-          font-size: 40px;
-          line-height: 1;
+          font-weight: 800;
+          font-size: 32px;
+          line-height: 1.1;
           text-align: center;
-          background: transparent !important;
-          text-shadow: none !important;
-          border: none !important;
-          outline: none !important;
-          text-decoration: none !important;
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+          user-select: none;
         ">Spiel<br>starten</span>
       `;      
       startHex.onclick = () => {
@@ -168,6 +175,17 @@ export function createMainMenuSidebar() {
           });
         }
       };
+      
+      // Hover-Effekte für bessere Sichtbarkeit
+      startHex.addEventListener('mouseenter', () => {
+        startHex.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+        startHex.style.transform = 'translateY(-50%) scale(1.05)';
+      });
+      startHex.addEventListener('mouseleave', () => {
+        startHex.style.boxShadow = '0 2px 12px #0002';
+        startHex.style.transform = 'translateY(-50%) scale(1)';
+      });
+      
       sidebar.appendChild(startHex);
     }
 
@@ -192,6 +210,49 @@ export function createMainMenuSidebar() {
       sidebar.appendChild(hex);
     }
   });
+
+  // CATAN 3D ÜBERSCHRIFT dort, wo die ersten beiden Meerhexes übersprungen werden (Reihe 1)
+  // Diese werden in der Meerhex-Schleife mit continue übersprungen
+  const titleRowIndex = 1;
+  const titleYOffset = -1 * verticalOffset; // Gleiche Y-Position wie Reihe 1
+  const titleXStart = centerOffset - (hexWidth + hexSpacing); // Gleiche xStart-Berechnung wie für Reihe 1
+  const row1Length = layout[1].length; // Anzahl der Landhexes in Reihe 1 (3)
+  
+  // Position direkt nach den Landhexes, wo die ersten beiden Meerhexes stehen würden
+  const titleLeft = titleXStart + row1Length * (hexWidth + hexSpacing) + shiftX;
+  const titleWidth = 2 * hexWidth + hexSpacing; // Breite von 2 Hex-Tiles plus Spacing
+  
+  const catanTitle = document.createElement('div');
+  catanTitle.id = 'catan-title';
+  catanTitle.style.position = 'absolute';
+  catanTitle.style.left = `${titleLeft}px`;
+  catanTitle.style.top = `calc(50% + ${titleYOffset}px)`;
+  catanTitle.style.transform = 'translateY(-50%)';
+  catanTitle.style.width = `${titleWidth}px`;
+  catanTitle.style.height = `${hexHeight}px`;
+  catanTitle.style.display = 'flex';
+  catanTitle.style.alignItems = 'center';
+  catanTitle.style.justifyContent = 'center';
+  catanTitle.style.pointerEvents = 'none';
+  catanTitle.style.zIndex = '10001'; // Über den Hex-Tiles
+  
+  catanTitle.innerHTML = `
+    <h1 id="animated-catan-title" style="
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 4.5em;
+      margin: 0;
+      text-align: center;
+      letter-spacing: 0.05em;
+      text-shadow: 0 4px 16px #000, 0 2px 0 #ffe066, 0 6px 20px #222;
+      filter: drop-shadow(0 0 12px #ffe066);
+      line-height: 1.2;
+      animation: titleGlow 2s ease-in-out infinite;
+    ">Catan 3D</h1>
+  `;
+  
+  sidebar.appendChild(catanTitle);
 
   document.body.appendChild(sidebar);
 
@@ -226,15 +287,6 @@ export function createMainMenuSidebar() {
   
   // Projektinformationen hinzufügen
   infoContainer.innerHTML = `
-    <h2 style="
-      color: white; 
-      font-family: 'Montserrat', sans-serif; 
-      font-weight: bold; 
-      font-size: 2.2em; 
-      margin: 0 0 20px 0;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-    "></h2>
-    
     <div style="
       color: #256D9B; 
       font-family: 'Montserrat', sans-serif; 
@@ -291,4 +343,14 @@ export function removeMainMenuSidebar() {
   
   const oldInfoContainer = document.getElementById('project-info-container');
   if (oldInfoContainer) oldInfoContainer.remove();
+  
+  const oldTitle = document.getElementById('catan-title');
+  if (oldTitle) oldTitle.remove();
+  
+  // HTML-Titel nur einblenden wenn wir ins Spiel wechseln (als Fallback)
+  // Nicht wenn die Sidebar nur neu erstellt wird
+  const htmlTitle = document.getElementById('main-title');
+  if (htmlTitle) {
+    htmlTitle.style.opacity = '0'; // Standardmäßig unsichtbar lassen
+  }
 }
