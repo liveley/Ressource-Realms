@@ -1,6 +1,13 @@
 // buildLogic.js
 // Zentrale Spiellogik für Siedlungen und Städte
 
+import { 
+  initializeVictoryPoints, 
+  updateLongestRoad, 
+  getCanonicalRoad,
+  updateAllVictoryPoints
+} from './victoryPoints.js';
+
 // Beispiel-Spielerstruktur (kann später erweitert werden)
 export const players = [
   {
@@ -39,18 +46,41 @@ export function canBuildRoad(player) {
 
 // Siedlung bauen (ohne Platzierungslogik)
 export function buildSettlement(player, q, r, corner) {
+  // Ensure VP system is initialized for this player
+  initializeVictoryPoints([player]);
+  // Defensive programming: ensure settlements array exists
+  if (!player.settlements) player.settlements = [];
+  
   // Nur Spielfeld-Update, KEIN Ressourcenabzug mehr!
   player.settlements.push({ q, r, corner });
+  
+  // Update victory points - use global players array with proper checks
+  if (window.players && Array.isArray(window.players)) {
+    updateAllVictoryPoints(player, window.players);
+  }
+  
   return true;
 }
 
 // Stadt bauen (Upgrade)
 export function buildCity(player, q, r, corner) {
+  // Ensure VP system is initialized for this player
+  initializeVictoryPoints([player]);
+  // Defensive programming: ensure arrays exist
+  if (!player.settlements) player.settlements = [];
+  if (!player.cities) player.cities = [];
+  
   // Nur Spielfeld-Update, KEIN Ressourcenabzug mehr!
   const idx = player.settlements.findIndex(s => s.q === q && s.r === r && s.corner === corner);
   if (idx === -1) return false;
   player.settlements.splice(idx, 1);
   player.cities.push({ q, r, corner });
+  
+  // Update victory points - use global players array with proper checks
+  if (window.players && Array.isArray(window.players)) {
+    updateAllVictoryPoints(player, window.players);
+  }
+  
   return true;
 }
 
@@ -349,6 +379,8 @@ function neighborAxial(q, r, edge) {
 }
 
 export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
+  // Ensure VP system is initialized for this player
+  initializeVictoryPoints([player]);
   // Limit: Maximal 15 Straßen pro Spieler
   if (player.roads && player.roads.length >= 15) {
     return { success: false, reason: 'Du hast keine Straßen mehr übrig (Limit: 15)' };
@@ -372,7 +404,16 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
     }
   }
   if (!player.roads) player.roads = [];
-  player.roads.push({ q, r, edge });
+  
+  // Use canonical coordinates to prevent duplicates
+  const canonicalRoad = getCanonicalRoad({ q, r, edge });
+  player.roads.push(canonicalRoad);
+  
+  // Update longest road after building - use proper parameter passed to function
+  if (allPlayers && Array.isArray(allPlayers)) {
+    updateLongestRoad(allPlayers);
+  }
+  
   return { success: true };
 }
 

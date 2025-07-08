@@ -27,6 +27,12 @@ import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debuggi
 import { createDevelopmentCardsUI } from './modules/developmentCardsUI.js';
 import { createDevelopmentDeck, initPlayerDevCards } from './modules/developmentCards.js';
 import { createSettingsMenu } from './modules/uiSettingsMenu.js';
+import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDisplay, calculateLongestRoad } from './modules/victoryPoints.js';
+import { enableRoadDebug, disableRoadDebug, analyzePlayerRoads, testRoadConnections, toggleRoadDebugTools, isRoadDebugToolsVisible } from './modules/debugging/longestRoadDebug.js';
+import { initRoadTestingUtils } from './modules/debugging/roadTestingUtils.js';
+import { initDebugKeyHandlers } from './modules/debugging/debugKeyHandlers.js';
+import { initDebugControls } from './modules/debugging/debugControls.js';
+import { initVictoryPointsTestingUtils } from './modules/debugging/victoryPointsTestingUtils.js';
 
 window.players = window.players || [
   {
@@ -34,16 +40,30 @@ window.players = window.players || [
     color: 0xd7263d,
     settlements: [],
     cities: [],
-    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
+    roads: [],
+    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 },
+    knightsPlayed: 0,
+    longestRoadLength: 0
   },
   {
     name: 'Spieler 2',
     color: 0x277da1,
     settlements: [],
     cities: [],
-    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
+    roads: [],
+    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 },
+    knightsPlayed: 0,
+    longestRoadLength: 0
   }
 ];
+
+// Initialize victory points system
+initializeVictoryPoints(window.players);
+
+// Make victory points functions available globally
+window.updateAllVictoryPoints = updateAllVictoryPoints;
+window.initializeVictoryPoints = initializeVictoryPoints;
+window.getVictoryPointsForDisplay = getVictoryPointsForDisplay;
 
 window.updateResourceUI = updateResourceUI;
 
@@ -132,11 +152,14 @@ window.addEventListener('initializeGame', async () => {
   console.log('Game initialization requested...');
   try {
     // First preload the game board
+    console.log('Starting preload...');    
     await preloadGameBoard();
     console.log('Game board preloaded, now starting UI...');
     
     // Then start the game UI
     await startGame();
+    console.log('Game UI started, dispatching gameReady event...');
+    window.dispatchEvent(new CustomEvent('gameReady'));
   } catch (error) {
     console.error('Error during game initialization:', error);
     // Still notify that we're "ready" even if there was an error
@@ -159,7 +182,10 @@ window.addEventListener('startGame', () => {
 let devCardsUI = null;
 
 async function startGame() {
-  if (gameInitialized) return;
+  if (gameInitialized) {
+    console.log('Game already initialized, returning...');
+    return;
+  }
   
   console.log('startGame() wurde aufgerufen!');
   let actionBar = document.getElementById('main-action-bar');
@@ -168,8 +194,10 @@ async function startGame() {
   console.log('Starte Spiel: Initialisiere UI...');
   
   // Show the game board
+  console.log('Zeige Spielfeld...');
   renderer.domElement.style.visibility = 'visible';
   renderer.domElement.classList.remove('board-hidden');
+  console.log('Spielfeld sollte jetzt sichtbar sein...');  
   
   try {
     // === UI: Build-Menü (Bauen) ===
@@ -435,6 +463,7 @@ async function startGame() {
         getDeck: () => window.developmentDeck,
         onBuy: () => {
           updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+          updatePlayerOverviews(window.players, () => activePlayerIdx);
         },
         getScene: () => scene,
         getTileMeshes: () => tileMeshes
@@ -484,9 +513,12 @@ async function startGame() {
     getActivePlayerIdx: () => activePlayerIdx,
     tryBuildSettlement,
     tryBuildCity,
-    tryBuildRoad, // <--- HINZUGEFÜGT
+    tryBuildRoad,
     getCornerWorldPosition,
-    updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx)
+    updateResourceUI: () => {
+      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+      updatePlayerOverviews(window.players, () => activePlayerIdx);
+    }
   });
 
   // === UI: Build-Preview (Vorschau beim Bauen) ===
@@ -506,8 +538,7 @@ async function startGame() {
   gameInitialized = true;
   console.log('Game initialization complete!');
   
-  // Notify HTML that game is ready
-  window.dispatchEvent(new CustomEvent('gameReady'));
+  // Note: gameReady event is now dispatched by the initializeGame event handler
 }
 
 // === Catan-Bank: Ressourcenlimitierung ===
@@ -523,7 +554,24 @@ window.bank = {
 window.developmentDeck = createDevelopmentDeck();
 window.players.forEach(initPlayerDevCards);
 
+// === Initialize Road Testing Utilities ===
+initRoadTestingUtils();
+console.log('Road testing utilities initialized and available in console.');
+
+// === Initialize Debug Key Handlers ===
+initDebugKeyHandlers();
+
+// === Initialize Debug Controls ===
+initDebugControls();
+console.log('Debug controls initialized. Use enableDebugLogging() / disableDebugLogging() in console.');
+
+// === Initialize Victory Points Testing Utils ===
+initVictoryPointsTestingUtils();
+console.log('Victory Points testing utilities initialized.');
+
 // === Main-Menu-Start-Button-Handler ===
+// NOTE: This is handled by index.js, so commenting out to avoid conflicts
+/*
 window.addEventListener('DOMContentLoaded', () => {
   console.log('DOM geladen, versuche Start-Button-Handler zu setzen...');
   const menu = document.getElementById('main-menu');
@@ -532,13 +580,18 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log('Start-Button gefunden und Handler gesetzt.');
     startBtn.onclick = () => {
       console.log('Start-Button wurde geklickt!');
-      if (menu) menu.style.display = 'none';
+      if (menu) {
+        console.log('Menu wird ausgeblendet...');
+        menu.style.display = 'none';
+      }
+      console.log('Rufe startGame() auf...');
       startGame();
     };
   } else {
     console.error('Start-Button NICHT gefunden!');
   }
 });
+*/
 
 // Debug flags
 window.debugDiceEnabled = false; // Initialize debug mode as disabled
@@ -703,56 +756,7 @@ window.addEventListener('diceRolled', (e) => {
     }
 });
 
-
-// === Build Event Handler Setup ===
-setupBuildEventHandler({
-  renderer,
-  scene,
-  camera,
-  tileMeshes,
-  players: window.players,
-  getBuildMode: () => buildMode,
-  getActivePlayerIdx: () => activePlayerIdx,
-  tryBuildSettlement,
-  tryBuildCity,
-  tryBuildRoad, // <--- HINZUGEFÜGT
-  getCornerWorldPosition,
-  updateResourceUI: () => updateResourceUI(window.players[activePlayerIdx], activePlayerIdx) // Always update for current player
-});
-
-// === Build Preview Setup ===
-setupBuildPreview(
-  renderer,
-  scene,
-  camera,
-  tileMeshes,
-  window.players,
-  () => buildMode,
-  () => activePlayerIdx,
-  tryBuildSettlement,
-  tryBuildCity
-);
-
 // === Place settlement/city mesh at corner ===
-
-// === Debug functions ===
-
-// Toggle dice debug mode when pressing 'D'
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'd' || e.key === 'D') {
-        // Toggle between debug mode (7) and normal mode (null)
-        window.debugDiceEnabled = toggleDebugDiceMode(7);
-        
-        // Show a message to the user about the current mode
-        const message = window.debugDiceEnabled ? 
-            "Debug mode enabled: Dice will always roll 7" : 
-            "Debug mode disabled: Dice will roll randomly";
-        
-        // Display the debug message and indicator
-        showDebugMessage(message, 3000);
-        createDebugDiceIndicator(window.debugDiceEnabled, 7);
-    }
-});
 
 // Globale Hilfsfunktion für Entwicklungskarten-Logik (z.B. Monopol)
 window.getAllPlayers = function() {
