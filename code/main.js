@@ -586,17 +586,13 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log('Start-Button gefunden und Handler gesetzt.');
     startBtn.onclick = () => {
       console.log('Start-Button wurde geklickt!');
-<<<<<<< code/main.js
-      if (menu) menu.style.display = 'none';
-      // Sidebar ausblenden, wenn Spiel startet
-      import('./modules/uiMainMenu.js').then(mod => mod.removeMainMenuSidebar());
-=======
       if (menu) {
         console.log('Menu wird ausgeblendet...');
         menu.style.display = 'none';
       }
+      // Sidebar ausblenden, wenn Spiel startet
+      import('./modules/uiMainMenu.js').then(mod => mod.removeMainMenuSidebar());
       console.log('Rufe startGame() auf...');
->>>>>>> code/main.js
       startGame();
     };
   } else {

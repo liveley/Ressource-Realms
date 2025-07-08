@@ -63,6 +63,15 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Load configuration
   gameConfig = await loadGameConfig();
   
+  // Initialize main menu sidebar
+  try {
+    const { createMainMenuSidebar } = await import('./modules/uiMainMenu.js');
+    createMainMenuSidebar();
+    console.log('Main menu sidebar created successfully');
+  } catch (error) {
+    console.error('Error creating main menu sidebar:', error);
+  }
+  
   // Funktion für Start-Button (sowohl HTML als auch Hexagon)
   window.startGameFromMenu = async () => {
     if (isGameInitialized) return;
@@ -72,6 +81,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Hide menu and show loading overlay
     menu.style.display = 'none';
     const loadingInterval = showGameLoadingOverlay();
+    
+    // Remove main menu sidebar
+    try {
+      const { removeMainMenuSidebar } = await import('./modules/uiMainMenu.js');
+      removeMainMenuSidebar();
+      console.log('Main menu sidebar removed successfully');
+    } catch (error) {
+      console.error('Error removing main menu sidebar:', error);
+    }
     
     try {
       // Wait for main.js to be ready and trigger game initialization
