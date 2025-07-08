@@ -106,16 +106,21 @@ if (!gameStatusDisplay) {
   gameStatusDisplay.id = 'game-status-display';
   gameStatusDisplay.style.cssText = `
     position: fixed;
-    top: 10px;
-    right: 10px;
-    background: rgba(0, 0, 0, 0.8);
+    bottom: 20px;
+    left: 20px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(30, 30, 30, 0.9));
     color: white;
-    padding: 10px;
-    border-radius: 5px;
-    font-family: Arial, sans-serif;
+    padding: 15px;
+    border-radius: 10px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: 14px;
     z-index: 1000;
-    max-width: 250px;
+    max-width: 280px;
+    min-width: 260px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
   `;
   document.body.appendChild(gameStatusDisplay);
 }
@@ -124,14 +129,42 @@ function updateGameStatusDisplay() {
   const phaseInfo = getGamePhaseInfo();
   const currentPlayerInfo = getCurrentPlayerPlacementInfo(activePlayerIdx);
   
-  let html = `<div><strong>${phaseInfo.phase}</strong></div>`;
-  html += `<div style="margin-top: 5px;">${phaseInfo.description}</div>`;
+  let html = `<div style="display: flex; align-items: center; margin-bottom: 8px;">`;
+  html += `<div style="width: 8px; height: 8px; background: ${phaseInfo.phase === 'Startaufstellung' ? '#4CAF50' : '#2196F3'}; border-radius: 50%; margin-right: 8px;"></div>`;
+  html += `<strong style="color: #fff; font-size: 16px;">${phaseInfo.phase}</strong>`;
+  html += `</div>`;
+  html += `<div style="color: #ccc; font-size: 13px; margin-bottom: 12px;">${phaseInfo.description}</div>`;
   
   if (currentPlayerInfo) {
-    html += `<div style="margin-top: 10px; padding-top: 5px; border-top: 1px solid #555;">`;
-    html += `<strong>Aktueller Spieler:</strong><br>`;
-    html += `Siedlungen: ${currentPlayerInfo.settlements}<br>`;
-    html += `Straßen: ${currentPlayerInfo.roads}`;
+    const playerColor = window.players && window.players[activePlayerIdx] ? 
+      `#${window.players[activePlayerIdx].color.toString(16).padStart(6, '0')}` : '#fff';
+    
+    html += `<div style="background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 8px; border-left: 3px solid ${playerColor};">`;
+    html += `<div style="color: ${playerColor}; font-weight: bold; margin-bottom: 8px;">Spieler ${activePlayerIdx + 1}</div>`;
+    
+    // Progress bars for remaining pieces
+    const settlementProgress = ((2 - currentPlayerInfo.settlements) / 2) * 100;
+    const roadProgress = ((2 - currentPlayerInfo.roads) / 2) * 100;
+    
+    html += `<div style="margin-bottom: 6px;">`;
+    html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">`;
+    html += `<span style="color: #ddd; font-size: 12px;">🏠 Siedlungen</span>`;
+    html += `<span style="color: #fff; font-weight: bold;">${currentPlayerInfo.settlements}</span>`;
+    html += `</div>`;
+    html += `<div style="background: rgba(255,255,255,0.2); height: 4px; border-radius: 2px; overflow: hidden;">`;
+    html += `<div style="background: #4CAF50; height: 100%; width: ${settlementProgress}%; transition: width 0.3s;"></div>`;
+    html += `</div>`;
+    html += `</div>`;
+    
+    html += `<div style="margin-bottom: 12px;">`;
+    html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">`;
+    html += `<span style="color: #ddd; font-size: 12px;">🛤️ Straßen</span>`;
+    html += `<span style="color: #fff; font-weight: bold;">${currentPlayerInfo.roads}</span>`;
+    html += `</div>`;
+    html += `<div style="background: rgba(255,255,255,0.2); height: 4px; border-radius: 2px; overflow: hidden;">`;
+    html += `<div style="background: #FF9800; height: 100%; width: ${roadProgress}%; transition: width 0.3s;"></div>`;
+    html += `</div>`;
+    html += `</div>`;
     
     // Add undo button if available
     if (currentPlayerInfo.canUndo) {
@@ -140,7 +173,20 @@ function updateGameStatusDisplay() {
         (lastAction.type === 'settlements' ? 'Siedlung' : 'Straße') : 
         'letzte Aktion';
       
-      html += `<br><button onclick="performUndo()" style="margin-top: 5px; background-color: #ff6b6b; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">`;
+      html += `<button onclick="performUndo()" style="
+        width: 100%;
+        background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+      " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(255, 107, 107, 0.4)'" 
+         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255, 107, 107, 0.3)'">`;
       html += `🔄 ${actionName} rückgängig`;
       html += `</button>`;
     }
