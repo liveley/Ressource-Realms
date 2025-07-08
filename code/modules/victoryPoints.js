@@ -17,6 +17,13 @@ const MIN_KNIGHTS_FOR_LARGEST_ARMY = 3;
 const LONGEST_ROAD_VICTORY_POINTS = 2;
 const LARGEST_ARMY_VICTORY_POINTS = 2;
 
+// Debug logging helper
+function debugLog(...args) {
+  if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
+    console.log('[VP Debug]', ...args);
+  }
+}
+
 // Initialize VP tracking for all players
 export function initializeVictoryPoints(players) {
   players.forEach(player => {
@@ -126,7 +133,7 @@ export function addVictoryPointCard(player) {
   player.victoryPointCardsCount += 1;
   player.victoryPoints.hiddenVP += 1;
   
-  console.log(`Player ${player.name || 'Unknown'} received VP card (${player.victoryPointCardsCount} total)`);
+  debugLog(`Player ${player.name || 'Unknown'} received VP card (${player.victoryPointCardsCount} total)`);
   
   checkWinCondition(player);
   return true;
@@ -458,9 +465,7 @@ export function updateLongestRoad(players) {
   if (!players || players.length === 0) return;
   
   // Debug logging (only if enabled)
-  if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-    console.log('Updating longest road for', players.length, 'players');
-  }
+  debugLog('Updating longest road for', players.length, 'players');
   
   // Calculate road lengths for all players
   const roadLengths = players.map(player => ({
@@ -468,18 +473,14 @@ export function updateLongestRoad(players) {
     length: calculateLongestRoad(player)
   }));
   
-  if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-    console.log('Road lengths:', roadLengths.map(r => ({ name: r.player.name, length: r.length })));
-  }
+  debugLog('Road lengths:', roadLengths.map(r => ({ name: r.player.name, length: r.length })));
   
   // Find the longest road (must be at least 5)
   const validRoads = roadLengths.filter(item => item.length >= MIN_ROAD_LENGTH_FOR_LONGEST_ROAD);
   
   if (validRoads.length === 0) {
     // No one has longest road
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log(`No player has ${MIN_ROAD_LENGTH_FOR_LONGEST_ROAD}+ roads for longest road`);
-    }
+    debugLog(`No player has ${MIN_ROAD_LENGTH_FOR_LONGEST_ROAD}+ roads for longest road`);
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.longestRoad = 0;
@@ -497,9 +498,7 @@ export function updateLongestRoad(players) {
   
   if (winners.length === 1) {
     // Clear winner
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log(`${winners[0].player.name} gets longest road with ${maxLength} roads`);
-    }
+    debugLog(`${winners[0].player.name} gets longest road with ${maxLength} roads`);
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.longestRoad = (player === winners[0].player) ? LONGEST_ROAD_VICTORY_POINTS : 0;
@@ -507,16 +506,12 @@ export function updateLongestRoad(players) {
     });
   } else {
     // Tie - check who currently has the longest road achievement
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log(`Longest road tie at ${maxLength} roads between:`, winners.map(w => w.player.name));
-    }
+    debugLog(`Longest road tie at ${maxLength} roads between:`, winners.map(w => w.player.name));
     const currentHolder = players.find(player => player.victoryPoints?.longestRoad > 0);
     
     if (currentHolder && winners.some(w => w.player === currentHolder)) {
       // Current holder is tied, they keep it
-      if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-        console.log(`${currentHolder.name} keeps longest road (tie-breaker rule)`);
-      }
+      debugLog(`${currentHolder.name} keeps longest road (tie-breaker rule)`);
       players.forEach(player => {
         if (player.victoryPoints) {
           player.victoryPoints.longestRoad = (player === currentHolder) ? LONGEST_ROAD_VICTORY_POINTS : 0;
@@ -524,9 +519,7 @@ export function updateLongestRoad(players) {
       });
     } else {
       // No current holder among tied players, first tied player gets it
-      if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-        console.log(`${winners[0].player.name} gets longest road (first to achieve tie)`);
-      }
+      debugLog(`${winners[0].player.name} gets longest road (first to achieve tie)`);
       players.forEach(player => {
         if (player.victoryPoints) {
           player.victoryPoints.longestRoad = (player === winners[0].player) ? LONGEST_ROAD_VICTORY_POINTS : 0;
@@ -550,24 +543,18 @@ export function updateLargestArmy(players) {
   if (!players || players.length === 0) return;
   
   // Debug logging (only if enabled)
-  if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-    console.log('Updating largest army for', players.length, 'players');
-  }
+  debugLog('Updating largest army for', players.length, 'players');
   
   // Find players with at least 3 knights played
   const validArmies = players
     .filter(player => (player.knightsPlayed || 0) >= MIN_KNIGHTS_FOR_LARGEST_ARMY)
     .map(player => ({ player, knights: player.knightsPlayed || 0 }));
     
-  if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-    console.log('Valid armies:', validArmies.map(a => ({ name: a.player.name, knights: a.knights })));
-  }
+  debugLog('Valid armies:', validArmies.map(a => ({ name: a.player.name, knights: a.knights })));
   
   if (validArmies.length === 0) {
     // No one has largest army
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log(`No player has ${MIN_KNIGHTS_FOR_LARGEST_ARMY}+ knights for largest army`);
-    }
+    debugLog(`No player has ${MIN_KNIGHTS_FOR_LARGEST_ARMY}+ knights for largest army`);
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.largestArmy = 0;
@@ -585,9 +572,7 @@ export function updateLargestArmy(players) {
   
   if (winners.length === 1) {
     // Clear winner
-    if (typeof window !== 'undefined' && window.DEBUG_VICTORY_POINTS) {
-      console.log(`${winners[0].player.name} gets largest army with ${maxKnights} knights`);
-    }
+    debugLog(`${winners[0].player.name} gets largest army with ${maxKnights} knights`);
     players.forEach(player => {
       if (player.victoryPoints) {
         player.victoryPoints.largestArmy = (player === winners[0].player) ? LARGEST_ARMY_VICTORY_POINTS : 0;
@@ -828,7 +813,7 @@ export function getVictoryPointsBreakdown(player) {
  */
 export function getVictoryPointsForDisplay(player, isCurrentPlayer = false) {
   if (!player) {
-    console.warn('getVictoryPointsForDisplay called with null/undefined player');
+    debugLog('getVictoryPointsForDisplay called with null/undefined player');
     return { display: '0', total: 0, public: 0, hidden: 0 };
   }
   
