@@ -14,7 +14,7 @@ import { createResourceUI, updateResourceUI, handleResourceKeydown } from './mod
 import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
 import { initTileInfoOverlay } from './modules/uiTileInfo.js';
 import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, handleTileSelection, isInRobberPlacementMode, getTileCenter } from './modules/bandit.js';
-import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
+import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad, initializeInitialPlacement, getGamePhaseInfo, getCurrentPlayerPlacementInfo } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import CardManager from './modules/cards.js';
@@ -64,10 +64,17 @@ window.players = window.players || [
 // Initialize victory points system
 initializeVictoryPoints(window.players);
 
+// Initialize initial placement phase
+initializeInitialPlacement(window.players);
+
 // Make victory points functions available globally
 window.updateAllVictoryPoints = updateAllVictoryPoints;
 window.initializeVictoryPoints = initializeVictoryPoints;
 window.getVictoryPointsForDisplay = getVictoryPointsForDisplay;
+
+// Make game phase functions available globally
+window.getGamePhaseInfo = getGamePhaseInfo;
+window.getCurrentPlayerPlacementInfo = getCurrentPlayerPlacementInfo;
 
 window.updateResourceUI = updateResourceUI;
 
@@ -90,12 +97,58 @@ window.activePlayerIdx = activePlayerIdx;
 renderer.domElement.style.visibility = 'hidden';
 renderer.domElement.classList.add('board-hidden');
 
+// === UI: Game Status Display ===
+let gameStatusDisplay = document.getElementById('game-status-display');
+if (!gameStatusDisplay) {
+  gameStatusDisplay = document.createElement('div');
+  gameStatusDisplay.id = 'game-status-display';
+  gameStatusDisplay.style.cssText = `
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    z-index: 1000;
+    max-width: 250px;
+  `;
+  document.body.appendChild(gameStatusDisplay);
+}
+
+function updateGameStatusDisplay() {
+  const phaseInfo = getGamePhaseInfo();
+  const currentPlayerInfo = getCurrentPlayerPlacementInfo(activePlayerIdx);
+  
+  let html = `<div><strong>${phaseInfo.phase}</strong></div>`;
+  html += `<div style="margin-top: 5px;">${phaseInfo.description}</div>`;
+  
+  if (currentPlayerInfo) {
+    html += `<div style="margin-top: 10px; padding-top: 5px; border-top: 1px solid #555;">`;
+    html += `<strong>Aktueller Spieler:</strong><br>`;
+    html += `Siedlungen: ${currentPlayerInfo.settlements}<br>`;
+    html += `Straßen: ${currentPlayerInfo.roads}`;
+    html += `</div>`;
+  }
+  
+  gameStatusDisplay.innerHTML = html;
+}
+
 // === UI: Haupt-Button-Leiste (Action Bar) ===
 let actionBar = document.getElementById('main-action-bar');
 if (!actionBar) {
   actionBar = document.createElement('div');
   actionBar.id = 'main-action-bar';
   document.body.appendChild(actionBar);
+}
+
+// Centralized UI update function
+function updateAllUI() {
+  updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+  updatePlayerOverviews(window.players, () => activePlayerIdx);
+  updateGameStatusDisplay();
 }
 
 // === Preload Game Board ===
@@ -213,8 +266,7 @@ async function startGame() {
       setActivePlayerIdx: (idx) => {
         activePlayerIdx = idx;
         window.activePlayerIdx = idx;
-        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-        updatePlayerOverviews(window.players, () => activePlayerIdx);
+        updateAllUI();
       },
       parent: actionBar
     });
@@ -426,8 +478,7 @@ async function startGame() {
           window.activePlayerIdx = nextIdx;
         }
         // UI updaten
-        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-        updatePlayerOverviews(window.players, () => activePlayerIdx);
+        updateAllUI();
         if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
         // Button zurück auf Würfeln
         state = 0;
@@ -466,8 +517,7 @@ async function startGame() {
         getBank: () => window.bank,
         getDeck: () => window.developmentDeck,
         onBuy: () => {
-          updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-          updatePlayerOverviews(window.players, () => activePlayerIdx);
+          updateAllUI();
         },
         getScene: () => scene,
         getTileMeshes: () => tileMeshes
@@ -484,7 +534,7 @@ async function startGame() {
   try {
     // === UI: Spieler-Übersicht (oben links) ===
     createPlayerOverviews(window.players, () => activePlayerIdx);
-    updatePlayerOverviews(window.players, () => activePlayerIdx);
+    updateAllUI();
     console.log('Player-Overviews erstellt:', document.getElementById('player-overview-container'));
   } catch (e) {
     console.error('Fehler beim Erstellen der Player-Overviews:', e);
@@ -520,8 +570,7 @@ async function startGame() {
     tryBuildRoad,
     getCornerWorldPosition,
     updateResourceUI: () => {
-      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-      updatePlayerOverviews(window.players, () => activePlayerIdx);
+      updateAllUI();
     }
   });
 
