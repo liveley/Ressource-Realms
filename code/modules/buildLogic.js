@@ -640,6 +640,19 @@ export function validateInitialPlacement(player, playerId, type, q, r, corner, e
     return { success: false, reason: `Keine ${type === 'settlements' ? 'Siedlungen' : 'Straßen'} mehr für Startaufstellung` };
   }
   
+  // Check if player is trying to build in the correct order
+  const expectedAction = getInitialPlacementExpectedAction(player, playerId);
+  const actionType = type === 'settlements' ? 'settlement' : 'road';
+  
+  if (expectedAction && expectedAction !== actionType) {
+    const expectedGerman = expectedAction === 'settlement' ? 'Siedlung' : 'Straße';
+    const actualGerman = actionType === 'settlement' ? 'Siedlung' : 'Straße';
+    return { 
+      success: false, 
+      reason: `Du musst erst eine ${expectedGerman} bauen, bevor du eine ${actualGerman} platzieren kannst` 
+    };
+  }
+  
   if (type === 'settlements') {
     return validateInitialSettlement(player, q, r, corner, allPlayers);
   } else if (type === 'roads') {
@@ -673,12 +686,8 @@ function validateInitialSettlement(player, q, r, corner, allPlayers) {
     }
   }
   
-  // 4. Connectivity rule: Settlement must connect to one of player's roads
-  // BUT: If this is the first settlement, it can be placed anywhere
-  const hasRoads = player.roads && player.roads.length > 0;
-  if (hasRoads && !isSettlementConnectedToOwnRoad(player, q, r, corner)) {
-    return { success: false, reason: 'Siedlung muss an eigene Straße anschließen' };
-  }
+  // 4. For initial placement: settlements can be placed freely (following distance rule)
+  // No connectivity requirement during setup!
   
   return { success: true };
 }
@@ -695,11 +704,16 @@ function validateInitialRoad(player, q, r, edge, allPlayers) {
     return { success: false, reason: 'Hier liegt schon eine Straße' };
   }
   
-  // 3. Connectivity rule: Road must connect to one of player's settlements
-  // BUT: If this is the first road, it can be placed anywhere
+  // 3. Initial placement rule: Road must connect to the MOST RECENTLY built settlement
   const hasSettlements = player.settlements && player.settlements.length > 0;
-  if (hasSettlements && !isRoadConnectedToOwnSettlement(player, q, r, edge)) {
-    return { success: false, reason: 'Straße muss an eigene Siedlung anschließen' };
+  if (!hasSettlements) {
+    return { success: false, reason: 'Du musst erst eine Siedlung bauen' };
+  }
+  
+  // In initial placement, the road must connect to the last settlement built
+  const lastSettlement = player.settlements[player.settlements.length - 1];
+  if (!isRoadConnectedToSpecificSettlement(player, q, r, edge, lastSettlement)) {
+    return { success: false, reason: 'Straße muss an die zuletzt gebaute Siedlung anschließen' };
   }
   
   return { success: true };
@@ -722,6 +736,27 @@ function isRoadConnectedToOwnSettlement(player, q, r, edge) {
           (eq.q === q && eq.r === r && eq.corner === roadCorner2)) {
         return true;
       }
+    }
+  }
+  
+  return false;
+}
+
+// Helper function to check if a road connects to a specific settlement
+function isRoadConnectedToSpecificSettlement(player, q, r, edge, settlement) {
+  if (!settlement) return false;
+  
+  // Road connects corners 'edge' and '(edge + 1) % 6' on the same tile
+  const roadCorner1 = edge;
+  const roadCorner2 = (edge + 1) % 6;
+  
+  const settlementEquivalents = getEquivalentCorners(settlement.q, settlement.r, settlement.corner);
+  
+  // Check if any equivalent corner of the settlement matches either road endpoint
+  for (const eq of settlementEquivalents) {
+    if ((eq.q === q && eq.r === r && eq.corner === roadCorner1) ||
+        (eq.q === q && eq.r === r && eq.corner === roadCorner2)) {
+      return true;
     }
   }
   
@@ -792,6 +827,7 @@ export function undoLastInitialPlacement(playerId, allPlayers) {
       player.settlements.splice(settlementIndex, 1);
     }
   } else if (lastAction.type === 'roads') {
+    if (!player.roads) player.roads = [];
     const roadIndex = player.roads.findIndex(r => 
       (r.q === lastAction.q && r.r === lastAction.r && r.edge === lastAction.edge) ||
       (r.q1 === lastAction.q && r.r1 === lastAction.r && r.corner1 === lastAction.edge)
@@ -841,6 +877,27 @@ export function getLastInitialPlacementAction(playerId) {
   if (lastActionIndex === -1) return null;
   
   return initialPlacementHistory.actions[lastActionIndex];
+}
+
+// Helper function to determine what the player should build next in initial placement
+function getInitialPlacementExpectedAction(player, playerId) {
+  if (!gameState.initialPlacementsRemaining[playerId]) return null;
+  
+  const remaining = gameState.initialPlacementsRemaining[playerId];
+  const settlementsBuilt = 2 - remaining.settlements;
+  const roadsBuilt = 2 - remaining.roads;
+  
+  // First round: settlement -> road
+  // Second round: settlement -> road
+  if (settlementsBuilt === roadsBuilt) {
+    // Need to build a settlement
+    return 'settlement';
+  } else if (settlementsBuilt > roadsBuilt) {
+    // Need to build a road
+    return 'road';
+  }
+  
+  return null;
 }
 
 // === UI Helper Functions ===
