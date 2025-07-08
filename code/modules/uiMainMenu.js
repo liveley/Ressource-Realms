@@ -246,12 +246,23 @@ export function createMainMenuSidebar() {
   catanTitle.style.pointerEvents = 'none';
   catanTitle.style.zIndex = '10001'; // Über den Hex-Tiles
   
+  // Dynamische Schriftgröße - aggressivere Skalierung für höhere Auflösungen
+  const baseFontSize = titleWidth / 7; // Etwas größere Basis für bessere Ausnutzung des Platzes
+  const resolutionMultiplier = Math.max(
+    1.0, // Minimum-Multiplier
+    window.innerWidth / 1920 // Lineare Skalierung basierend auf Bildschirmbreite
+  );
+  const dynamicFontSize = baseFontSize * resolutionMultiplier;
+  
+  // Begrenzung: Mindestens 28px, maximal 90px
+  const finalFontSize = Math.max(28, Math.min(90, dynamicFontSize));
+  
   catanTitle.innerHTML = `
     <h1 id="animated-catan-title" style="
       color: #fff;
       font-family: 'Montserrat', sans-serif;
       font-weight: 700;
-      font-size: 4.5em;
+      font-size: ${finalFontSize}px;
       margin: 0;
       text-align: center;
       letter-spacing: 0.05em;
