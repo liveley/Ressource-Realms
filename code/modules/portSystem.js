@@ -385,7 +385,8 @@ export function getPlayerTradeRates(player) {
 export function updatePortLabels(camera) {
   Object.values(portMeshes).forEach(portData => {
     if (portData.label && portData.label.userData && portData.label.userData.isBillboard) {
-      portData.label.lookAt(camera.position);
+      // Verwende das gleiche System wie Number Tokens: quaternion copy
+      portData.label.quaternion.copy(camera.quaternion);
     }
   });
 }
