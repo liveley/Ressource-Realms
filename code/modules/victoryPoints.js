@@ -13,6 +13,7 @@
 // Import the new modular components
 import { VictoryPointCalculator } from './victoryPointSystem/VictoryPointCalculator.js';
 import { LongestRoadManager } from './victoryPointSystem/LongestRoadManager.js';
+import { LargestArmyManager } from './victoryPointSystem/LargestArmyManager.js';
 import { getCanonicalRoad as getCanonicalRoadUtil } from './victoryPointSystem/utils/roadUtils.js';
 
 // Game constants
@@ -648,6 +649,7 @@ class VictoryPointsManager {
 let globalVPManager = null;
 let globalVPCalculator = null;
 let globalLongestRoadManager = null;
+let globalLargestArmyManager = null;
 
 /**
  * Get or create the global VP calculator instance
@@ -669,6 +671,17 @@ function getLongestRoadManager() {
     globalLongestRoadManager = new LongestRoadManager();
   }
   return globalLongestRoadManager;
+}
+
+/**
+ * Get or create the global largest army manager instance
+ * @returns {LargestArmyManager} The global largest army manager instance
+ */
+function getLargestArmyManager() {
+  if (!globalLargestArmyManager) {
+    globalLargestArmyManager = new LargestArmyManager();
+  }
+  return globalLargestArmyManager;
 }
 
 /**
@@ -1011,8 +1024,8 @@ export function updateLongestRoad(players) {
  * @param {Array} players - Array of all players
  */
 export function updateLargestArmy(players) {
-  const vpManager = getVPManager();
-  vpManager.updateLargestArmy(players);
+  const armyManager = getLargestArmyManager();
+  armyManager.updateLargestArmy(players);
 }
 
 /**
@@ -1021,8 +1034,8 @@ export function updateLargestArmy(players) {
  * @param {Array} allPlayers - Array of all players
  */
 export function playKnight(player, allPlayers) {
-  const vpManager = getVPManager();
-  vpManager.playKnight(player, allPlayers);
+  const armyManager = getLargestArmyManager();
+  armyManager.processKnightPlay(player, allPlayers);
 }
 
 /**
