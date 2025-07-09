@@ -172,10 +172,17 @@ function getNeighborCorner(q, r, corner) {
 // === Platzierungsregel: Siedlung muss an eigene Straße angrenzen (außer bei Startaufstellung) ===
 export function isSettlementConnectedToOwnRoad(player, q, r, corner) {
   // Für jede eigene Straße prüfen, ob sie an diese Ecke angrenzt
+  // Prüfe alle äquivalenten Ecken (physische Ecke!)
+  const equivalents = getEquivalentCorners(q, r, corner);
+  
   if (!player.roads || player.roads.length === 0) return false;
-  for (const road of player.roads) {
-    if (isRoadAdjacentToCorner(road, q, r, corner)) {
-      return true;
+  
+  for (const eq of equivalents) {
+    for (const road of player.roads) {
+      const isAdjacent = isRoadAdjacentToCorner(road, eq.q, eq.r, eq.corner);
+      if (isAdjacent) {
+        return true;
+      }
     }
   }
   return false;
@@ -183,12 +190,42 @@ export function isSettlementConnectedToOwnRoad(player, q, r, corner) {
 
 // Hilfsfunktion: Prüft, ob eine Straße an eine bestimmte Ecke angrenzt
 function isRoadAdjacentToCorner(road, q, r, corner) {
-  // Eine Straße verbindet immer zwei Ecken (A und B)
-  // Wir prüfen, ob die gewünschte Ecke eine der beiden ist
-  return (
-    (road.q1 === q && road.r1 === r && road.corner1 === corner) ||
-    (road.q2 === q && road.r2 === r && road.corner2 === corner)
-  );
+  // Eine Straße entlang der Kante 'edge' verbindet die Ecken 'edge' und '(edge + 1) % 6'
+  // Wir müssen prüfen, ob die gewünschte Ecke eine der beiden ist (oder deren Äquivalente)
+  
+  // Straße hat das Format {q, r, edge, ...}
+  if (road.q !== undefined && road.r !== undefined && road.edge !== undefined) {
+    // Die Straße verbindet zwei Ecken auf dem Straßen-Tile
+    const roadCorner1 = road.edge;
+    const roadCorner2 = (road.edge + 1) % 6;
+    
+    // Prüfe, ob die gewünschte Ecke eine der beiden Straßen-Ecken ist (mit Äquivalenz)
+    const equivalentsCorner1 = getEquivalentCorners(road.q, road.r, roadCorner1);
+    const equivalentsCorner2 = getEquivalentCorners(road.q, road.r, roadCorner2);
+    
+    for (const eq1 of equivalentsCorner1) {
+      if (eq1.q === q && eq1.r === r && eq1.corner === corner) {
+        return true;
+      }
+    }
+    
+    for (const eq2 of equivalentsCorner2) {
+      if (eq2.q === q && eq2.r === r && eq2.corner === corner) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+  
+  // Fallback für neue Datenstruktur mit q1,r1,corner1 und q2,r2,corner2
+  if (road.q1 !== undefined && road.r1 !== undefined && road.corner1 !== undefined) {
+    const match1 = (road.q1 === q && road.r1 === r && road.corner1 === corner);
+    const match2 = (road.q2 === q && road.r2 === r && road.corner2 === corner);
+    return match1 || match2;
+  }
+  
+  return false;
 }
 
 // Helper: Prüft, ob ein Tile ein Landfeld ist (kein Wasser, keine Wüste)
@@ -270,6 +307,24 @@ export function getEquivalentCorners(q, r, corner) {
 
 // Siedlung bauen (mit Platzierungslogik)
 export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoad = true, ignoreDistanceRule = false, ignoreResourceRule = false} = {}) {
+  // Get player ID (index in allPlayers array)
+  const playerId = allPlayers.findIndex(p => p === player);
+  
+  // Check if in initial placement phase
+  if (gameState.phase === GAME_PHASES.INITIAL_PLACEMENT) {
+    const validation = validateInitialPlacement(player, playerId, 'settlements', q, r, corner, null, allPlayers);
+    if (!validation.success) {
+      return validation;
+    }
+    
+    // Build settlement without resource cost in initial phase
+    buildSettlement(player, q, r, corner);
+    trackInitialPlacement(playerId, 'settlements');
+    recordInitialPlacementAction('settlements', playerId, q, r, corner);
+    return { success: true };
+  }
+  
+  // Regular play validation
   // Limit: Maximal 5 Siedlungen pro Spieler
   if (player.settlements && player.settlements.length >= 5) {
     return { success: false, reason: 'Du hast keine Siedlungen mehr übrig (Limit: 5)' };
@@ -303,8 +358,15 @@ export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoa
   }
   // Ressourcen prüfen
   if (!ignoreResourceRule && !canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
-  // Abstand zu anderen Siedlungen/Städten prüfen
-  if (!ignoreDistanceRule && !isSettlementPlacementValid(q, r, corner, allPlayers)) return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+  // Abstand zu anderen Siedlungen/Städten prüfen (für alle äquivalenten Ecken!)
+  if (!ignoreDistanceRule) {
+    const equivalents = getEquivalentCorners(q, r, corner);
+    for (const eq of equivalents) {
+      if (!isSettlementPlacementValid(eq.q, eq.r, eq.corner, allPlayers)) {
+        return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+      }
+    }
+  }
   // Straßenanbindung prüfen (außer bei Startaufstellung)
   if (requireRoad && !isSettlementConnectedToOwnRoad(player, q, r, corner)) return { success: false, reason: 'Keine eigene Straße an dieser Ecke' };
   // Bauen & Ressourcen abziehen
@@ -325,6 +387,15 @@ export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoa
 
 // === Nur-Prüf-Funktion für Build-Preview (ohne Ressourcenabzug, ohne Bauen) ===
 export function canPlaceSettlement(player, q, r, corner, allPlayers, {requireRoad = true, ignoreDistanceRule = false, ignoreResourceRule = false} = {}) {
+  // Get player ID (index in allPlayers array)
+  const playerId = allPlayers.findIndex(p => p === player);
+  
+  // Check if in initial placement phase
+  if (gameState.phase === GAME_PHASES.INITIAL_PLACEMENT) {
+    return validateInitialPlacement(player, playerId, 'settlements', q, r, corner, null, allPlayers);
+  }
+  
+  // Regular play validation
   if (!hasAtLeastOneLandTileAdjacent(q, r, corner)) {
     return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
   }
@@ -332,8 +403,15 @@ export function canPlaceSettlement(player, q, r, corner, allPlayers, {requireRoa
   // Ressourcen prüfen
   if (!ignoreResourceRule && !canBuildSettlement(player)) return { success: false, reason: 'Nicht genug Ressourcen' };
   
-  // Abstandsregel prüfen (isSettlementPlacementValid prüft bereits alle äquivalenten Ecken und bestehende Siedlungen/Städte)
-  if (!ignoreDistanceRule && !isSettlementPlacementValid(q, r, corner, allPlayers)) return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+  // Abstandsregel prüfen (für alle äquivalenten Ecken!)
+  if (!ignoreDistanceRule) {
+    const equivalents = getEquivalentCorners(q, r, corner);
+    for (const eq of equivalents) {
+      if (!isSettlementPlacementValid(eq.q, eq.r, eq.corner, allPlayers)) {
+        return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+      }
+    }
+  }
   
   // Straßenanbindung prüfen (außer bei Startaufstellung)
   if (requireRoad && !isSettlementConnectedToOwnRoad(player, q, r, corner)) return { success: false, reason: 'Keine eigene Straße an dieser Ecke' };
@@ -383,6 +461,42 @@ function neighborAxial(q, r, edge) {
 }
 
 export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
+  // Get player ID (index in allPlayers array)
+  const playerId = allPlayers.findIndex(p => p === player);
+  
+  // Check if in initial placement phase
+  if (gameState.phase === GAME_PHASES.INITIAL_PLACEMENT) {
+    const validation = validateInitialPlacement(player, playerId, 'roads', q, r, null, edge, allPlayers);
+    if (!validation.success) {
+      return validation;
+    }
+    
+    // Build road without resource cost in initial phase
+    if (!player.roads) player.roads = [];
+    
+    // Speichere beide Endpunkte der Straße für die Adjazenzprüfung
+    // Eine Straße entlang der Kante 'edge' verbindet die Ecken 'edge' und '(edge + 1) % 6' auf demselben Tile
+    const roadData = {
+      q1: q, r1: r, corner1: edge,                    // Erste Ecke der Straße
+      q2: q, r2: r, corner2: (edge + 1) % 6,         // Zweite Ecke der Straße (gleiche Tile)
+      q, r, edge // optional, falls noch woanders genutzt
+    };
+    
+    // Use canonical coordinates to prevent duplicates
+    const canonicalRoad = getCanonicalRoad(roadData);
+    player.roads.push(canonicalRoad);
+    trackInitialPlacement(playerId, 'roads');
+    recordInitialPlacementAction('roads', playerId, q, r, null, edge);
+    
+    // Update longest road after building
+    if (allPlayers && Array.isArray(allPlayers)) {
+      updateLongestRoad(allPlayers);
+    }
+    
+    return { success: true };
+  }
+  
+  // Regular play validation
   // Ensure VP system is initialized for this player
   initializeVictoryPoints([player]);
   // Limit: Maximal 15 Straßen pro Spieler
@@ -409,8 +523,16 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
   }
   if (!player.roads) player.roads = [];
   
+  // Speichere beide Endpunkte der Straße für die Adjazenzprüfung
+  // Eine Straße entlang der Kante 'edge' verbindet die Ecken 'edge' und '(edge + 1) % 6' auf demselben Tile
+  const roadData = {
+    q1: q, r1: r, corner1: edge,                    // Erste Ecke der Straße
+    q2: q, r2: r, corner2: (edge + 1) % 6,         // Zweite Ecke der Straße (gleiche Tile)
+    q, r, edge // optional, falls noch woanders genutzt
+  };
+  
   // Use canonical coordinates to prevent duplicates
-  const canonicalRoad = getCanonicalRoad({ q, r, edge });
+  const canonicalRoad = getCanonicalRoad(roadData);
   player.roads.push(canonicalRoad);
   
   // Update longest road after building - use proper parameter passed to function
@@ -423,6 +545,15 @@ export function tryBuildRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
 
 // Nur-Prüf-Funktion für Preview
 export function canPlaceRoad(player, q, r, edge, allPlayers, {ignoreResourceRule = false} = {}) {
+  // Get player ID (index in allPlayers array)
+  const playerId = allPlayers.findIndex(p => p === player);
+  
+  // Check if in initial placement phase
+  if (gameState.phase === GAME_PHASES.INITIAL_PLACEMENT) {
+    return validateInitialPlacement(player, playerId, 'roads', q, r, null, edge, allPlayers);
+  }
+  
+  // Regular play validation
   // Erlaube Straßenbau, wenn mindestens EIN angrenzendes Feld Land ist (Wüste ist erlaubt)
   const [nq, nr] = neighborAxial(q, r, edge);
   if (!isLandTile(q, r) && !isLandTile(nq, nr)) {
@@ -434,4 +565,525 @@ export function canPlaceRoad(player, q, r, edge, allPlayers, {ignoreResourceRule
   return { success: true };
 }
 
-// TODO: UI-Integration
+// === Game Phase Management ===
+export const GAME_PHASES = {
+  INITIAL_PLACEMENT: 'initial_placement',
+  REGULAR_PLAY: 'regular_play'
+};
+
+// Global game state
+export const gameState = {
+  phase: GAME_PHASES.INITIAL_PLACEMENT,
+  initialPlacementsRemaining: {}, // spieler_id: {settlements: 2, roads: 2}
+  currentPlayerTurn: 0
+};
+
+// Initialize initial placement phase for all players
+export function initializeInitialPlacement(players) {
+  gameState.phase = GAME_PHASES.INITIAL_PLACEMENT;
+  gameState.initialPlacementsRemaining = {};
+  
+  players.forEach((player, index) => {
+    gameState.initialPlacementsRemaining[index] = {
+      settlements: 2,
+      roads: 2
+    };
+  });
+  
+  gameState.currentPlayerTurn = 0;
+  console.log('Initial placement phase started:', gameState);
+}
+
+// Check if initial placement phase is complete
+export function isInitialPlacementComplete() {
+  for (const playerId in gameState.initialPlacementsRemaining) {
+    const remaining = gameState.initialPlacementsRemaining[playerId];
+    if (remaining.settlements > 0 || remaining.roads > 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Switch to regular play phase
+export function startRegularPlay() {
+  gameState.phase = GAME_PHASES.REGULAR_PLAY;
+  console.log('Switched to regular play phase');
+  
+  // According to Catan rules, the first player starts the first regular turn after initial placement
+  // Set active player to first player (index 0)
+  if (typeof window.setActivePlayerToFirstPlayer === 'function') {
+    window.setActivePlayerToFirstPlayer();
+  }
+  
+  // Update dice button UI when phase changes
+  if (typeof window.updateDiceButtonForPhaseChange === 'function') {
+    window.updateDiceButtonForPhaseChange();
+  }
+}
+
+// Track initial placement
+export function trackInitialPlacement(playerId, type) {
+  if (gameState.phase !== GAME_PHASES.INITIAL_PLACEMENT) return;
+  
+  const remaining = gameState.initialPlacementsRemaining[playerId];
+  if (remaining && remaining[type] > 0) {
+    remaining[type]--;
+    
+    // Check if initial placement is complete
+    if (isInitialPlacementComplete()) {
+      startRegularPlay();
+    }
+  }
+}
+
+// === Initial Placement Validation ===
+export function validateInitialPlacement(player, playerId, type, q, r, corner, edge, allPlayers) {
+  if (gameState.phase !== GAME_PHASES.INITIAL_PLACEMENT) {
+    return { success: false, reason: 'Nicht in der Startaufstellung-Phase' };
+  }
+  
+  const remaining = gameState.initialPlacementsRemaining[playerId];
+  
+  const typeKey = type; // Already plural: 'roads', 'settlements'
+  
+  if (!remaining || remaining[typeKey] <= 0) {
+    return { success: false, reason: `Keine ${type === 'settlements' ? 'Siedlungen' : 'Straßen'} mehr für Startaufstellung` };
+  }
+  
+  // Check if player is trying to build in the correct order
+  const expectedAction = getInitialPlacementExpectedAction(player, playerId);
+  const actionType = type === 'settlements' ? 'settlement' : 'road';
+  
+  if (expectedAction && expectedAction !== actionType) {
+    const expectedGerman = expectedAction === 'settlement' ? 'Siedlung' : 'Straße';
+    const actualGerman = actionType === 'settlement' ? 'Siedlung' : 'Straße';
+    return { 
+      success: false, 
+      reason: `Du musst erst eine ${expectedGerman} bauen, bevor du eine ${actualGerman} platzieren kannst` 
+    };
+  }
+  
+  if (type === 'settlements') {
+    return validateInitialSettlement(player, q, r, corner, allPlayers);
+  } else if (type === 'roads') {
+    return validateInitialRoad(player, q, r, edge, allPlayers);
+  }
+  
+  return { success: false, reason: 'Unbekannter Bautyp' };
+}
+
+function validateInitialSettlement(player, q, r, corner, allPlayers) {
+  // 1. Land tile adjacency
+  if (!hasAtLeastOneLandTileAdjacent(q, r, corner)) {
+    return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
+  }
+  
+  // 2. Distance rule - keine Siedlung/Stadt in der Nähe (egal von welchem Spieler)
+  if (!isSettlementPlacementValid(q, r, corner, allPlayers)) {
+    return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
+  }
+  
+  // 3. Check for existing buildings at this exact location
+  for (const other of allPlayers) {
+    const equivalents = getEquivalentCorners(q, r, corner);
+    for (const eq of equivalents) {
+      if (
+        other.settlements.some(s => s.q === eq.q && s.r === eq.r && s.corner === eq.corner) ||
+        other.cities.some(c => c.q === eq.q && c.r === eq.r && c.corner === eq.corner)
+      ) {
+        return { success: false, reason: 'Hier steht bereits eine Siedlung/Stadt' };
+      }
+    }
+  }
+  
+  // 4. For initial placement: settlements can be placed freely (following distance rule)
+  // No connectivity requirement during setup!
+  
+  return { success: true };
+}
+
+function validateInitialRoad(player, q, r, edge, allPlayers) {
+  // 1. Land adjacency
+  const [nq, nr] = neighborAxial(q, r, edge);
+  if (!isLandTile(q, r) && !isLandTile(nq, nr)) {
+    return { success: false, reason: 'Straßenbau auf Wasser nicht erlaubt' };
+  }
+  
+  // 2. Check if road already exists
+  if (isRoadOccupied(q, r, edge, allPlayers)) {
+    return { success: false, reason: 'Hier liegt schon eine Straße' };
+  }
+  
+  // 3. Initial placement rule: Road must connect to the MOST RECENTLY built settlement
+  const hasSettlements = player.settlements && player.settlements.length > 0;
+  if (!hasSettlements) {
+    return { success: false, reason: 'Du musst erst eine Siedlung bauen' };
+  }
+  
+  // In initial placement, the road must connect to the last settlement built
+  const lastSettlement = player.settlements[player.settlements.length - 1];
+  if (!isRoadConnectedToSpecificSettlement(player, q, r, edge, lastSettlement)) {
+    return { success: false, reason: 'Straße muss an die zuletzt gebaute Siedlung anschließen' };
+  }
+  
+  return { success: true };
+}
+
+// Helper function to check if a road connects to player's settlement
+function isRoadConnectedToOwnSettlement(player, q, r, edge) {
+  if (!player.settlements || player.settlements.length === 0) return false;
+  
+  // Road connects corners 'edge' and '(edge + 1) % 6' on the same tile
+  const roadCorner1 = edge;
+  const roadCorner2 = (edge + 1) % 6;
+  
+  for (const settlement of player.settlements) {
+    const settlementEquivalents = getEquivalentCorners(settlement.q, settlement.r, settlement.corner);
+    
+    // Check if any equivalent corner of the settlement matches either road endpoint
+    for (const eq of settlementEquivalents) {
+      if ((eq.q === q && eq.r === r && eq.corner === roadCorner1) ||
+          (eq.q === q && eq.r === r && eq.corner === roadCorner2)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+// Helper function to check if a road connects to a specific settlement
+function isRoadConnectedToSpecificSettlement(player, q, r, edge, settlement) {
+  if (!settlement) return false;
+  
+  // Road connects corners 'edge' and '(edge + 1) % 6' on the same tile
+  const roadCorner1 = edge;
+  const roadCorner2 = (edge + 1) % 6;
+  
+  const settlementEquivalents = getEquivalentCorners(settlement.q, settlement.r, settlement.corner);
+  
+  // Check if any equivalent corner of the settlement matches either road endpoint
+  for (const eq of settlementEquivalents) {
+    if ((eq.q === q && eq.r === r && eq.corner === roadCorner1) ||
+        (eq.q === q && eq.r === r && eq.corner === roadCorner2)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+// === Modified Build Functions for Initial Placement ===
+
+// === Undo System for Initial Placement ===
+export const initialPlacementHistory = {
+  actions: [], // [{type: 'settlement'|'road', playerId, q, r, corner?, edge?, timestamp}]
+  maxActions: 8 // 2 players * (2 settlements + 2 roads) = 8 max actions
+};
+
+// Add action to history
+export function recordInitialPlacementAction(type, playerId, q, r, corner = null, edge = null) {
+  if (gameState.phase !== GAME_PHASES.INITIAL_PLACEMENT) return;
+  
+  const action = {
+    type,
+    playerId,
+    q, r,
+    corner,
+    edge,
+    timestamp: Date.now()
+  };
+  
+  initialPlacementHistory.actions.push(action);
+  
+  // Keep only recent actions (prevent memory bloat)
+  if (initialPlacementHistory.actions.length > initialPlacementHistory.maxActions) {
+    initialPlacementHistory.actions.shift();
+  }
+}
+
+// Undo last action for a specific player
+export function undoLastInitialPlacement(playerId, allPlayers) {
+  if (gameState.phase !== GAME_PHASES.INITIAL_PLACEMENT) {
+    return { success: false, reason: 'Rückgängig nur in der Startaufstellung möglich' };
+  }
+  
+  // Find the last action by this player
+  let lastActionIndex = -1;
+  for (let i = initialPlacementHistory.actions.length - 1; i >= 0; i--) {
+    if (initialPlacementHistory.actions[i].playerId === playerId) {
+      lastActionIndex = i;
+      break;
+    }
+  }
+  
+  if (lastActionIndex === -1) {
+    return { success: false, reason: 'Keine Aktion zum Rückgängigmachen gefunden' };
+  }
+  
+  const lastAction = initialPlacementHistory.actions[lastActionIndex];
+  const player = allPlayers[playerId];
+  
+  if (!player) {
+    return { success: false, reason: 'Spieler nicht gefunden' };
+  }
+  
+  // Remove the building from the game
+  if (lastAction.type === 'settlements') {
+    const settlementIndex = player.settlements.findIndex(s => 
+      s.q === lastAction.q && s.r === lastAction.r && s.corner === lastAction.corner
+    );
+    if (settlementIndex !== -1) {
+      player.settlements.splice(settlementIndex, 1);
+    }
+  } else if (lastAction.type === 'roads') {
+    if (!player.roads) player.roads = [];
+    const roadIndex = player.roads.findIndex(r => 
+      (r.q === lastAction.q && r.r === lastAction.r && r.edge === lastAction.edge) ||
+      (r.q1 === lastAction.q && r.r1 === lastAction.r && r.corner1 === lastAction.edge)
+    );
+    if (roadIndex !== -1) {
+      player.roads.splice(roadIndex, 1);
+    }
+  }
+  
+  // Restore the counter
+  const remaining = gameState.initialPlacementsRemaining[playerId];
+  if (remaining && remaining[lastAction.type] < 2) {
+    remaining[lastAction.type]++;
+  }
+  
+  // Remove action from history
+  initialPlacementHistory.actions.splice(lastActionIndex, 1);
+  
+  // Switch back from regular play if we were there
+  if (gameState.phase === GAME_PHASES.REGULAR_PLAY) {
+    gameState.phase = GAME_PHASES.INITIAL_PLACEMENT;
+  }
+  
+  return { 
+    success: true, 
+    message: `${lastAction.type === 'settlements' ? 'Siedlung' : 'Straße'} rückgängig gemacht` 
+  };
+}
+
+// Check if a player can undo their last action
+export function canUndoInitialPlacement(playerId) {
+  if (gameState.phase !== GAME_PHASES.INITIAL_PLACEMENT) return false;
+  
+  return initialPlacementHistory.actions.some(action => action.playerId === playerId);
+}
+
+// Get the last action by a player (for UI display)
+export function getLastInitialPlacementAction(playerId) {
+  let lastActionIndex = -1;
+  for (let i = initialPlacementHistory.actions.length - 1; i >= 0; i--) {
+    if (initialPlacementHistory.actions[i].playerId === playerId) {
+      lastActionIndex = i;
+      break;
+    }
+  }
+  
+  if (lastActionIndex === -1) return null;
+  
+  return initialPlacementHistory.actions[lastActionIndex];
+}
+
+// Helper function to determine what the player should build next in initial placement
+function getInitialPlacementExpectedAction(player, playerId) {
+  if (!gameState.initialPlacementsRemaining[playerId]) return null;
+  
+  const remaining = gameState.initialPlacementsRemaining[playerId];
+  const settlementsBuilt = 2 - remaining.settlements;
+  const roadsBuilt = 2 - remaining.roads;
+  
+  // First round: settlement -> road
+  // Second round: settlement -> road
+  if (settlementsBuilt === roadsBuilt) {
+    // Need to build a settlement
+    return 'settlement';
+  } else if (settlementsBuilt > roadsBuilt) {
+    // Need to build a road
+    return 'road';
+  }
+  
+  return null;
+}
+
+// === UI Helper Functions ===
+export function getGamePhaseInfo() {
+  if (gameState.phase === GAME_PHASES.INITIAL_PLACEMENT) {
+    const totalRemaining = Object.values(gameState.initialPlacementsRemaining)
+      .reduce((total, player) => total + player.settlements + player.roads, 0);
+    return {
+      phase: 'Startaufstellung',
+      description: `Noch ${totalRemaining} Bauteile zu platzieren`,
+      remaining: gameState.initialPlacementsRemaining
+    };
+  } else {
+    return {
+      phase: 'Normales Spiel',
+      description: 'Alle Catan-Regeln aktiv',
+      remaining: null
+    };
+  }
+}
+
+export function getCurrentPlayerPlacementInfo(playerId) {
+  if (gameState.phase === GAME_PHASES.INITIAL_PLACEMENT) {
+    const remaining = gameState.initialPlacementsRemaining[playerId];
+    if (remaining) {
+      return {
+        settlements: remaining.settlements,
+        roads: remaining.roads,
+        isComplete: remaining.settlements === 0 && remaining.roads === 0,
+        canUndo: canUndoInitialPlacement(playerId),
+        lastAction: getLastInitialPlacementAction(playerId)
+      };
+    }
+  }
+  return null;
+}
+
+// === Smart Placement Validation ===
+// Check if a player would be able to complete their initial placement
+export function canPlayerCompleteInitialPlacement(playerId, allPlayers) {
+  if (gameState.phase !== GAME_PHASES.INITIAL_PLACEMENT) return true;
+  
+  const remaining = gameState.initialPlacementsRemaining[playerId];
+  const player = allPlayers[playerId];
+  
+  if (!remaining || !player) return false;
+  
+  // If player has no more pieces to place, they're done
+  if (remaining.settlements === 0 && remaining.roads === 0) return true;
+  
+  // If player needs to place settlements, check if any valid positions exist
+  if (remaining.settlements > 0) {
+    // Try to find at least one valid settlement position
+    // This is a simplified check - we could make it more thorough
+    for (let q = -3; q <= 3; q++) {
+      for (let r = -3; r <= 3; r++) {
+        for (let corner = 0; corner < 6; corner++) {
+          if (hasAtLeastOneLandTileAdjacent(q, r, corner)) {
+            const validation = validateInitialSettlement(player, q, r, corner, allPlayers);
+            if (validation.success) {
+              return true; // Found at least one valid position
+            }
+          }
+        }
+      }
+    }
+    return false; // No valid settlement positions found
+  }
+  
+  // If only roads need to be placed, there should always be valid positions
+  return true;
+}
+
+// Warn if current action would block the player
+export function getPlacementWarning(playerId, allPlayers, type, q, r, corner = null, edge = null) {
+  if (gameState.phase !== GAME_PHASES.INITIAL_PLACEMENT) return null;
+  
+  // Simulate the placement
+  const player = allPlayers[playerId];
+  const remaining = gameState.initialPlacementsRemaining[playerId];
+  
+  if (!remaining || !player) return null;
+  
+  // Check what would remain after this placement
+  const wouldRemain = { ...remaining };
+  if (type === 'settlements') wouldRemain.settlements--;
+  if (type === 'roads') wouldRemain.roads--;
+  
+  // If this would complete the placement, no warning needed
+  if (wouldRemain.settlements === 0 && wouldRemain.roads === 0) {
+    return null;
+  }
+  
+  // Temporarily add the building to simulate the state
+  const originalBuildings = type === 'settlements' ? [...player.settlements] : [...(player.roads || [])];
+  
+  if (type === 'settlements') {
+    player.settlements.push({ q, r, corner });
+  } else if (type === 'roads') {
+    const roadData = {
+      q1: q, r1: r, corner1: edge,
+      q2: q, r2: r, corner2: (edge + 1) % 6,
+      q, r, edge
+    };
+    if (!player.roads) player.roads = [];
+    player.roads.push(roadData);
+  }
+  
+  // Check if player could still complete placement
+  const canComplete = canPlayerCompleteInitialPlacement(playerId, allPlayers);
+  
+  // Restore original state
+  if (type === 'settlements') {
+    player.settlements = originalBuildings;
+  } else if (type === 'roads') {
+    player.roads = originalBuildings;
+  }
+  
+  if (!canComplete) {
+    return {
+      type: 'blocking_warning',
+      message: 'Warnung: Diese Platzierung könnte dich blockieren! Du kannst mit "Rückgängig" den letzten Zug zurücknehmen.'
+    };
+  }
+  
+  return null;
+}
+
+// === UI Integration Functions ===
+export function getInitialPlacementUIState(playerId, allPlayers) {
+  if (gameState.phase !== GAME_PHASES.INITIAL_PLACEMENT) {
+    return { 
+      phase: 'regular_play',
+      actions: []
+    };
+  }
+  
+  const playerInfo = getCurrentPlayerPlacementInfo(playerId);
+  const actions = [];
+  
+  // Add placement actions
+  if (playerInfo && playerInfo.settlements > 0) {
+    actions.push({
+      type: 'place_settlement',
+      label: `Siedlung platzieren (${playerInfo.settlements} übrig)`,
+      enabled: true
+    });
+  }
+  
+  if (playerInfo && playerInfo.roads > 0) {
+    actions.push({
+      type: 'place_road', 
+      label: `Straße platzieren (${playerInfo.roads} übrig)`,
+      enabled: true
+    });
+  }
+  
+  // Add undo action
+  if (playerInfo && playerInfo.canUndo) {
+    const lastAction = playerInfo.lastAction;
+    const actionName = lastAction ? 
+      (lastAction.type === 'settlements' ? 'Siedlung' : 'Straße') : 
+      'letzte Aktion';
+    
+    actions.push({
+      type: 'undo_placement',
+      label: `${actionName} rückgängig machen`,
+      enabled: true,
+      style: 'warning'
+    });
+  }
+  
+  return {
+    phase: 'initial_placement',
+    actions,
+    playerInfo
+  };
+}

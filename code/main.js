@@ -14,7 +14,7 @@ import { createResourceUI, updateResourceUI, handleResourceKeydown } from './mod
 import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
 import { initTileInfoOverlay } from './modules/uiTileInfo.js';
 import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, handleTileSelection, isInRobberPlacementMode, getTileCenter } from './modules/bandit.js';
-import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad } from './modules/buildLogic.js';
+import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad, initializeInitialPlacement, getGamePhaseInfo, getCurrentPlayerPlacementInfo, undoLastInitialPlacement, getInitialPlacementUIState, getPlacementWarning } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import CardManager from './modules/cards.js';
@@ -64,10 +64,19 @@ window.players = window.players || [
 // Initialize victory points system
 initializeVictoryPoints(window.players);
 
+// Initialize initial placement phase
+initializeInitialPlacement(window.players);
+
 // Make victory points functions available globally
 window.updateAllVictoryPoints = updateAllVictoryPoints;
 window.initializeVictoryPoints = initializeVictoryPoints;
 window.getVictoryPointsForDisplay = getVictoryPointsForDisplay;
+
+// Make game phase functions available globally
+window.getGamePhaseInfo = getGamePhaseInfo;
+window.getCurrentPlayerPlacementInfo = getCurrentPlayerPlacementInfo;
+window.undoLastInitialPlacement = undoLastInitialPlacement;
+window.getInitialPlacementUIState = getInitialPlacementUIState;
 
 window.updateResourceUI = updateResourceUI;
 
@@ -90,12 +99,147 @@ window.activePlayerIdx = activePlayerIdx;
 renderer.domElement.style.visibility = 'hidden';
 renderer.domElement.classList.add('board-hidden');
 
+// === UI: Game Status Display ===
+let gameStatusDisplay = document.getElementById('game-status-display');
+if (!gameStatusDisplay) {
+  gameStatusDisplay = document.createElement('div');
+  gameStatusDisplay.id = 'game-status-display';
+  gameStatusDisplay.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(30, 30, 30, 0.9));
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    z-index: 1000;
+    max-width: 280px;
+    min-width: 260px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  `;
+  document.body.appendChild(gameStatusDisplay);
+}
+
+function updateGameStatusDisplay() {
+  const phaseInfo = getGamePhaseInfo();
+  const currentPlayerInfo = getCurrentPlayerPlacementInfo(activePlayerIdx);
+  
+  let html = `<div style="display: flex; align-items: center; margin-bottom: 8px;">`;
+  html += `<div style="width: 8px; height: 8px; background: ${phaseInfo.phase === 'Startaufstellung' ? '#4CAF50' : '#2196F3'}; border-radius: 50%; margin-right: 8px;"></div>`;
+  html += `<strong style="color: #fff; font-size: 16px;">${phaseInfo.phase}</strong>`;
+  html += `</div>`;
+  html += `<div style="color: #ccc; font-size: 13px; margin-bottom: 12px;">${phaseInfo.description}</div>`;
+  
+  if (currentPlayerInfo) {
+    const playerColor = window.players && window.players[activePlayerIdx] ? 
+      `#${window.players[activePlayerIdx].color.toString(16).padStart(6, '0')}` : '#fff';
+    
+    html += `<div style="background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 8px; border-left: 3px solid ${playerColor};">`;
+    html += `<div style="color: ${playerColor}; font-weight: bold; margin-bottom: 8px;">Spieler ${activePlayerIdx + 1}</div>`;
+    
+    // Progress bars for remaining pieces
+    const settlementProgress = ((2 - currentPlayerInfo.settlements) / 2) * 100;
+    const roadProgress = ((2 - currentPlayerInfo.roads) / 2) * 100;
+    
+    html += `<div style="margin-bottom: 6px;">`;
+    html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">`;
+    html += `<span style="color: #ddd; font-size: 12px;">🏠 Siedlungen</span>`;
+    html += `<span style="color: #fff; font-weight: bold;">${currentPlayerInfo.settlements}</span>`;
+    html += `</div>`;
+    html += `<div style="background: rgba(255,255,255,0.2); height: 4px; border-radius: 2px; overflow: hidden;">`;
+    html += `<div style="background: #4CAF50; height: 100%; width: ${settlementProgress}%; transition: width 0.3s;"></div>`;
+    html += `</div>`;
+    html += `</div>`;
+    
+    html += `<div style="margin-bottom: 12px;">`;
+    html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">`;
+    html += `<span style="color: #ddd; font-size: 12px;">🛤️ Straßen</span>`;
+    html += `<span style="color: #fff; font-weight: bold;">${currentPlayerInfo.roads}</span>`;
+    html += `</div>`;
+    html += `<div style="background: rgba(255,255,255,0.2); height: 4px; border-radius: 2px; overflow: hidden;">`;
+    html += `<div style="background: #FF9800; height: 100%; width: ${roadProgress}%; transition: width 0.3s;"></div>`;
+    html += `</div>`;
+    html += `</div>`;
+    
+    // Add undo button if available
+    if (currentPlayerInfo.canUndo) {
+      const lastAction = currentPlayerInfo.lastAction;
+      const actionName = lastAction ? 
+        (lastAction.type === 'settlements' ? 'Siedlung' : 'Straße') : 
+        'letzte Aktion';
+      
+      html += `<button onclick="performUndo()" style="
+        width: 100%;
+        background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+      " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(255, 107, 107, 0.4)'" 
+         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255, 107, 107, 0.3)'">`;
+      html += `🔄 ${actionName} rückgängig`;
+      html += `</button>`;
+    }
+    
+    html += `</div>`;
+  }
+  
+  gameStatusDisplay.innerHTML = html;
+}
+
+// === Centralized Player Switch Function ===
+// This function ensures all UI components are properly synchronized when switching players
+function setActivePlayerAndUpdateUI(newPlayerIdx) {
+  console.log(`Switching active player from ${activePlayerIdx} to ${newPlayerIdx}`);
+  
+  // Update the active player index
+  activePlayerIdx = newPlayerIdx;
+  window.activePlayerIdx = newPlayerIdx;
+  
+  // Update all UI components
+  updateAllUI();
+  
+  // Update development cards UI if it exists
+  if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') {
+    devCardsUI.updateDevHand();
+  }
+  
+  console.log(`Active player is now Player ${newPlayerIdx + 1}`);
+}
+
+// Function specifically for switching to first player after initial placement
+function setActivePlayerToFirstPlayer() {
+  console.log('Switching to first player (Player 1) after initial placement complete');
+  setActivePlayerAndUpdateUI(0);
+}
+
+// Make functions globally available
+window.setActivePlayerAndUpdateUI = setActivePlayerAndUpdateUI;
+window.setActivePlayerToFirstPlayer = setActivePlayerToFirstPlayer;
+
 // === UI: Haupt-Button-Leiste (Action Bar) ===
 let actionBar = document.getElementById('main-action-bar');
 if (!actionBar) {
   actionBar = document.createElement('div');
   actionBar.id = 'main-action-bar';
   document.body.appendChild(actionBar);
+}
+
+// Centralized UI update function
+function updateAllUI() {
+  updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
+  updatePlayerOverviews(window.players, () => activePlayerIdx);
+  updateGameStatusDisplay();
 }
 
 // === Preload Game Board ===
@@ -210,12 +354,7 @@ async function startGame() {
       getBuildMode: () => buildMode,
       setBuildMode: (mode) => { buildMode = mode; },
       getActivePlayerIdx: () => activePlayerIdx,
-      setActivePlayerIdx: (idx) => {
-        activePlayerIdx = idx;
-        window.activePlayerIdx = idx;
-        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-        updatePlayerOverviews(window.players, () => activePlayerIdx);
-      },
+      setActivePlayerIdx: setActivePlayerAndUpdateUI,  // Use centralized function
       parent: actionBar
     });
     console.log('Build-UI erstellt:', document.getElementById('build-ui'));
@@ -333,7 +472,7 @@ async function startGame() {
     emoji.style.lineHeight = '1';
     btn.appendChild(emoji);
 
-    // Label entfernt - nur noch Emoji wird angezeigt
+    // Label entfernt - nur noch Emoji
 
     // Dummy-UI für das Würfelergebnis (wie dice-result), aber außerhalb des Buttons
     let resultDiv = document.getElementById('dice-result');
@@ -377,19 +516,41 @@ async function startGame() {
     }
 
     function updateButtonUI() {
-      if (state === 0) {
-        emoji.textContent = '🎲';
-        // Label entfernt - nur Emoji wird geändert
-      } else {
+      // Check current game phase
+      const gamePhaseInfo = getGamePhaseInfo();
+      
+      if (gamePhaseInfo.phase === 'Startaufstellung') {
+        // During initial placement: always show player switch
         emoji.textContent = '🔄';
-        // Spielerwechsel-Emoji, kein Label nötig
+        btn.title = 'Spieler wechseln';
+      } else {
+        // During regular play: switch between dice and player change
+        if (state === 0) {
+          emoji.textContent = '🎲';
+          btn.title = 'Würfeln';
+        } else {
+          emoji.textContent = '🔄';
+          btn.title = 'Spieler wechseln';
+        }
       }
     }
-    updateButtonUI();
+    
+    // Initial UI update - delay to ensure game phase is properly set
+    setTimeout(() => {
+      updateButtonUI();
+    }, 100);
 
     btn.onclick = () => {
-      if (state === 0) {
-        // Würfeln
+      // Check current game phase
+      const gamePhaseInfo = getGamePhaseInfo();
+      
+      if (gamePhaseInfo.phase === 'Startaufstellung') {
+        // During initial placement: always do player switch
+        const nextIdx = (activePlayerIdx + 1) % window.players.length;
+        setActivePlayerAndUpdateUI(nextIdx);
+        
+      } else if (state === 0) {
+        // Regular play: Würfeln
         if (typeof throwPhysicsDice === 'function' && typeof scene !== 'undefined') {
           throwPhysicsDice(scene);
           window.setDiceResultFromPhysics = (result) => {
@@ -416,24 +577,19 @@ async function startGame() {
           }
         }
       } else {
-        // Spielerwechsel
-        const idx = activePlayerIdx;
-        const nextIdx = (idx + 1) % window.players.length;
-        if (typeof window.setActivePlayerIdx === 'function') {
-          window.setActivePlayerIdx(nextIdx);
-        } else {
-          activePlayerIdx = nextIdx;
-          window.activePlayerIdx = nextIdx;
-        }
-        // UI updaten
-        updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-        updatePlayerOverviews(window.players, () => activePlayerIdx);
-        if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
+        // Regular play: Spielerwechsel
+        const nextIdx = (activePlayerIdx + 1) % window.players.length;
+        setActivePlayerAndUpdateUI(nextIdx);
         // Button zurück auf Würfeln
         state = 0;
         resultDiv.textContent = '?'; // Zurück zum Platzhalter
         updateButtonUI();
       }
+    };
+    
+    // Make button update function globally available for phase changes
+    window.updateDiceButtonForPhaseChange = function() {
+      updateButtonUI();
     };
 
     // Button wird bereits im diceWrapper hinzugefügt, nicht direkt zur actionBar
@@ -466,8 +622,7 @@ async function startGame() {
         getBank: () => window.bank,
         getDeck: () => window.developmentDeck,
         onBuy: () => {
-          updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-          updatePlayerOverviews(window.players, () => activePlayerIdx);
+          updateAllUI();
         },
         getScene: () => scene,
         getTileMeshes: () => tileMeshes
@@ -484,7 +639,7 @@ async function startGame() {
   try {
     // === UI: Spieler-Übersicht (oben links) ===
     createPlayerOverviews(window.players, () => activePlayerIdx);
-    updatePlayerOverviews(window.players, () => activePlayerIdx);
+    updateAllUI();
     console.log('Player-Overviews erstellt:', document.getElementById('player-overview-container'));
   } catch (e) {
     console.error('Fehler beim Erstellen der Player-Overviews:', e);
@@ -520,8 +675,7 @@ async function startGame() {
     tryBuildRoad,
     getCornerWorldPosition,
     updateResourceUI: () => {
-      updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
-      updatePlayerOverviews(window.players, () => activePlayerIdx);
+      updateAllUI();
     }
   });
 
@@ -772,3 +926,31 @@ window.getAllPlayers = function() {
 };
 
 window.startRobberPlacement = startRobberPlacement;
+
+// === Undo Functionality ===
+function performUndo() {
+  if (typeof undoLastInitialPlacement === 'function') {
+    const result = undoLastInitialPlacement(activePlayerIdx, players);
+    
+    if (result.success) {
+      console.log('Undo successful:', result.message);
+      showBuildPopupFeedback(result.message, 'success');
+      
+      // Update all visual elements
+      updateAllUI();
+      
+      // Refresh the game board to reflect changes
+      if (typeof window.refreshGameBoard === 'function') {
+        window.refreshGameBoard();
+      }
+    } else {
+      console.log('Undo failed:', result.reason);
+      showBuildPopupFeedback(result.reason, 'error');
+    }
+  } else {
+    showBuildPopupFeedback('Undo-Funktion nicht verfügbar', 'error');
+  }
+}
+
+// Make undo function globally available
+window.performUndo = performUndo;

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { placeBuildingMesh, placeRoadMesh } from './gamePieces.js';
 import { isBuildEnabled } from './uiBuild.js';
 import { showBuildPopupFeedback } from './uiBuild.js';
+import { getPlacementWarning } from './buildLogic.js';
 
 // Build-Event-Handler für das Bauen von Siedlungen und Städten
 // Kapselt die Click-Logik für das Spielfeld
@@ -64,14 +65,36 @@ export function setupBuildEventHandler({
     if (minDist > 1.5) return;
     // Try to build
     const player = players[getActivePlayerIdx()];
+    const playerId = getActivePlayerIdx();
     let result;
     let meshPlaced = false;
+    
     if (getBuildMode() === 'settlement') {
-      // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
-      result = tryBuildSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
-      if (result.success) {
-        placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'settlement', player.color);
-        meshPlaced = true;
+      // Check for placement warning before building
+      const warning = getPlacementWarning(playerId, players, 'settlements', q, r, nearest);
+      if (warning) {
+        showBuildPopupFeedback(warning.message, 'warning');
+        // Give user a moment to see the warning, then proceed
+        setTimeout(() => {
+          // Use proper Catan rules for settlement placement
+          result = tryBuildSettlement(player, q, r, nearest, players);
+          if (result.success) {
+            placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'settlement', player.color);
+            meshPlaced = true;
+            showBuildPopupFeedback('Siedlung gebaut', 'success');
+          } else {
+            showBuildPopupFeedback(result.reason, 'error');
+          }
+          if (meshPlaced) updateResourceUI();
+        }, 1500);
+        return; // Exit early to show warning
+      } else {
+        // No warning, proceed immediately
+        result = tryBuildSettlement(player, q, r, nearest, players);
+        if (result.success) {
+          placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'settlement', player.color);
+          meshPlaced = true;
+        }
       }
     } else if (getBuildMode() === 'city') {
       result = tryBuildCity(player, q, r, nearest);
@@ -98,15 +121,42 @@ export function setupBuildEventHandler({
         ignoreResourceRule = true;
       }
       if (typeof tryBuildRoad === 'function') {
-        result = tryBuildRoad(player, q, r, nearestEdge, players, { ignoreResourceRule });
-        if (result.success) {
-          placeRoadMesh(scene, getCornerWorldPosition, q, r, nearestEdge, player.color);
-          meshPlaced = true;
-          // Straßenbau-Modus: Zähler runterzählen und ggf. beenden
-          if (ignoreResourceRule && window._roadBuildingMode && window._roadBuildingMode.player === player) {
-            window._roadBuildingMode.roadsLeft--;
-            if (window._roadBuildingMode.roadsLeft <= 0) {
-              if (typeof window._roadBuildingMode.finish === 'function') window._roadBuildingMode.finish();
+        // Check for placement warning before building roads
+        const warning = getPlacementWarning(playerId, players, 'roads', q, r, null, nearestEdge);
+        if (warning) {
+          showBuildPopupFeedback(warning.message, 'warning');
+          // Give user a moment to see the warning, then proceed
+          setTimeout(() => {
+            result = tryBuildRoad(player, q, r, nearestEdge, players, { ignoreResourceRule });
+            if (result.success) {
+              placeRoadMesh(scene, getCornerWorldPosition, q, r, nearestEdge, player.color);
+              meshPlaced = true;
+              showBuildPopupFeedback('Straße gebaut', 'success');
+              // Straßenbau-Modus: Zähler runterzählen und ggf. beenden
+              if (ignoreResourceRule && window._roadBuildingMode && window._roadBuildingMode.player === player) {
+                window._roadBuildingMode.roadsLeft--;
+                if (window._roadBuildingMode.roadsLeft <= 0) {
+                  if (typeof window._roadBuildingMode.finish === 'function') window._roadBuildingMode.finish();
+                }
+              }
+            } else {
+              showBuildPopupFeedback(result.reason, 'error');
+            }
+            if (meshPlaced) updateResourceUI();
+          }, 1500);
+          return; // Exit early to show warning
+        } else {
+          // No warning, proceed immediately
+          result = tryBuildRoad(player, q, r, nearestEdge, players, { ignoreResourceRule });
+          if (result.success) {
+            placeRoadMesh(scene, getCornerWorldPosition, q, r, nearestEdge, player.color);
+            meshPlaced = true;
+            // Straßenbau-Modus: Zähler runterzählen und ggf. beenden
+            if (ignoreResourceRule && window._roadBuildingMode && window._roadBuildingMode.player === player) {
+              window._roadBuildingMode.roadsLeft--;
+              if (window._roadBuildingMode.roadsLeft <= 0) {
+                if (typeof window._roadBuildingMode.finish === 'function') window._roadBuildingMode.finish();
+              }
             }
           }
         }

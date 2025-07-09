@@ -75,8 +75,8 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
     let shouldShowPreview = true; // New flag to control preview visibility
     
     if (buildMode === 'settlement') {
-      // Für Testzwecke: requireRoad = false, ignoreDistanceRule = true
-      const res = canPlaceSettlement(player, q, r, nearest, players, { requireRoad: false, ignoreDistanceRule: true });
+      // Use proper Catan rules for settlement placement
+      const res = canPlaceSettlement(player, q, r, nearest, players);
       canBuild = res.success;
       
       // Don't show preview if no land tile adjacent
