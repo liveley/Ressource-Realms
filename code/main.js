@@ -197,6 +197,36 @@ function updateGameStatusDisplay() {
   gameStatusDisplay.innerHTML = html;
 }
 
+// === Centralized Player Switch Function ===
+// This function ensures all UI components are properly synchronized when switching players
+function setActivePlayerAndUpdateUI(newPlayerIdx) {
+  console.log(`Switching active player from ${activePlayerIdx} to ${newPlayerIdx}`);
+  
+  // Update the active player index
+  activePlayerIdx = newPlayerIdx;
+  window.activePlayerIdx = newPlayerIdx;
+  
+  // Update all UI components
+  updateAllUI();
+  
+  // Update development cards UI if it exists
+  if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') {
+    devCardsUI.updateDevHand();
+  }
+  
+  console.log(`Active player is now Player ${newPlayerIdx + 1}`);
+}
+
+// Function specifically for switching to first player after initial placement
+function setActivePlayerToFirstPlayer() {
+  console.log('Switching to first player (Player 1) after initial placement complete');
+  setActivePlayerAndUpdateUI(0);
+}
+
+// Make functions globally available
+window.setActivePlayerAndUpdateUI = setActivePlayerAndUpdateUI;
+window.setActivePlayerToFirstPlayer = setActivePlayerToFirstPlayer;
+
 // === UI: Haupt-Button-Leiste (Action Bar) ===
 let actionBar = document.getElementById('main-action-bar');
 if (!actionBar) {
@@ -324,11 +354,7 @@ async function startGame() {
       getBuildMode: () => buildMode,
       setBuildMode: (mode) => { buildMode = mode; },
       getActivePlayerIdx: () => activePlayerIdx,
-      setActivePlayerIdx: (idx) => {
-        activePlayerIdx = idx;
-        window.activePlayerIdx = idx;
-        updateAllUI();
-      },
+      setActivePlayerIdx: setActivePlayerAndUpdateUI,  // Use centralized function
       parent: actionBar
     });
     console.log('Build-UI erstellt:', document.getElementById('build-ui'));
@@ -490,19 +516,41 @@ async function startGame() {
     }
 
     function updateButtonUI() {
-      if (state === 0) {
-        emoji.textContent = '🎲';
-        // Label entfernt - nur Emoji wird geändert
-      } else {
+      // Check current game phase
+      const gamePhaseInfo = getGamePhaseInfo();
+      
+      if (gamePhaseInfo.phase === 'Startaufstellung') {
+        // During initial placement: always show player switch
         emoji.textContent = '🔄';
-        // Spielerwechsel-Emoji, kein Label nötig
+        btn.title = 'Spieler wechseln';
+      } else {
+        // During regular play: switch between dice and player change
+        if (state === 0) {
+          emoji.textContent = '🎲';
+          btn.title = 'Würfeln';
+        } else {
+          emoji.textContent = '🔄';
+          btn.title = 'Spieler wechseln';
+        }
       }
     }
-    updateButtonUI();
+    
+    // Initial UI update - delay to ensure game phase is properly set
+    setTimeout(() => {
+      updateButtonUI();
+    }, 100);
 
     btn.onclick = () => {
-      if (state === 0) {
-        // Würfeln
+      // Check current game phase
+      const gamePhaseInfo = getGamePhaseInfo();
+      
+      if (gamePhaseInfo.phase === 'Startaufstellung') {
+        // During initial placement: always do player switch
+        const nextIdx = (activePlayerIdx + 1) % window.players.length;
+        setActivePlayerAndUpdateUI(nextIdx);
+        
+      } else if (state === 0) {
+        // Regular play: Würfeln
         if (typeof throwPhysicsDice === 'function' && typeof scene !== 'undefined') {
           throwPhysicsDice(scene);
           window.setDiceResultFromPhysics = (result) => {
@@ -529,23 +577,19 @@ async function startGame() {
           }
         }
       } else {
-        // Spielerwechsel
-        const idx = activePlayerIdx;
-        const nextIdx = (idx + 1) % window.players.length;
-        if (typeof window.setActivePlayerIdx === 'function') {
-          window.setActivePlayerIdx(nextIdx);
-        } else {
-          activePlayerIdx = nextIdx;
-          window.activePlayerIdx = nextIdx;
-        }
-        // UI updaten
-        updateAllUI();
-        if (devCardsUI && typeof devCardsUI.updateDevHand === 'function') devCardsUI.updateDevHand();
+        // Regular play: Spielerwechsel
+        const nextIdx = (activePlayerIdx + 1) % window.players.length;
+        setActivePlayerAndUpdateUI(nextIdx);
         // Button zurück auf Würfeln
         state = 0;
         resultDiv.textContent = '?'; // Zurück zum Platzhalter
         updateButtonUI();
       }
+    };
+    
+    // Make button update function globally available for phase changes
+    window.updateDiceButtonForPhaseChange = function() {
+      updateButtonUI();
     };
 
     // Button wird bereits im diceWrapper hinzugefügt, nicht direkt zur actionBar
