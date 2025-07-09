@@ -226,6 +226,7 @@ function setActivePlayerToFirstPlayer() {
 // Make functions globally available
 window.setActivePlayerAndUpdateUI = setActivePlayerAndUpdateUI;
 window.setActivePlayerToFirstPlayer = setActivePlayerToFirstPlayer;
+window.updateAllUI = updateAllUI;
 
 // === UI: Haupt-Button-Leiste (Action Bar) ===
 let actionBar = document.getElementById('main-action-bar');
@@ -674,7 +675,7 @@ async function startGame() {
     tryBuildCity,
     tryBuildRoad,
     getCornerWorldPosition,
-    updateResourceUI: () => {
+    updateAllUI: () => {
       updateAllUI();
     }
   });

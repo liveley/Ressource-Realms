@@ -2,28 +2,29 @@
 
 This directory contains all debug and testing utilities for the Catan 3D game, refactored out of the main game logic files.
 
-## 🎯 Refactoring Summary
+## 🎯 Cleanup Summary
 
-The debug and testing functionality has been successfully refactored and organized into dedicated modules:
+The debug and testing functionality has been successfully cleaned up and organized:
 
-### ✅ Completed Refactoring Tasks:
+### ✅ Completed Cleanup Tasks:
 
-1. **Moved debug utilities out of main.js**:
-   - Road testing and debug utilities → `roadTestingUtils.js`
-   - Debug key handlers → `debugKeyHandlers.js`
+1. **Cleaned up victoryPoints.js**:
+   - Removed all debug/testing functions from production code
+   - Moved debug functions → `victoryPointsTestingUtils.js` and `longestRoadDebug.js`
+   - Made console logging conditional (disabled in production)
+   - **Kept only core functions needed by main game logic**
+   - Removed duplicate debug exports
 
-2. **Cleaned up victoryPoints.js**:
-   - Moved debug/testing functions → `victoryPointsTestingUtils.js`
-   - Made console logging conditional (controlled by `window.DEBUG_VICTORY_POINTS`)
-   - **Kept core functions needed by main game logic** (like `getCanonicalRoad`)
+2. **Organized debug utilities**:
+   - All longest road debugging → `longestRoadDebug.js`
+   - Victory points testing → `victoryPointsTestingUtils.js`
+   - Road testing utilities → `roadTestingUtils.js`
+   - General debug tools → `debugTools.js`
 
-3. **Created centralized debug control system**:
-   - `debugControls.js` - Centralized debug flag management
-   - Global functions for enabling/disabling debug logging
-
-4. **Consolidated test utilities**:
-   - `testUtils.js` - Unified test runner and utilities
-   - Organized tests from scattered test files
+3. **Fixed production build**:
+   - Debug functions only available in development (localhost)
+   - Clean separation between production and debug code
+   - No performance impact from debug code in production
 
 ## 📁 Module Structure
 
@@ -40,13 +41,24 @@ The debug and testing functionality has been successfully refactored and organiz
   - D key: Toggle dice debug mode
   - R+D keys: Toggle road debug tools
 
-- **`roadTestingUtils.js`** - Road connection testing and debugging
+- **`longestRoadDebug.js`** - Longest road debugging tools
+  - `analyzePlayerRoads(player)` - Analyze a player's road network
+  - `testRoadConnections()` - Test road connection examples
+  - `enableRoadDebug()` / `disableRoadDebug()` - Toggle road debug logging
+  - `toggleRoadDebugTools()` - Show/hide road debug UI
+
+- **`roadTestingUtils.js`** - Road connection testing and utilities
   - `initRoadTestingUtils()` - Make road debug functions globally available
   - `testRoadConnectionLogic()` - Test road connection logic
   - `analyzeActualRoads()` - Analyze current game roads
   - `testFiveRoadChain()` - Test specific 5-road scenario
   - `simulateRoadBuilding()` - Simulate road placement
   - Various other road testing functions (see file header for complete list)
+
+- **`victoryPointsTestingUtils.js`** - Victory points debugging
+  - `debugRoadConnections(roads)` - Debug road connections for analysis
+  - `testRoadConnections()` - Run comprehensive road connection tests
+  - `initVictoryPointsTestingUtils()` - Make VP debug functions globally available
 
 - **`victoryPointsTestingUtils.js`** - Victory points and road connection debugging
   - `initVictoryPointsTestingUtils()` - Initialize VP debug functions

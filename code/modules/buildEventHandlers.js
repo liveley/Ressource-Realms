@@ -19,7 +19,7 @@ export function setupBuildEventHandler({
   tryBuildCity,
   tryBuildRoad,
   getCornerWorldPosition,
-  updateResourceUI // now expects no arguments, closure from main.js
+  updateAllUI // now includes player overviews and achievement display
 }) {
   function onBoardClick(event) {
     console.log('BuildEventHandler: click event');
@@ -85,7 +85,7 @@ export function setupBuildEventHandler({
           } else {
             showBuildPopupFeedback(result.reason, 'error');
           }
-          if (meshPlaced) updateResourceUI();
+          if (meshPlaced) updateAllUI();
         }, 1500);
         return; // Exit early to show warning
       } else {
@@ -142,7 +142,7 @@ export function setupBuildEventHandler({
             } else {
               showBuildPopupFeedback(result.reason, 'error');
             }
-            if (meshPlaced) updateResourceUI();
+            if (meshPlaced) updateAllUI();
           }, 1500);
           return; // Exit early to show warning
         } else {
@@ -176,8 +176,8 @@ export function setupBuildEventHandler({
       return;
     }
     showBuildPopupFeedback('Gebaut!', true);
-    // Ressourcen-UI nur aktualisieren, wenn gebaut wurde
-    if (meshPlaced) updateResourceUI();
+    // UI aktualisieren, wenn gebaut wurde (inklusive Achievements)
+    if (meshPlaced) updateAllUI();
   }
   renderer.domElement.addEventListener('click', onBoardClick, false);
 }

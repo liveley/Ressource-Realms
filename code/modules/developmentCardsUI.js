@@ -217,6 +217,10 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
             playKnight(player, window.players);
             // Update the button text to reflect new knight count
             updateOverviewButtonText();
+            // Trigger full UI update to refresh achievement display
+            if (typeof window.updateAllUI === 'function') {
+              window.updateAllUI();
+            }
           }
         } else {
           showGlobalFeedback('Räuberplatzierung nicht möglich (Szene oder Tiles fehlen)', '#c00', 3000);
@@ -234,6 +238,10 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
               // Update longest road after road building
               if (window.players && Array.isArray(window.players)) {
                 updateLongestRoad(window.players);
+                // Trigger full UI update to refresh achievement display
+                if (typeof window.updateAllUI === 'function') {
+                  window.updateAllUI();
+                }
               }
             }
           };
