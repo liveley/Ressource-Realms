@@ -298,45 +298,97 @@ export async function renderPorts(scene) {
 
 /**
  * Findet alle Häfen in der Nähe einer Siedlung/Stadt
- * @param {number} q - Hex coordinate q of settlement
- * @param {number} r - Hex coordinate r of settlement  
+ * @param {number} q - Hex coordinate q of settlement (Land-Tile)
+ * @param {number} r - Hex coordinate r of settlement (Land-Tile)  
  * @param {number} corner - Corner index (0-5) of settlement
  * @returns {Array<Object>} Array of nearby ports
  */
 export function getPortsNearSettlement(q, r, corner) {
   const nearbyPorts = [];
   
+  // Debug: Log the settlement position we're checking
+  console.log(`Checking for ports near settlement at land tile q=${q}, r=${r}, corner=${corner}`);
+  
   for (const port of PORTS) {
-    // Prüfe ob die Siedlung auf einer der beiden Ecken der Port-Kante liegt
-    const portVertices = getPortVertices(port.position.q, port.position.r, port.position.edge);
+    // Für jeden Port prüfen wir, ob die Siedlung an einer angrenzenden Ecke steht
+    // Ports sind an Wasser-Tiles, Siedlungen an Land-Tiles
+    const waterTileQ = port.position.q;
+    const waterTileR = port.position.r;
+    const portEdge = port.position.edge;
     
-    for (const vertex of portVertices) {
-      if (vertex.q === q && vertex.r === r && vertex.corner === corner) {
-        nearbyPorts.push(port);
-        break;
-      }
+    // Berechne die Nachbar-Land-Tiles um das Wasser-Tile
+    // und prüfe, ob unsere Siedlung an einer relevanten Ecke steht
+    if (isSettlementNearPort(q, r, corner, waterTileQ, waterTileR, portEdge)) {
+      console.log(`Found port ${port.id} near settlement at q=${q}, r=${r}, corner=${corner}`);
+      nearbyPorts.push(port);
     }
   }
   
+  console.log(`Found ${nearbyPorts.length} ports near settlement`);
   return nearbyPorts;
 }
 
 /**
- * Berechnet die beiden Vertices (Ecken) einer Port-Kante
- * @param {number} q - Hex coordinate q
- * @param {number} r - Hex coordinate r
- * @param {number} edge - Edge index (0-5)
- * @returns {Array<Object>} Array of two vertices [{q, r, corner}, {q, r, corner}]
+ * Prüft ob eine Siedlung an einem Land-Tile in der Nähe eines Hafens steht
+ * @param {number} settlementQ - Q-Koordinate der Siedlung (Land-Tile)
+ * @param {number} settlementR - R-Koordinate der Siedlung (Land-Tile)
+ * @param {number} settlementCorner - Ecken-Index der Siedlung (0-5)
+ * @param {number} portQ - Q-Koordinate des Hafen-Wasser-Tiles
+ * @param {number} portR - R-Koordinate des Hafen-Wasser-Tiles
+ * @param {number} portEdge - Kanten-Index des Hafens (0-5)
+ * @returns {boolean} True wenn die Siedlung nahe genug am Hafen ist
  */
-function getPortVertices(q, r, edge) {
-  // Jede Kante verbindet zwei Ecken
-  const corner1 = edge;
-  const corner2 = (edge + 1) % 6;
+function isSettlementNearPort(settlementQ, settlementR, settlementCorner, portQ, portR, portEdge) {
+  // Berechne die 6 Nachbar-Tiles um das Wasser-Tile
+  const waterNeighbors = getHexNeighbors(portQ, portR);
   
-  return [
-    { q, r, corner: corner1 },
-    { q, r, corner: corner2 }
+  // Für jeden Nachbarn prüfen, ob unsere Siedlung dort steht
+  for (let i = 0; i < waterNeighbors.length; i++) {
+    const neighbor = waterNeighbors[i];
+    
+    // Prüfe ob die Siedlung auf diesem Land-Tile steht
+    if (neighbor.q === settlementQ && neighbor.r === settlementR) {
+      // Jetzt prüfen wir, ob die Siedlungs-Ecke mit dem Hafen-Edge kompatibel ist
+      // Die Ecke der Siedlung muss zur Kante des Hafens zeigen
+      
+      // Vereinfachte Logik: Wenn die Siedlung auf einem angrenzenden Land-Tile steht
+      // und die Ecke in Richtung des Wasser-Tiles zeigt, dann ist sie am Hafen
+      const edgeToWater = (i + 3) % 6; // Gegenüberliegende Kante zeigt zum Wasser
+      const edgeToWater2 = (i + 2) % 6; // Angrenzende Kanten
+      const edgeToWater3 = (i + 4) % 6;
+      
+      if (settlementCorner === edgeToWater || 
+          settlementCorner === edgeToWater2 || 
+          settlementCorner === edgeToWater3) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Berechnet die 6 Nachbar-Koordinaten eines Hex-Tiles
+ * @param {number} q - Axial coordinate q
+ * @param {number} r - Axial coordinate r
+ * @returns {Array<Object>} Array of 6 neighbor coordinates [{q, r}, ...]
+ */
+function getHexNeighbors(q, r) {
+  // Die 6 Hex-Nachbarn in axial coordinates
+  const directions = [
+    { q: 1, r: 0 },   // Osten
+    { q: 1, r: -1 },  // Nordosten  
+    { q: 0, r: -1 },  // Nordwesten
+    { q: -1, r: 0 },  // Westen
+    { q: -1, r: 1 },  // Südwesten
+    { q: 0, r: 1 }    // Südosten
   ];
+  
+  return directions.map(dir => ({
+    q: q + dir.q,
+    r: r + dir.r
+  }));
 }
 
 /**
