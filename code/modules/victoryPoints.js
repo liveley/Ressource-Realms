@@ -144,7 +144,8 @@ export function addVictoryPointCard(player) {
 }
 
 /**
- * Calculate longest road for a player
+ * Calculate longest road for a player using correct Catan rules
+ * Finds the longest single path without repeating any road segment
  * @param {Object} player - The player object
  * @returns {number} Length of longest road
  */
@@ -153,69 +154,170 @@ export function calculateLongestRoad(player) {
     return 0;
   }
   
-  // Use simplified approach: build adjacency list directly
-  const adjacencyList = buildSimpleRoadAdjacencyList(player.roads);
+  debugLog(`Calculating longest road for ${player.name || 'Unknown'} with ${player.roads.length} roads`);
   
-  // Find longest path in the graph
+  // Build road network as edge-based graph
+  const roadNetwork = buildRoadNetwork(player.roads);
+  
+  // Find longest path using edge-based DFS with backtracking
   let maxLength = 0;
   
-  // Try starting from each road segment
-  for (const roadKey of adjacencyList.keys()) {
-    const visited = new Set();
-    const length = dfsLongestPathSimple(adjacencyList, roadKey, visited);
+  // Try starting from each road endpoint (vertex)
+  for (const vertex of roadNetwork.vertices.keys()) {
+    const visitedEdges = new Set();
+    const length = dfsLongestPath(roadNetwork, vertex, visitedEdges);
     maxLength = Math.max(maxLength, length);
+  }
+  
+  debugLog(`Longest road for ${player.name || 'Unknown'}: ${maxLength}`);
+  return maxLength;
+}
+
+/**
+ * Build road network as vertex-edge graph for longest path calculation
+ * Each road is an edge connecting two vertices (road endpoints)
+ * @param {Array} roads - Array of road objects {q, r, edge}
+ * @returns {Object} Road network with vertices and edges
+ */
+function buildRoadNetwork(roads) {
+  const vertices = new Map(); // vertex -> Set of connected edges
+  const edges = new Map();    // edge -> {from: vertex, to: vertex}
+  const vertexEquivalenceMap = new Map(); // canonical vertex -> original vertices
+  
+  roads.forEach(road => {
+    const roadKey = getRoadKey(road);
+    const endpoints = getRoadVertices(road);
+    
+    // For each endpoint, find its canonical representation
+    const canonicalVertices = endpoints.map(vertex => {
+      // Check if we already have a canonical vertex for this physical location
+      for (const [canonical, originals] of vertexEquivalenceMap.entries()) {
+        for (const original of originals) {
+          if (areVerticesEqual(vertex, original)) {
+            return canonical;
+          }
+        }
+      }
+      
+      // No existing canonical vertex found, this becomes the canonical one
+      const canonical = getVertexKey(vertex);
+      vertexEquivalenceMap.set(canonical, [vertex]);
+      return canonical;
+    });
+    
+    const vertex1 = canonicalVertices[0];
+    const vertex2 = canonicalVertices[1];
+    
+    // Add vertices to graph
+    if (!vertices.has(vertex1)) vertices.set(vertex1, new Set());
+    if (!vertices.has(vertex2)) vertices.set(vertex2, new Set());
+    
+    // Connect vertices with this edge
+    vertices.get(vertex1).add(roadKey);
+    vertices.get(vertex2).add(roadKey);
+    
+    // Store edge information
+    edges.set(roadKey, { from: vertex1, to: vertex2 });
+  });
+  
+  debugLog(`Built road network: ${vertices.size} vertices, ${edges.size} edges`);
+  debugLog(`Vertex equivalence map has ${vertexEquivalenceMap.size} canonical vertices`);
+  return { vertices, edges };
+}
+
+/**
+ * Get unique string key for a vertex
+ * @param {Object} vertex - Vertex object {q, r, corner}
+ * @returns {string} Unique vertex key
+ */
+function getVertexKey(vertex) {
+  return `${vertex.q},${vertex.r},${vertex.corner}`;
+}
+
+/**
+ * DFS to find longest path using edge-based backtracking (correct Catan algorithm)
+ * @param {Object} roadNetwork - Road network with vertices and edges
+ * @param {string} currentVertex - Current vertex key
+ * @param {Set} visitedEdges - Set of visited edge keys
+ * @returns {number} Length of longest path from current vertex
+ */
+function dfsLongestPath(roadNetwork, currentVertex, visitedEdges) {
+  let maxLength = 0;
+  
+  // Get all edges connected to current vertex
+  const connectedEdges = roadNetwork.vertices.get(currentVertex) || new Set();
+  
+  for (const edgeKey of connectedEdges) {
+    // Skip if this edge was already used in the current path
+    if (visitedEdges.has(edgeKey)) continue;
+    
+    // Mark edge as visited
+    visitedEdges.add(edgeKey);
+    
+    // Find the other end of this edge
+    const edge = roadNetwork.edges.get(edgeKey);
+    const nextVertex = (edge.from === currentVertex) ? edge.to : edge.from;
+    
+    // Recursively explore from the other end
+    const pathLength = 1 + dfsLongestPath(roadNetwork, nextVertex, visitedEdges);
+    maxLength = Math.max(maxLength, pathLength);
+    
+    // Backtrack: remove edge from visited set
+    visitedEdges.delete(edgeKey);
   }
   
   return maxLength;
 }
 
 /**
- * Build road graph from road segments
- * @param {Array} roads - Array of road objects {q, r, edge}
- * @returns {Map} Adjacency graph
- */
-function buildRoadGraph(roads) {
-  const graph = new Map();
-  
-  roads.forEach(road => {
-    const key = getRoadKey(road);
-    if (!graph.has(key)) {
-      graph.set(key, new Set());
-    }
-  });
-  
-  // Connect adjacent roads
-  roads.forEach(road1 => {
-    const key1 = getRoadKey(road1);
-    roads.forEach(road2 => {
-      if (road1 === road2) return;
-      
-      const key2 = getRoadKey(road2);
-      if (areRoadsConnected(road1, road2)) {
-        graph.get(key1).add(key2);
-        graph.get(key2).add(key1);
-      }
-    });
-  });
-  
-  return graph;
-}
-
-/**
- * Check if two roads are connected
+ * Check if two roads are connected (share a vertex)
+ * Simplified and more reliable version
  * @param {Object} road1 - First road
  * @param {Object} road2 - Second road
  * @returns {boolean} True if roads are connected
  */
 function areRoadsConnected(road1, road2) {
-  // Roads are connected if they share a vertex (corner)
+  // Get vertices for both roads
   const vertices1 = getRoadVertices(road1);
   const vertices2 = getRoadVertices(road2);
   
-  const connected = vertices1.some(v1 => 
-    vertices2.some(v2 => areVerticesEqual(v1, v2))
-  );
-  return connected;
+  // Check if any vertex from road1 matches any vertex from road2
+  for (const v1 of vertices1) {
+    for (const v2 of vertices2) {
+      if (areVerticesEqual(v1, v2)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Check if two vertices are equal (considering equivalent representations)
+ * @param {Object} v1 - First vertex {q, r, corner}
+ * @param {Object} v2 - Second vertex {q, r, corner}
+ * @returns {boolean} True if vertices represent the same physical location
+ */
+function areVerticesEqual(v1, v2) {
+  // Direct comparison
+  if (v1.q === v2.q && v1.r === v2.r && v1.corner === v2.corner) {
+    return true;
+  }
+  
+  // Check equivalent representations
+  const equivalents1 = getEquivalentVertices(v1);
+  const equivalents2 = getEquivalentVertices(v2);
+  
+  for (const eq1 of equivalents1) {
+    for (const eq2 of equivalents2) {
+      if (eq1.q === eq2.q && eq1.r === eq2.r && eq1.corner === eq2.corner) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
 }
 
 /**
@@ -224,7 +326,7 @@ function areRoadsConnected(road1, road2) {
  * @param {Object} v2 - Second vertex {q, r, corner}
  * @returns {boolean} True if vertices are at the same location
  */
-function areVerticesEqual(v1, v2) {
+function areVerticesEqualOld(v1, v2) {
   // Direct match for hex coordinates (exact integer comparison)
   if (v1.q === v2.q && v1.r === v2.r && v1.corner === v2.corner) {
     return true;
@@ -253,35 +355,39 @@ function areWorldPointsEqual(p1, p2) {
 }
 
 /**
- * Get all equivalent representations of a vertex (simplified based on axial coordinates)
+ * Get all equivalent representations of a vertex (simplified and more accurate)
  * @param {Object} vertex - Vertex object {q, r, corner}
  * @returns {Array} Array of equivalent vertex objects
  */
 function getEquivalentVertices(vertex) {
   const { q, r, corner } = vertex;
   
-  // Each vertex is shared by exactly 3 tiles
-  // Using the axial coordinate system with directions: [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  // For corner N on tile (q,r), the equivalent representations are:
-  // - Current tile: (q, r, corner)
-  // - Neighbor in direction (corner-1)%6: corner becomes (corner+2)%6
-  // - Neighbor in direction corner: corner becomes (corner+4)%6
-  
+  // Direction vectors for axial coordinates
   const directions = [
     [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
   ];
   
+  // Each vertex is shared by exactly 3 tiles in a hexagonal grid
+  // Based on the correct mathematical relationship between hex tiles and vertices
+  
   const equivalents = [{ q, r, corner }];
   
-  // Add representation from neighbor in direction (corner-1)%6
-  const dir1 = (corner + 5) % 6; // (corner - 1) % 6 with wrap-around
-  const neighbor1 = [q + directions[dir1][0], r + directions[dir1][1]];
-  equivalents.push({ q: neighbor1[0], r: neighbor1[1], corner: (corner + 2) % 6 });
+  // For a vertex at corner N on tile (q,r), find the adjacent tiles that share this vertex
+  // Using the proper hexagonal grid mathematics:
   
-  // Add representation from neighbor in direction corner
-  const dir2 = corner;
-  const neighbor2 = [q + directions[dir2][0], r + directions[dir2][1]];
-  equivalents.push({ q: neighbor2[0], r: neighbor2[1], corner: (corner + 4) % 6 });
+  // Clockwise neighbor (direction = corner)
+  const neighborCW_q = q + directions[corner][0];
+  const neighborCW_r = r + directions[corner][1];
+  const neighborCW_corner = (corner + 4) % 6; // 240° rotation
+  
+  // Counter-clockwise neighbor (direction = (corner-1+6)%6)
+  const prevDirection = (corner + 5) % 6; // (corner - 1) with proper wrap
+  const neighborCCW_q = q + directions[prevDirection][0]; 
+  const neighborCCW_r = r + directions[prevDirection][1];
+  const neighborCCW_corner = (corner + 2) % 6; // 120° rotation
+  
+  equivalents.push({ q: neighborCW_q, r: neighborCW_r, corner: neighborCW_corner });
+  equivalents.push({ q: neighborCCW_q, r: neighborCCW_r, corner: neighborCCW_corner });
   
   return equivalents;
 }
@@ -438,29 +544,7 @@ function getRoadEndpoints(road) {
   }));
 }
 
-/**
- * DFS to find longest path in road graph (simple version)
- * @param {Map} adjacencyList - Road adjacency list
- * @param {string} current - Current road key
- * @param {Set} visited - Set of visited roads
- * @returns {number} Length of longest path from current node
- */
-function dfsLongestPathSimple(adjacencyList, current, visited) {
-  visited.add(current);
-  
-  let maxLength = 0;
-  const neighbors = adjacencyList.get(current) || [];
-  
-  for (const neighbor of neighbors) {
-    if (!visited.has(neighbor)) {
-      const length = dfsLongestPathSimple(adjacencyList, neighbor, visited);
-      maxLength = Math.max(maxLength, length);
-    }
-  }
-  
-  visited.delete(current);
-  return maxLength + 1;
-}
+// Removed old DFS function - replaced with correct edge-based algorithm above
 
 /**
  * Get unique key for a road
@@ -909,6 +993,294 @@ export function updateSpecialAchievements(allPlayers) {
   
   // Check win conditions for all players after special achievements update
   allPlayers.forEach(player => checkWinCondition(player));
+}
+
+// === DEBUG FUNCTIONS FOR LONGEST ROAD TESTING ===
+
+/**
+ * Debug function to test longest road calculation with visual output
+ * @param {Object} player - The player object
+ * @returns {Object} Debug information
+ */
+export function debugLongestRoad(player) {
+  if (!player || !player.roads) {
+    console.log('No player or roads provided');
+    return { length: 0, roads: [] };
+  }
+  
+  console.log(`=== DEBUG: Longest Road for ${player.name || 'Unknown'} ===`);
+  console.log(`Total roads: ${player.roads.length}`);
+  
+  if (player.roads.length === 0) {
+    console.log('No roads found');
+    return { length: 0, roads: [] };
+  }
+  
+  // Show all roads
+  console.log('Roads:');
+  player.roads.forEach((road, i) => {
+    console.log(`  ${i}: (${road.q}, ${road.r}, edge ${road.edge})`);
+  });
+  
+  // Build and analyze network
+  const roadNetwork = buildRoadNetwork(player.roads);
+  console.log(`Network: ${roadNetwork.vertices.size} vertices, ${roadNetwork.edges.size} edges`);
+  
+  // Show vertices and their connections
+  console.log('Vertices and connections:');
+  for (const [vertex, edges] of roadNetwork.vertices) {
+    console.log(`  ${vertex}: connected to ${edges.size} roads [${Array.from(edges).join(', ')}]`);
+  }
+  
+  // Calculate longest road
+  const longestLength = calculateLongestRoad(player);
+  console.log(`Longest road length: ${longestLength}`);
+  
+  return {
+    length: longestLength,
+    roads: player.roads,
+    vertices: Array.from(roadNetwork.vertices.keys()),
+    edges: Array.from(roadNetwork.edges.keys())
+  };
+}
+
+/**
+ * Create a test scenario for longest road calculation
+ * @param {string} scenario - Test scenario name
+ * @returns {Object} Test player with roads
+ */
+export function createLongestRoadTest(scenario = 'simple') {
+  const testPlayer = {
+    name: `Test Player (${scenario})`,
+    roads: []
+  };
+  
+  switch (scenario) {
+    case 'simple':
+      // Simple chain: 3 roads in a line
+      testPlayer.roads = [
+        { q: 0, r: 0, edge: 0 }, // Top edge of center tile
+        { q: 0, r: 0, edge: 1 }, // Top-right edge of center tile  
+        { q: 0, r: 0, edge: 2 }  // Bottom-right edge of center tile
+      ];
+      console.log('Simple: Expected longest road = 3 (all roads form a chain)');
+      break;
+      
+    case 'branched':
+      // Real branched network: Y-shaped with 3 separate branches from center
+      testPlayer.roads = [
+        { q: 0, r: 0, edge: 0 }, // Center hub: top edge
+        { q: 1, r: -1, edge: 3 }, // Branch 1: north tile, bottom edge (connects to center top)
+        { q: 1, r: -1, edge: 4 }, // Branch 1 continues: north tile, bottom-left edge
+        { q: 0, r: 0, edge: 1 }, // Branch 2: center tile, top-right edge  
+        { q: 1, r: 0, edge: 4 }, // Branch 2 continues: northeast tile, bottom-left edge (connects to center top-right)
+        { q: 0, r: 0, edge: 5 }, // Branch 3: center tile, top-left edge
+        { q: 0, r: -1, edge: 2 }  // Branch 3 continues: northwest tile, right edge (connects to center top-left)
+      ];
+      console.log('Branched: Y-shaped network with center hub and 3 branches');
+      console.log('Expected longest road = 3 (center + any one complete branch)');
+      break;
+      
+    case 'complex':
+      // More realistic network spanning multiple tiles with clear connections
+      testPlayer.roads = [
+        { q: 0, r: 0, edge: 0 },  // Center tile, top edge
+        { q: 1, r: -1, edge: 3 }, // North tile, bottom edge (connects to center top)
+        { q: 1, r: -1, edge: 4 }, // North tile, bottom-left edge
+        { q: 0, r: 0, edge: 1 },  // Center tile, top-right edge
+        { q: 1, r: 0, edge: 4 },  // Northeast tile, bottom-left edge (connects to center top-right)
+        { q: 1, r: 0, edge: 3 }   // Northeast tile, bottom edge
+      ];
+      console.log('Complex: Expected longest road = likely 3-4 (connected across tiles)');
+      break;
+      
+    case 'linear_on_hex':
+      // The previous "branched" test - actually a linear path on one hex
+      testPlayer.roads = [
+        { q: 0, r: 0, edge: 0 }, // Top
+        { q: 0, r: 0, edge: 1 }, // Top-right (connects to edge 0)
+        { q: 0, r: 0, edge: 2 }, // Right (connects to edge 1)
+        { q: 0, r: 0, edge: 5 }, // Top-left (connects to edge 0)
+        { q: 0, r: 0, edge: 4 }  // Left (connects to edge 5)
+      ];
+      console.log('Linear on hex: Forms path 4→5→0→1→2 (5 roads in line)');
+      console.log('Expected longest road = 5 (all roads form one path)');
+      break;
+      
+    case 'isolated':
+      // Separate road segments that should NOT connect
+      testPlayer.roads = [
+        { q: 0, r: 0, edge: 0 },  // Center tile
+        { q: 0, r: 0, edge: 1 },  // Connected to first
+        { q: 2, r: 2, edge: 0 },  // Far tile - isolated
+        { q: 2, r: 2, edge: 1 }   // Connected to third
+      ];
+      console.log('Isolated: Expected longest road = 2 (two separate segments of 2 each)');
+      break;
+      
+    default:
+      console.warn(`Unknown test scenario: ${scenario}`);
+  }
+  
+  return testPlayer;
+}
+
+/**
+ * Run all longest road tests
+ */
+export function runLongestRoadTests() {
+  console.log('=== RUNNING LONGEST ROAD TESTS ===');
+  
+  const scenarios = ['simple', 'branched', 'linear_on_hex', 'complex', 'isolated'];
+  
+  scenarios.forEach(scenario => {
+    console.log(`\n--- Testing scenario: ${scenario} ---`);
+    const testPlayer = createLongestRoadTest(scenario);
+    const result = debugLongestRoad(testPlayer);
+    
+    // Analyze result
+    console.log(`Result: ${result.length} roads`);
+    if (scenario === 'linear_on_hex' && result.length !== 5) {
+      console.log('⚠️  ISSUE: Linear hex path should show 5 roads');
+    } else if (scenario === 'branched' && result.length !== 3) {
+      console.log('⚠️  ISSUE: True branched network should show 3 roads (longest branch)');
+    } else if (scenario === 'complex' && result.length < 2) {
+      console.log('⚠️  ISSUE: Complex network shows unexpectedly short path');
+    } else {
+      console.log('✅ Result seems reasonable');
+    }
+  });
+  
+  console.log('\n=== TESTING WITH REAL PLAYERS ===');
+  if (typeof window !== 'undefined' && window.players && window.players.length > 0) {
+    window.players.forEach((player, i) => {
+      if (player.roads && player.roads.length > 0) {
+        console.log(`\n--- Real Player ${i + 1}: ${player.name} ---`);
+        const result = debugLongestRoad(player);
+        console.log(`Real longest road: ${result.length}`);
+      }
+    });
+  } else {
+    console.log('No real players with roads found');
+  }
+  
+  console.log('\n=== TESTS COMPLETE ===');
+  console.log('To test with a real player, use: debugLongestRoad(window.players[0])');
+}
+
+/**
+ * Detailed debug function to analyze road connections
+ * @param {Object} player - The player object
+ */
+export function debugRoadConnections(player) {
+  if (!player || !player.roads || player.roads.length === 0) {
+    console.log('No roads to analyze');
+    return;
+  }
+  
+  console.log(`=== ROAD CONNECTION ANALYSIS for ${player.name || 'Unknown'} ===`);
+  
+  // Analyze each road's vertices
+  player.roads.forEach((road, i) => {
+    const vertices = getRoadVertices(road);
+    console.log(`Road ${i}: (${road.q}, ${road.r}, edge ${road.edge})`);
+    console.log(`  Vertices: ${vertices.map(v => `(${v.q},${v.r},${v.corner})`).join(' - ')}`);
+    
+    // Show equivalent vertices
+    vertices.forEach((vertex, vi) => {
+      const equivalents = getEquivalentVertices(vertex);
+      console.log(`    Vertex ${vi} equivalents:`, equivalents.map(eq => `(${eq.q},${eq.r},${eq.corner})`));
+    });
+  });
+  
+  // Analyze connections between roads
+  console.log('\n--- Road Connections ---');
+  for (let i = 0; i < player.roads.length; i++) {
+    for (let j = i + 1; j < player.roads.length; j++) {
+      const road1 = player.roads[i];
+      const road2 = player.roads[j];
+      const connected = areRoadsConnected(road1, road2);
+      console.log(`Road ${i} - Road ${j}: ${connected ? 'CONNECTED' : 'not connected'}`);
+      
+      if (connected) {
+        // Find which vertices connect them
+        const vertices1 = getRoadVertices(road1);
+        const vertices2 = getRoadVertices(road2);
+        
+        for (const v1 of vertices1) {
+          for (const v2 of vertices2) {
+            if (areVerticesEqual(v1, v2)) {
+              console.log(`  Connected at: (${v1.q},${v1.r},${v1.corner})`);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Debug specific road connection between two roads
+ * @param {Object} road1 - First road
+ * @param {Object} road2 - Second road  
+ */
+export function debugSpecificConnection(road1, road2) {
+  console.log(`\n=== DEBUG CONNECTION: Road ${road1.q},${road1.r},${road1.edge} <-> Road ${road2.q},${road2.r},${road2.edge} ===`);
+  
+  // Get vertices for both roads
+  const vertices1 = getRoadVertices(road1);
+  const vertices2 = getRoadVertices(road2);
+  
+  console.log('Road 1 vertices:', vertices1);
+  console.log('Road 2 vertices:', vertices2);
+  
+  // Check each vertex pair
+  let connected = false;
+  for (let i = 0; i < vertices1.length; i++) {
+    for (let j = 0; j < vertices2.length; j++) {
+      const v1 = vertices1[i];
+      const v2 = vertices2[j];
+      
+      console.log(`Checking vertex ${v1.q},${v1.r},${v1.corner} vs ${v2.q},${v2.r},${v2.corner}`);
+      
+      // Direct match
+      if (v1.q === v2.q && v1.r === v2.r && v1.corner === v2.corner) {
+        console.log('  → DIRECT MATCH!');
+        connected = true;
+      }
+      
+      // Check equivalents
+      const eq1 = getEquivalentVertices(v1);
+      const eq2 = getEquivalentVertices(v2);
+      
+      console.log(`  Equivalents for ${v1.q},${v1.r},${v1.corner}:`, eq1.map(e => `${e.q},${e.r},${e.corner}`));
+      console.log(`  Equivalents for ${v2.q},${v2.r},${v2.corner}:`, eq2.map(e => `${e.q},${e.r},${e.corner}`));
+      
+      for (const eqv1 of eq1) {
+        for (const eqv2 of eq2) {
+          if (eqv1.q === eqv2.q && eqv1.r === eqv2.r && eqv1.corner === eqv2.corner) {
+            console.log(`  → EQUIVALENT MATCH: ${eqv1.q},${eqv1.r},${eqv1.corner}!`);
+            connected = true;
+          }
+        }
+      }
+    }
+  }
+  
+  console.log(`RESULT: ${connected ? 'CONNECTED' : 'NOT CONNECTED'}`);
+  console.log('=== END DEBUG ===\n');
+  
+  return connected;
+}
+
+// Make functions available globally for console testing
+if (typeof window !== 'undefined') {
+  window.debugLongestRoad = debugLongestRoad;
+  window.createLongestRoadTest = createLongestRoadTest;
+  window.runLongestRoadTests = runLongestRoadTests;
+  window.debugRoadConnections = debugRoadConnections;
+  window.debugSpecificConnection = debugSpecificConnection;
+  window.DEBUG_VICTORY_POINTS = true; // Enable debug logging
 }
 
 
