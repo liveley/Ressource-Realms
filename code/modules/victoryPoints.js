@@ -2,6 +2,7 @@
 // Comprehensive Victory Points System for Catan 3D
 
 /**
+ // Helper: This module manages all logic for calculating, updating, and displaying victory points in the Catan 3D game. See exported functions for integration points with the main game loop and UI.
  * Victory Points System - Handles all aspects of victory point calculation and tracking:
  * - Base VP sources (settlements, cities, VP cards)
  * - Special VP sources (Longest Road, Largest Army)
