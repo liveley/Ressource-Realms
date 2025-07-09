@@ -52,9 +52,16 @@ Das Spiel verläuft in Runden. Jede Runde besteht aus folgenden Phasen:
 - **Entwicklungskarte:** 1x Wolle, 1x Getreide, 1x Erz
 
 ## Entwicklungskarten
-- **Ritter:** Versetze den Räuber und erhalte ggf. die größte Rittermacht.
-- **Siegpunkt:** Zählt sofort zu den Siegpunkten.
-- **Fortschritt:** Spezialeffekte (z.B. Straßenbau, Monopol, Erfindung)
+Entwicklungskarten bieten besondere Vorteile und können das Spielgeschehen maßgeblich beeinflussen. Es gibt drei Arten von Entwicklungskarten:
+
+- **Ritter:** Erlaubt das Versetzen des Räubers/Banditen. Wer als Erster mindestens 3 Ritter ausgespielt hat und die meisten Ritter besitzt, erhält die größte Rittermacht (2 Siegpunkte).
+- **Siegpunkt:** Diese Karte zählt sofort als zusätzlicher Siegpunkt. Sie bleibt verdeckt, bis der Spieler das Spiel gewinnt oder sie offenlegt.
+- **Fortschritt:** Spezialkarten mit einmaligen Effekten, z.B. Straßenbau (zwei kostenlose Straßen bauen), Monopol (alle Rohstoffe einer Sorte von allen Spielern erhalten) oder Erfindung (zwei beliebige Rohstoffe nehmen).
+
+**Hinweise:**
+- Entwicklungskarten können nicht im selben Zug ausgespielt werden, in dem sie gekauft wurden (außer Siegpunktkarten, die sofort zählen).
+- Es ist nicht erlaubt, mehr als eine Entwicklungskarte pro Zug auszuspielen (außer bei Siegpunkten).
+- Entwicklungskarten werden digital verwaltet und automatisch gezählt.
 
 ## Handel
 - **Mitspielern:** Frei verhandelbar.
