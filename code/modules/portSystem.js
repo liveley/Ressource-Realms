@@ -7,79 +7,85 @@ import { axialToWorld } from './game_board.js';
 
 // Port-Konfiguration basierend auf Standard Catan Layout
 // 9 Häfen total: 4 Generic (3:1) + 5 Resource-spezifisch (2:1)
-// Positioniert auf jedem zweiten Wasser-Tile des "1st harbor ring"
 // Harbor ring: [3,-1], [3,-2], [3,-3], [2,-3], [1,-3], [0,-3], [-1,-2], [-2,-1], [-3,1], [-3,2], [-3,0], [-3,3], [-2,3], [-1,3], [0,3], [1,2], [2,1], [3,0]
+// Systematische Verteilung für bessere Balance: jeden 2. Tile mit korrekten Edge-Werten
 export const PORTS = [
-  // Generic Ports (3:1) - 4 Stück auf jedem zweiten harbor ring Tile
+  // Index 0: [3, -1] - Generic port, Edge 5 (zeigt nach links oben)
   { 
     id: 'port_generic_1', 
     type: 'generic', 
     ratio: '3:1', 
-    position: { q: 3, r: -2, edge: 3 }, // harbor ring [3, -2] - jeden 2. Tile
+    position: { q: 3, r: -1, edge: 5 },
     description: 'Allgemeiner Hafen'
   },
-  { 
-    id: 'port_generic_2', 
-    type: 'generic', 
-    ratio: '3:1', 
-    position: { q: 1, r: -3, edge: 3 }, // harbor ring [1, -3] - jeden 2. Tile
-    description: 'Allgemeiner Hafen'
-  },
-  { 
-    id: 'port_generic_3', 
-    type: 'generic', 
-    ratio: '3:1', 
-    position: { q: -2, r: -1, edge: 4 }, // harbor ring [-2, -1] - jeden 2. Tile
-    description: 'Allgemeiner Hafen'
-  },
-  { 
-    id: 'port_generic_4', 
-    type: 'generic', 
-    ratio: '3:1', 
-    position: { q: -3, r: 0, edge: 5 }, // harbor ring [-3, 0] - jeden 2. Tile
-    description: 'Allgemeiner Hafen'
-  },
-  
-  // Resource-spezifische Ports (2:1) - 5 Stück auf jedem zweiten harbor ring Tile
-  { 
-    id: 'port_wood', 
-    type: 'wood', 
-    ratio: '2:1', 
-    position: { q: 2, r: -3, edge: 3 }, // harbor ring [2, -3] - jeden 2. Tile
-    description: 'Holz-Hafen',
-    resourceSymbol: '🌲'
-  },
-  { 
-    id: 'port_clay', 
-    type: 'clay', 
-    ratio: '2:1', 
-    position: { q: 0, r: -3, edge: 3 }, // harbor ring [0, -3] - jeden 2. Tile
-    description: 'Lehm-Hafen',
-    resourceSymbol: '🧱'
-  },
-  { 
-    id: 'port_wheat', 
-    type: 'wheat', 
-    ratio: '2:1', 
-    position: { q: -3, r: 2, edge: 5 }, // harbor ring [-3, 2] - jeden 2. Tile
-    description: 'Getreide-Hafen',
-    resourceSymbol: '🌾'
-  },
-  { 
-    id: 'port_sheep', 
-    type: 'sheep', 
-    ratio: '2:1', 
-    position: { q: -1, r: 3, edge: 1 }, // harbor ring [-1, 3] - jeden 2. Tile
-    description: 'Wolle-Hafen',
-    resourceSymbol: '🐑'
-  },
+  // Index 2: [3, -3] - Ore port, Edge 4 (zeigt nach links)
   { 
     id: 'port_ore', 
     type: 'ore', 
     ratio: '2:1', 
-    position: { q: 1, r: 2, edge: 2 }, // harbor ring [1, 2] - jeden 2. Tile
+    position: { q: 3, r: -3, edge: 4 },
     description: 'Erz-Hafen',
     resourceSymbol: '⛏️'
+  },
+  // Index 4: [1, -3] - Generic port, Edge 4 (zeigt nach links)
+  { 
+    id: 'port_generic_2', 
+    type: 'generic', 
+    ratio: '3:1', 
+    position: { q: 1, r: -3, edge: 4 },
+    description: 'Allgemeiner Hafen'
+  },
+  // Index 6: [-1, -2] - Wheat port, Edge 3 (zeigt nach links unten)
+  { 
+    id: 'port_wheat', 
+    type: 'wheat', 
+    ratio: '2:1', 
+    position: { q: -1, r: -2, edge: 3 },
+    description: 'Getreide-Hafen',
+    resourceSymbol: '🌾'
+  },
+  // Index 8: [-3, 1] - Clay port, Edge 2 (zeigt nach unten)
+  { 
+    id: 'port_clay', 
+    type: 'clay', 
+    ratio: '2:1', 
+    position: { q: -3, r: 2, edge: 2 },
+    description: 'Lehm-Hafen',
+    resourceSymbol: '🧱'
+  },
+  // Index 10: [-3, 0] - Generic port, Edge 1 (zeigt nach rechts unten)
+  { 
+    id: 'port_generic_3', 
+    type: 'generic', 
+    ratio: '3:1', 
+    position: { q: -3, r: 0, edge: 1 },
+    description: 'Allgemeiner Hafen'
+  },
+  // Index 12: [-2, 3] - Wood port, Edge 1 (zeigt nach rechts unten)
+  { 
+    id: 'port_wood', 
+    type: 'wood', 
+    ratio: '2:1', 
+    position: { q: -2, r: 3, edge: 1 },
+    description: 'Holz-Hafen',
+    resourceSymbol: '🌲'
+  },
+  // Index 14: [0, 3] - Generic port, Edge 0 (zeigt nach rechts)
+  { 
+    id: 'port_generic_4', 
+    type: 'generic', 
+    ratio: '3:1', 
+    position: { q: 0, r: 3, edge: 0 },
+    description: 'Allgemeiner Hafen'
+  },
+  // Index 16: [2, 1] - Sheep port, Edge 0 (zeigt nach rechts)
+  { 
+    id: 'port_sheep', 
+    type: 'sheep', 
+    ratio: '2:1', 
+    position: { q: 2, r: 1, edge: 0 },
+    description: 'Wolle-Hafen',
+    resourceSymbol: '🐑'
   }
 ];
 
