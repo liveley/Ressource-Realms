@@ -12,6 +12,8 @@
 
 // Import the new modular components
 import { VictoryPointCalculator } from './victoryPointSystem/VictoryPointCalculator.js';
+import { LongestRoadManager } from './victoryPointSystem/LongestRoadManager.js';
+import { getCanonicalRoad as getCanonicalRoadUtil } from './victoryPointSystem/utils/roadUtils.js';
 
 // Game constants
 const VICTORY_POINTS_TO_WIN = 10;
@@ -645,6 +647,7 @@ class VictoryPointsManager {
 // Create global instances for backward compatibility
 let globalVPManager = null;
 let globalVPCalculator = null;
+let globalLongestRoadManager = null;
 
 /**
  * Get or create the global VP calculator instance
@@ -655,6 +658,17 @@ function getVPCalculator() {
     globalVPCalculator = new VictoryPointCalculator();
   }
   return globalVPCalculator;
+}
+
+/**
+ * Get or create the global longest road manager instance
+ * @returns {LongestRoadManager} The global longest road manager instance
+ */
+function getLongestRoadManager() {
+  if (!globalLongestRoadManager) {
+    globalLongestRoadManager = new LongestRoadManager();
+  }
+  return globalLongestRoadManager;
 }
 
 /**
@@ -677,8 +691,8 @@ function getVPManager(players = null) {
  * @returns {number} Length of longest road
  */
 export function calculateLongestRoad(player) {
-  const vpManager = getVPManager();
-  return vpManager.calculateLongestRoad(player);
+  const roadManager = getLongestRoadManager();
+  return roadManager.calculateLongestRoad(player);
 }
 
 /**
@@ -988,8 +1002,8 @@ function getRoadKey(road) {
  * @param {Array} players - Array of all players
  */
 export function updateLongestRoad(players) {
-  const vpManager = getVPManager();
-  vpManager.updateLongestRoad(players);
+  const roadManager = getLongestRoadManager();
+  roadManager.updateLongestRoad(players);
 }
 
 /**
@@ -1264,23 +1278,7 @@ export function getVictoryPointsForDisplay(player, isCurrentPlayer = false) {
  * @returns {Object} Canonical road representation
  */
 export function getCanonicalRoad(road) {
-  const { q, r, edge } = road;
-  
-  // Calculate neighbor tile coordinates
-  const directions = [
-    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-  ];
-  
-  const [nq, nr] = [q + directions[edge][0], r + directions[edge][1]];
-  const neighborEdge = (edge + 3) % 6;
-  
-  // Choose the canonical representation based on tile coordinates
-  // Use lexicographic ordering: smaller q first, then smaller r, then smaller edge
-  if (q < nq || (q === nq && r < nr) || (q === nq && r === nr && edge < neighborEdge)) {
-    return { q, r, edge };
-  } else {
-    return { q: nq, r: nr, edge: neighborEdge };
-  }
+  return getCanonicalRoadUtil(road);
 }
 
 
