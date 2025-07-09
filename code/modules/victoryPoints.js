@@ -14,6 +14,7 @@
 import { VictoryPointCalculator } from './victoryPointSystem/VictoryPointCalculator.js';
 import { LongestRoadManager } from './victoryPointSystem/LongestRoadManager.js';
 import { LargestArmyManager } from './victoryPointSystem/LargestArmyManager.js';
+import { GameWinManager } from './victoryPointSystem/GameWinManager.js';
 import { getCanonicalRoad as getCanonicalRoadUtil } from './victoryPointSystem/utils/roadUtils.js';
 
 // Game constants
@@ -43,6 +44,12 @@ class VictoryPointsManager {
     this.players = players;
     this.gameWon = false;
     this.winnerCallback = null;
+    
+    // Initialize component managers
+    this.vpCalculator = new VictoryPointCalculator();
+    this.longestRoadManager = new LongestRoadManager();
+    this.largestArmyManager = new LargestArmyManager();
+    this.gameWinManager = new GameWinManager(this.vpCalculator);
     
     // Game constants (can be overridden in constructor options)
     this.VICTORY_POINTS_TO_WIN = 10;
@@ -91,26 +98,7 @@ class VictoryPointsManager {
    * @returns {number} Total victory points
    */
   calculatePlayerPoints(player, includeHidden = true) {
-    if (!player.victoryPoints) {
-      this.initializePlayers([player]);
-    }
-    
-    let total = 0;
-    
-    // Base VP sources
-    total += player.victoryPoints.settlements;
-    total += player.victoryPoints.cities;
-    
-    // Special VP sources
-    total += player.victoryPoints.longestRoad;
-    total += player.victoryPoints.largestArmy;
-    
-    // Hidden VP cards (if requested)
-    if (includeHidden) {
-      total += player.victoryPoints.hiddenVP;
-    }
-    
-    return total;
+    return this.vpCalculator.calculateTotalVP(player, includeHidden);
   }
   
   /**
@@ -119,7 +107,7 @@ class VictoryPointsManager {
    * @returns {number} Public victory points
    */
   calculatePublicPoints(player) {
-    return this.calculatePlayerPoints(player, false);
+    return this.vpCalculator.calculatePublicVP(player);
   }
   
   /**
@@ -128,19 +116,7 @@ class VictoryPointsManager {
    * @returns {boolean} True if player has won
    */
   checkWinCondition(player) {
-    if (this.gameWon) {
-      return false; // Game already won
-    }
-    
-    const totalVP = this.calculatePlayerPoints(player, true);
-    
-    if (totalVP >= this.VICTORY_POINTS_TO_WIN) {
-      this.gameWon = true;
-      this.triggerGameWin(player, totalVP);
-      return true;
-    }
-    
-    return false;
+    return this.gameWinManager.checkWinCondition(player);
   }
   
   /**
@@ -149,12 +125,7 @@ class VictoryPointsManager {
    * @param {number} totalVP - Total victory points
    */
   triggerGameWin(winner, totalVP) {
-    if (this.winnerCallback) {
-      this.winnerCallback(winner, totalVP);
-    } else {
-      // Default win handling (existing overlay logic)
-      this.showWinOverlay(winner, totalVP);
-    }
+    return this.gameWinManager.triggerGameWin(winner, totalVP);
   }
   
   /**
@@ -162,7 +133,23 @@ class VictoryPointsManager {
    * @param {Function} callback - Function to call when game is won
    */
   setWinnerCallback(callback) {
-    this.winnerCallback = callback;
+    this.gameWinManager.setWinnerCallback(callback);
+  }
+  
+  /**
+   * Check if game is currently won
+   * @returns {boolean} True if game is won
+   */
+  isGameWon() {
+    return this.gameWinManager.isGameWon();
+  }
+  
+  /**
+   * Clean up win overlay
+   * @returns {boolean} True if overlay was removed
+   */
+  cleanupWinOverlay() {
+    return this.gameWinManager.cleanupWinOverlay();
   }
   
   /**
@@ -170,6 +157,9 @@ class VictoryPointsManager {
    */
   resetGame() {
     this.gameWon = false;
+    this.gameWinManager.resetGameState();
+    
+    // Reset all player states
     this.players.forEach(player => {
       if (player.victoryPoints) {
         Object.keys(player.victoryPoints).forEach(key => {
@@ -180,16 +170,12 @@ class VictoryPointsManager {
       player.longestRoadLength = 0;
       player.victoryPointCardsCount = 0;
     });
+    
+    // Reset component states
+    this.largestArmyManager.resetKnightTracking(this.players);
   }
   
-  /**
-   * Default win overlay display (preserves existing behavior)
-   */
-  showWinOverlay(winner, totalVP) {
-    // This will contain the existing triggerGameWin logic
-    // For now, delegate to the existing function
-    triggerGameWin(winner, totalVP);
-  }
+
   
   /**
    * Update settlement VP count for a player
@@ -1054,116 +1040,8 @@ export function checkWinCondition(player) {
  * @param {number} totalVP - Total victory points
  */
 function triggerGameWin(winner, totalVP) {
-  // Remove any existing win overlay to prevent duplicates/leaks
-  const existingOverlay = document.getElementById('game-win-overlay');
-  if (existingOverlay) {
-    existingOverlay.remove();
-  }
-  
-  // Create win announcement
-  const winOverlay = document.createElement('div');
-  winOverlay.id = 'game-win-overlay';
-  winOverlay.style.position = 'fixed';
-  winOverlay.style.top = '0';
-  winOverlay.style.left = '0';
-  winOverlay.style.width = '100vw';
-  winOverlay.style.height = '100vh';
-  winOverlay.style.background = 'rgba(0, 0, 0, 0.8)';
-  winOverlay.style.display = 'flex';
-  winOverlay.style.flexDirection = 'column';
-  winOverlay.style.alignItems = 'center';
-  winOverlay.style.justifyContent = 'center';
-  winOverlay.style.zIndex = '999999';
-  winOverlay.style.fontFamily = 'Montserrat, Arial, sans-serif';
-  
-  // Win message
-  const winMessage = document.createElement('div');
-  winMessage.style.fontSize = '3em';
-  winMessage.style.fontWeight = 'bold';
-  winMessage.style.color = '#ffd700';
-  winMessage.style.textAlign = 'center';
-  winMessage.style.marginBottom = '1em';
-  winMessage.style.textShadow = '0 0 20px #ffd700';
-  winMessage.textContent = `🏆 ${winner.name} gewinnt! 🏆`;
-  
-  // VP breakdown
-  const vpBreakdown = document.createElement('div');
-  vpBreakdown.style.fontSize = '1.5em';
-  vpBreakdown.style.color = '#fff';
-  vpBreakdown.style.textAlign = 'center';
-  vpBreakdown.style.marginBottom = '2em';
-  
-  const publicVP = calculatePublicVictoryPoints(winner);
-  const hiddenVP = winner.victoryPoints.hiddenVP || 0;
-  
-  vpBreakdown.innerHTML = `
-    <div style="margin-bottom: 0.5em;">Gesamtpunkte: ${totalVP}</div>
-    <div style="font-size: 0.8em; color: #ccc;">
-      Öffentliche Punkte: ${publicVP}<br>
-      Versteckte Punkte: ${hiddenVP}
-    </div>
-  `;
-  
-  // Play again button
-  const playAgainBtn = document.createElement('button');
-  playAgainBtn.textContent = 'Neues Spiel';
-  playAgainBtn.style.fontSize = '1.2em';
-  playAgainBtn.style.padding = '0.8em 2em';
-  playAgainBtn.style.background = '#ffe066';
-  playAgainBtn.style.border = 'none';
-  playAgainBtn.style.borderRadius = '0.5em';
-  playAgainBtn.style.cursor = 'pointer';
-  playAgainBtn.style.fontWeight = 'bold';
-  playAgainBtn.onclick = () => {
-    // Clean up overlay before reload to prevent memory leaks
-    cleanup();
-    
-    // Reload the page for a new game
-    if (typeof window !== 'undefined' && window.location) {
-      window.location.reload();
-    }
-  };
-  
-  // ESC key listener for cleanup
-  const escListener = (event) => {
-    if (event.key === 'Escape') {
-      cleanup();
-    }
-  };
-  
-  // Cleanup function to remove overlay and event listeners
-  const cleanup = () => {
-    document.removeEventListener('keydown', escListener);
-    if (winOverlay.parentNode) {
-      winOverlay.remove();
-    }
-    // Reset game state
-    if (typeof window !== 'undefined') {
-      window.gameWon = false;
-    }
-  };
-  
-  // Add ESC key listener
-  document.addEventListener('keydown', escListener);
-  
-  winOverlay.appendChild(winMessage);
-  winOverlay.appendChild(vpBreakdown);
-  winOverlay.appendChild(playAgainBtn);
-  
-  document.body.appendChild(winOverlay);
-  
-  // Disable further game actions
-  if (typeof window !== 'undefined') {
-    window.gameWon = true;
-  }
-  
-  // Fire custom event
-  if (typeof window !== 'undefined' && window.dispatchEvent) {
-    const winEvent = new CustomEvent('gameWon', {
-      detail: { winner, totalVP, cleanup }
-    });
-    window.dispatchEvent(winEvent);
-  }
+  const vpManager = getVPManager();
+  return vpManager.triggerGameWin(winner, totalVP);
 }
 
 /**
@@ -1171,16 +1049,8 @@ function triggerGameWin(winner, totalVP) {
  * @returns {boolean} True if overlay was removed, false if none existed
  */
 export function cleanupWinOverlay() {
-  const existingOverlay = document.getElementById('game-win-overlay');
-  if (existingOverlay) {
-    existingOverlay.remove();
-    // Reset game state
-    if (typeof window !== 'undefined') {
-      window.gameWon = false;
-    }
-    return true;
-  }
-  return false;
+  const vpManager = getVPManager();
+  return vpManager.cleanupWinOverlay();
 }
 
 /**
