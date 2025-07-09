@@ -193,8 +193,14 @@ function createPortLabel(port) {
   if (port.type === 'generic') {
     context.fillText('3:1', canvas.width / 2, canvas.height / 2);
   } else {
-    // Resource-Symbol + Ratio
-    context.fillText(`${port.resourceSymbol || '?'} 2:1`, canvas.width / 2, canvas.height / 2);
+    // Resource-Symbol + Ratio mit größerem Symbol
+    // Erst das größere Symbol zeichnen
+    context.font = 'bold 64px Arial'; // Größere Schrift für das Symbol
+    context.fillText(port.resourceSymbol || '?', canvas.width / 2 - 40, canvas.height / 2);
+    
+    // Dann das "2:1" in kleinerer Schrift daneben
+    context.font = 'bold 40px Arial'; // Kleinere Schrift für "2:1"
+    context.fillText('2:1', canvas.width / 2 + 35, canvas.height / 2);
   }
   
   // Text-Textur erstellen
