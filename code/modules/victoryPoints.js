@@ -184,6 +184,132 @@ class VictoryPointsManager {
     // For now, delegate to the existing function
     triggerGameWin(winner, totalVP);
   }
+  
+  /**
+   * Update settlement VP count for a player
+   * @param {Object} player - The player object
+   * @param {boolean} skipWinCheck - Skip win condition check for performance
+   */
+  updateSettlementVP(player, skipWinCheck = false) {
+    if (!player) {
+      console.error('VictoryPointsManager.updateSettlementVP: player is null/undefined');
+      return;
+    }
+    if (!player.victoryPoints) this.initializePlayers([player]);
+    player.victoryPoints.settlements = (player.settlements || []).length;
+    if (!skipWinCheck) {
+      this.checkWinCondition(player);
+    }
+  }
+  
+  /**
+   * Update city VP count for a player
+   * @param {Object} player - The player object
+   * @param {boolean} skipWinCheck - Skip win condition check for performance
+   */
+  updateCityVP(player, skipWinCheck = false) {
+    if (!player) {
+      console.error('VictoryPointsManager.updateCityVP: player is null/undefined');
+      return;
+    }
+    if (!player.victoryPoints) this.initializePlayers([player]);
+    player.victoryPoints.cities = (player.cities || []).length * 2;
+    if (!skipWinCheck) {
+      this.checkWinCondition(player);
+    }
+  }
+  
+  /**
+   * Add victory point card (immediately adds to hidden VP)
+   * @param {Object} player - The player object
+   * @returns {boolean} - True if card was added
+   */
+  addVictoryPointCard(player) {
+    if (!player.victoryPoints) this.initializePlayers([player]);
+    
+    // Track VP cards separately for proper counting
+    if (!player.victoryPointCardsCount) player.victoryPointCardsCount = 0;
+    
+    player.victoryPointCardsCount += 1;
+    player.victoryPoints.hiddenVP += 1;
+    
+    debugLog(`Player ${player.name || 'Unknown'} received VP card (${player.victoryPointCardsCount} total)`);
+    
+    this.checkWinCondition(player);
+    return true;
+  }
+  
+  /**
+   * Update basic victory points efficiently (settlements and cities only)
+   * Use this for settlement/city building when roads/knights don't change
+   * @param {Object} player - The player object
+   */
+  updateBasicVictoryPoints(player) {
+    if (!player.victoryPoints) this.initializePlayers([player]);
+    
+    // Only update basic VP sources (no expensive calculations)
+    player.victoryPoints.settlements = (player.settlements || []).length;
+    player.victoryPoints.cities = (player.cities || []).length * 2;
+    
+    // Check win condition with current VP state
+    this.checkWinCondition(player);
+  }
+  
+  /**
+   * Get victory points breakdown for display
+   * @param {Object} player - The player object
+   * @returns {Object} VP breakdown
+   */
+  getVictoryPointsBreakdown(player) {
+    if (!player.victoryPoints) {
+      this.initializePlayers([player]);
+    }
+    
+    return {
+      settlements: player.victoryPoints.settlements,
+      cities: player.victoryPoints.cities,
+      hiddenVP: player.victoryPoints.hiddenVP,
+      longestRoad: player.victoryPoints.longestRoad,
+      largestArmy: player.victoryPoints.largestArmy,
+      total: this.calculatePlayerPoints(player, true),
+      public: this.calculatePublicPoints(player)
+    };
+  }
+  
+  /**
+   * Get victory points for display in UI
+   * @param {Object} player - The player object
+   * @param {boolean} isCurrentPlayer - Whether this is the current player
+   * @returns {Object} Display information
+   */
+  getVictoryPointsForDisplay(player, isCurrentPlayer = false) {
+    if (!player) {
+      debugLog('getVictoryPointsForDisplay called with null/undefined player');
+      return { display: '0', total: 0, public: 0, hidden: 0 };
+    }
+    
+    const breakdown = this.getVictoryPointsBreakdown(player);
+    
+    if (isCurrentPlayer) {
+      // Current player sees their total including hidden VP
+      return {
+        display: breakdown.hiddenVP > 0 ? 
+          `${breakdown.public} (+${breakdown.hiddenVP})` : 
+          `${breakdown.total}`,
+        total: breakdown.total,
+        public: breakdown.public,
+        hidden: breakdown.hiddenVP
+      };
+    } else {
+      // Other players only see public VP
+      return {
+        display: `${breakdown.public}`,
+        total: breakdown.public,
+        public: breakdown.public,
+        hidden: 0
+      };
+    }
+  }
 }
 
 // Create a global instance for backward compatibility
@@ -688,22 +814,8 @@ export function playKnight(player, allPlayers) {
  * @returns {boolean} True if player has won
  */
 export function checkWinCondition(player) {
-  const totalVP = calculateVictoryPoints(player, true);
-  
-  if (totalVP >= VICTORY_POINTS_TO_WIN) {
-    // Atomically check and set to prevent race conditions
-    if (typeof window !== 'undefined') {
-      if (window.gameWon) {
-        return false; // Another player already won
-      }
-      window.gameWon = true;
-    }
-    // Player has won!
-    triggerGameWin(player, totalVP);
-    return true;
-  }
-  
-  return false;
+  const vpManager = getVPManager();
+  return vpManager.checkWinCondition(player);
 }
 
 /**
@@ -866,51 +978,16 @@ export function updateAllVictoryPoints(player, allPlayers, skipSpecialAchievemen
  * @returns {Object} VP breakdown
  */
 export function getVictoryPointsBreakdown(player) {
-  if (!player.victoryPoints) {
-    initializeVictoryPoints([player]);
-  }
-  
-  return {
-    settlements: player.victoryPoints.settlements,
-    cities: player.victoryPoints.cities,
-    hiddenVP: player.victoryPoints.hiddenVP,
-    longestRoad: player.victoryPoints.longestRoad,
-    largestArmy: player.victoryPoints.largestArmy,
-    total: calculateVictoryPoints(player, true),
-    public: calculatePublicVictoryPoints(player)
-  };
+  const vpManager = getVPManager();
+  return vpManager.getVictoryPointsBreakdown(player);
 }
 
 /**
  * Export functions for updating UI
  */
 export function getVictoryPointsForDisplay(player, isCurrentPlayer = false) {
-  if (!player) {
-    debugLog('getVictoryPointsForDisplay called with null/undefined player');
-    return { display: '0', total: 0, public: 0, hidden: 0 };
-  }
-  
-  const breakdown = getVictoryPointsBreakdown(player);
-  
-  if (isCurrentPlayer) {
-    // Current player sees their total including hidden VP
-    return {
-      display: breakdown.hiddenVP > 0 ? 
-        `${breakdown.public} (+${breakdown.hiddenVP})` : 
-        `${breakdown.total}`,
-      total: breakdown.total,
-      public: breakdown.public,
-      hidden: breakdown.hiddenVP
-    };
-  } else {
-    // Other players only see public VP
-    return {
-      display: `${breakdown.public}`,
-      total: breakdown.public,
-      public: breakdown.public,
-      hidden: 0
-    };
-  }
+  const vpManager = getVPManager();
+  return vpManager.getVictoryPointsForDisplay(player, isCurrentPlayer);
 }
 
 /**
@@ -945,14 +1022,8 @@ export function getCanonicalRoad(road) {
  * @param {Object} player - The player object
  */
 export function updateBasicVictoryPoints(player) {
-  if (!player.victoryPoints) initializeVictoryPoints([player]);
-  
-  // Only update basic VP sources (no expensive calculations)
-  player.victoryPoints.settlements = (player.settlements || []).length;
-  player.victoryPoints.cities = (player.cities || []).length * 2;
-  
-  // Check win condition with current VP state
-  checkWinCondition(player);
+  const vpManager = getVPManager();
+  vpManager.updateBasicVictoryPoints(player);
 }
 
 /**
@@ -1005,16 +1076,8 @@ export function calculatePublicVictoryPoints(player) {
  * @param {boolean} skipWinCheck - Skip win condition check for performance
  */
 export function updateSettlementVP(player, skipWinCheck = false) {
-  if (!player) {
-    console.error('updateSettlementVP: player is null/undefined');
-    return;
-  }
   const vpManager = getVPManager();
-  if (!player.victoryPoints) vpManager.initializePlayers([player]);
-  player.victoryPoints.settlements = (player.settlements || []).length;
-  if (!skipWinCheck) {
-    vpManager.checkWinCondition(player);
-  }
+  vpManager.updateSettlementVP(player, skipWinCheck);
 }
 
 /**
@@ -1023,16 +1086,8 @@ export function updateSettlementVP(player, skipWinCheck = false) {
  * @param {boolean} skipWinCheck - Skip win condition check for performance
  */
 export function updateCityVP(player, skipWinCheck = false) {
-  if (!player) {
-    console.error('updateCityVP: player is null/undefined');
-    return;
-  }
   const vpManager = getVPManager();
-  if (!player.victoryPoints) vpManager.initializePlayers([player]);
-  player.victoryPoints.cities = (player.cities || []).length * 2;
-  if (!skipWinCheck) {
-    vpManager.checkWinCondition(player);
-  }
+  vpManager.updateCityVP(player, skipWinCheck);
 }
 
 /**
@@ -1042,18 +1097,7 @@ export function updateCityVP(player, skipWinCheck = false) {
  */
 export function addVictoryPointCard(player) {
   const vpManager = getVPManager();
-  if (!player.victoryPoints) vpManager.initializePlayers([player]);
-  
-  // Track VP cards separately for proper counting
-  if (!player.victoryPointCardsCount) player.victoryPointCardsCount = 0;
-  
-  player.victoryPointCardsCount += 1;
-  player.victoryPoints.hiddenVP += 1;
-  
-  debugLog(`Player ${player.name || 'Unknown'} received VP card (${player.victoryPointCardsCount} total)`);
-  
-  vpManager.checkWinCondition(player);
-  return true;
+  return vpManager.addVictoryPointCard(player);
 }
 
 
