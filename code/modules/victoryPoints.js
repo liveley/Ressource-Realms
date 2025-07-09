@@ -10,6 +10,9 @@
  * - Real-time updates
  */
 
+// Import the new modular components
+import { VictoryPointCalculator } from './victoryPointSystem/VictoryPointCalculator.js';
+
 // Game constants
 const VICTORY_POINTS_TO_WIN = 10;
 const MIN_ROAD_LENGTH_FOR_LONGEST_ROAD = 5;
@@ -639,8 +642,20 @@ class VictoryPointsManager {
   }
 }
 
-// Create a global instance for backward compatibility
+// Create global instances for backward compatibility
 let globalVPManager = null;
+let globalVPCalculator = null;
+
+/**
+ * Get or create the global VP calculator instance
+ * @returns {VictoryPointCalculator} The global VP calculator instance
+ */
+function getVPCalculator() {
+  if (!globalVPCalculator) {
+    globalVPCalculator = new VictoryPointCalculator();
+  }
+  return globalVPCalculator;
+}
 
 /**
  * Get or create the global VP manager instance
@@ -1177,8 +1192,8 @@ export function initializeVictoryPoints(players) {
  * @returns {number} Total victory points
  */
 export function calculateVictoryPoints(player, includeHidden = true) {
-  const vpManager = getVPManager();
-  return vpManager.calculatePlayerPoints(player, includeHidden);
+  const vpCalculator = getVPCalculator();
+  return vpCalculator.calculateTotalVP(player, includeHidden);
 }
 
 /**
@@ -1187,8 +1202,8 @@ export function calculateVictoryPoints(player, includeHidden = true) {
  * @returns {number} Public victory points
  */
 export function calculatePublicVictoryPoints(player) {
-  const vpManager = getVPManager();
-  return vpManager.calculatePublicPoints(player);
+  const vpCalculator = getVPCalculator();
+  return vpCalculator.calculatePublicVP(player);
 }
 
 /**
@@ -1227,8 +1242,8 @@ export function addVictoryPointCard(player) {
  * @returns {Object} VP breakdown
  */
 export function getVictoryPointsBreakdown(player) {
-  const vpManager = getVPManager();
-  return vpManager.getVictoryPointsBreakdown(player);
+  const vpCalculator = getVPCalculator();
+  return vpCalculator.getVPBreakdown(player);
 }
 
 /**
@@ -1238,8 +1253,8 @@ export function getVictoryPointsBreakdown(player) {
  * @returns {Object} Display information
  */
 export function getVictoryPointsForDisplay(player, isCurrentPlayer = false) {
-  const vpManager = getVPManager();
-  return vpManager.getVictoryPointsForDisplay(player, isCurrentPlayer);
+  const vpCalculator = getVPCalculator();
+  return vpCalculator.getVPForDisplay(player, isCurrentPlayer);
 }
 
 /**
