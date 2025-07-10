@@ -66,7 +66,8 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
   buildMenu.style.bottom = '-0.15em';
   // Exakt gewünschte Breite und Höhe laut User-Devtools
   buildMenu.style.width = 'calc(3 * clamp(2.1em, 2.8vw, 2.5em))';
-  buildMenu.style.height = 'calc(3 * clamp(2.1em, 2.8vw, 2.5em))';
+  // Erhöhe das Menü, damit alle Buttons sichtbar sind (z.B. für 5 Buttons)
+  buildMenu.style.height = 'calc(4.8 * clamp(2.1em, 2.8vw, 2.5em))';
   buildMenu.style.background = 'rgba(255,255,255,0.98)';
   buildMenu.style.border = '2px solid #ffe066';
   buildMenu.style.borderRadius = '0.5em';
@@ -80,9 +81,9 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     btn.id = id;
     btn.textContent = text;
     btn.style.width = '100%';
-    btn.style.height = '22%'; // 4 Buttons passen mit gap exakt in 100%
+    btn.style.height = '19%'; // 5 Buttons passen mit gap exakt in 100%
     btn.style.minHeight = '1.5em';
-    btn.style.maxHeight = '2.2em';
+    btn.style.maxHeight = '2.5em';
     btn.style.fontSize = '1em';
     btn.style.fontFamily = 'inherit';
     btn.style.fontWeight = '600';
@@ -101,9 +102,18 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     return btn;
   }
 
+
   buildMenu.appendChild(makeMenuBtn('build-road', 'Straße', () => setBuildMode('road')));
   buildMenu.appendChild(makeMenuBtn('build-settlement', 'Siedlung', () => setBuildMode('settlement')));
   buildMenu.appendChild(makeMenuBtn('build-city', 'Stadt', () => setBuildMode('city')));
+
+  // Baukosten-Button
+  const costBtn = makeMenuBtn('build-costs', 'Baukosten', () => {
+    showBuildCostsPopup();
+  });
+  // Füge den Button unter "Stadt" und über "bauen aus" ein
+  buildMenu.appendChild(costBtn);
+
   // "Bauen aus" schließt das Menü (nicht mehr setBuildMode(null), sondern Menü schließen)
   buildMenu.appendChild(makeMenuBtn('build-cancel', 'bauen aus', () => {
     buildEnabled = false;
@@ -111,6 +121,48 @@ export function createBuildUI({ players, getBuildMode, setBuildMode, getActivePl
     buildMenu.style.display = 'none';
     ui.classList.remove('menu-open');
   }));
+
+  // Baukosten-Popup (einmalig anlegen)
+  if (!document.getElementById('build-costs-popup')) {
+    const popup = document.createElement('div');
+    popup.id = 'build-costs-popup';
+    popup.style.position = 'fixed';
+    popup.style.left = '50%';
+    popup.style.top = '50%';
+    popup.style.transform = 'translate(-50%, -50%)';
+    popup.style.background = 'rgba(255,255,255,0.98)';
+    popup.style.border = '2px solid #ffe066';
+    popup.style.borderRadius = '0.7em';
+    popup.style.boxShadow = '0 6px 32px #0004, 0 1.5px 0 #ffe066';
+    popup.style.padding = '2em 2.5em 1.5em 2.5em';
+    popup.style.zIndex = '99999';
+    popup.style.display = 'none';
+    popup.style.minWidth = '320px';
+    popup.style.maxWidth = '90vw';
+    popup.style.fontFamily = "'Montserrat', Arial, sans-serif";
+    popup.innerHTML = `
+      <div style="font-size:1.3em;font-weight:bold;margin-bottom:1em;text-align:center;">Baukosten Übersicht</div>
+      <table style="width:100%;border-collapse:collapse;font-size:1.1em;">
+        <tr><th style='text-align:left;'>Bau</th><th>Ressourcen</th></tr>
+        <tr><td>Straße</td><td>🪵 Holz, 🧱 Lehm</td></tr>
+        <tr><td>Siedlung</td><td>🪵 Holz, 🧱 Lehm, 🌾 Weizen, 🐑 Schaf</td></tr>
+        <tr><td>Stadt</td><td>🌾 Weizen x2, 🪨 Erz x3</td></tr>
+        <tr><td>Entwicklungskarte</td><td>🌾 Weizen, 🐑 Schaf, 🪨 Erz</td></tr>
+      </table>
+      <button id="close-costs-popup" style="margin-top:1.5em;padding:0.5em 1.5em;font-size:1em;border-radius:0.4em;border:none;background:#ffe066;font-weight:bold;cursor:pointer;">Schließen</button>
+    `;
+    document.body.appendChild(popup);
+    // Close-Button Handler
+    popup.querySelector('#close-costs-popup').onclick = () => {
+      popup.style.display = 'none';
+    };
+  }
+
+  // Funktion zum Anzeigen des Popups
+  function showBuildCostsPopup() {
+    const popup = document.getElementById('build-costs-popup');
+    if (popup) popup.style.display = 'block';
+  }
 
   ui.appendChild(buildMenu); // Menü bleibt erhalten
 
