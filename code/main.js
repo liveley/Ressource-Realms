@@ -4,7 +4,7 @@ import { scene } from './modules/scene.js';
 import { camera } from './modules/camera.js';
 import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
-import { createDirectionArrows } from './modules/directionArrows.js'; 
+// import { createDirectionArrows } from './modules/directionArrows.js'; 
 import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, updateNumberTokensForRobber } from './modules/game_board.js';
 import { animateHalos, highlightNumberTokens, getTileWorldPosition } from './modules/tileHighlight.js'; 
 import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
@@ -257,7 +257,7 @@ async function preloadGameBoard() {
   return new Promise((resolve) => {
     // Set up scene components that don't require UI
     scene.add(createHexGrid());
-    createDirectionArrows(scene);
+    // createDirectionArrows(scene);
     setupLights(scene);
 
     // Create the game board with all tiles
