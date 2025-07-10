@@ -375,19 +375,15 @@ function isSettlementNearPort(settlementQ, settlementR, settlementCorner, portQ,
  * @returns {Array<Object>} Array of 6 neighbor coordinates [{q, r}, ...]
  */
 function getHexNeighbors(q, r) {
-  // Die 6 Hex-Nachbarn in axial coordinates
+  // Die 6 Hex-Nachbarn in axial coordinates - EXAKT wie in game_board.js
+  // Edge order: 0 = top right, then clockwise
   const directions = [
-    { q: 1, r: 0 },   // Osten
-    { q: 1, r: -1 },  // Nordosten  
-    { q: 0, r: -1 },  // Nordwesten
-    { q: -1, r: 0 },  // Westen
-    { q: -1, r: 1 },  // Südwesten
-    { q: 0, r: 1 }    // Südosten
+    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
   ];
   
   return directions.map(dir => ({
-    q: q + dir.q,
-    r: r + dir.r
+    q: q + dir[0],
+    r: r + dir[1]
   }));
 }
 
