@@ -751,40 +751,58 @@ async function startGame() {
 
   // === UI: Info-Button (Regeln) ===
   try {
-    // Settings-Button suchen, um daneben den Info-Button zu platzieren
-    let settingsBtn = document.getElementById('settings-button');
-    if (!settingsBtn) {
+    // Settings-Button Container suchen oder erstellen
+    let settingsContainer = document.getElementById('settings-ui');
+    if (!settingsContainer) {
       createSettingsMenu();
-      settingsBtn = document.getElementById('settings-button');
+      settingsContainer = document.getElementById('settings-ui');
     }
+    
     // Info-Button nur einmal anlegen
     let infoBtn = document.getElementById('info-button');
     if (!infoBtn) {
       infoBtn = document.createElement('button');
       infoBtn.id = 'info-button';
       infoBtn.title = 'Spielregeln anzeigen';
-      infoBtn.style.fontSize = '2.2em';
-      infoBtn.style.padding = '0.3em 0.5em';
-      infoBtn.style.margin = '0 0.5em 0 0';
-      infoBtn.style.cursor = 'pointer';
-      infoBtn.style.borderRadius = '6px';
-      infoBtn.style.background = 'linear-gradient(90deg, #e0eafc 60%, #cfdef3 100%)';
+      infoBtn.textContent = 'ℹ️';
+      // Gleiche Styling wie Settings-Button
+      infoBtn.style.fontSize = '1.5em';
+      infoBtn.style.padding = '0.3em';
+      infoBtn.style.width = '2em';
+      infoBtn.style.height = '2em';
+      infoBtn.style.borderRadius = '7px';
+      infoBtn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
       infoBtn.style.border = 'none';
-      infoBtn.style.boxShadow = '0 2px 8px #0001';
-      infoBtn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s';
-      infoBtn.style.outline = 'none';
       infoBtn.style.fontFamily = "'Montserrat', Arial, sans-serif";
       infoBtn.style.fontWeight = '700';
+      infoBtn.style.cursor = 'pointer';
+      infoBtn.style.boxShadow = '0 2px 8px #0001';
+      infoBtn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s';
+      infoBtn.style.outline = 'none';
       infoBtn.style.color = '#222';
-      infoBtn.style.display = 'flex';
-      infoBtn.style.alignItems = 'center';
-      infoBtn.style.justifyContent = 'center';
-      infoBtn.innerHTML = 'ℹ️';
-      // Button direkt vor Settings-Button einfügen
-      if (settingsBtn && settingsBtn.parentNode) {
-        settingsBtn.parentNode.insertBefore(infoBtn, settingsBtn);
-      } else {
-        actionBar.appendChild(infoBtn);
+      infoBtn.style.display = 'inline-block';
+      infoBtn.style.marginRight = '0.5em';
+      
+      // Hover-Effekte (gleich wie Settings-Button)
+      infoBtn.onmouseenter = () => {
+        infoBtn.style.background = 'linear-gradient(90deg, #ffd700 70%, #fffbe6 100%)';
+        infoBtn.style.boxShadow = '0 4px 12px #ffe06644';
+        infoBtn.style.transform = 'translateY(-1px)';
+      };
+      infoBtn.onmouseleave = () => {
+        infoBtn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
+        infoBtn.style.boxShadow = '0 2px 8px #0001';
+        infoBtn.style.transform = 'translateY(0)';
+      };
+      
+      // Button in den Settings-Container einfügen (vor dem Settings-Button)
+      if (settingsContainer) {
+        const settingsBtn = document.getElementById('settings-button');
+        if (settingsBtn) {
+          settingsContainer.insertBefore(infoBtn, settingsBtn);
+        } else {
+          settingsContainer.appendChild(infoBtn);
+        }
       }
     }
     // Regeln-Popup Modal nur einmal anlegen
