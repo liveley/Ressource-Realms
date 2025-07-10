@@ -8,9 +8,9 @@ import { createBankTradeUI } from './bankTradeUI.js';
 const resources = [
   { key: 'wheat', symbol: '🌾', name: 'Weizen', color: '#ffe066' },
   { key: 'sheep', symbol: '🐑', name: 'Schaf', color: '#8fd19e' },
-  { key: 'wood', symbol: '🌲', name: 'Holz', color: '#deb887' },
+  { key: 'wood', symbol: '🪵', name: 'Holz', color: '#deb887' },
   { key: 'clay', symbol: '🧱', name: 'Lehm', color: '#e07a5f' },
-  { key: 'ore', symbol: '🪙', name: 'Erz', color: '#ffd700' }
+  { key: 'ore', symbol: '🪨', name: 'Erz', color: '#ffd700' }
 ];
 
 let resUI = null;

@@ -831,10 +831,11 @@ async function startGame() {
         <div style="font-size:1.5em;font-weight:bold;margin-bottom:0.5em;text-align:center;">Spielregeln</div>
         <div style="max-height:340px;overflow-y:auto;padding-right:8px;">
           <ul style="padding-left:1.2em;">
-            <li>Baue Siedlungen, Städte und Straßen, um Siegpunkte zu sammeln.</li>
+          <li>Jeder Spieler beginnt mit 2 Siedlungen und 2 Straßen.</li>  
+          <li>Baue Siedlungen, Städte und Straßen, um Siegpunkte zu sammeln.</li>
             <li>Würfle zu Beginn deines Zuges und sammle Rohstoffe entsprechend der gewürfelten Zahl.</li>
             <li>Handel mit der Bank, anderen Spielern oder an Häfen.</li>
-            <li>Der Räuber blockiert Felder und kann Rohstoffe stehlen, wenn eine 7 gewürfelt wird.</li>
+            <li>Der Räuber blockiert Felder, wenn eine 7 gewürfelt wird.</li>
             <li>Entwicklungskarten bringen Vorteile wie Ritter, Fortschritt oder Siegpunkte.</li>
             <li>Wer zuerst 10 Siegpunkte erreicht, gewinnt das Spiel!</li>
           </ul>

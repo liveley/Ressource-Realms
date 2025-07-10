@@ -222,9 +222,9 @@ function createCostsSection() {
 
   const costs = [
     { name: 'Siedlung', cost: '🪵 🧱 🌾 🐑' },
-    { name: 'Stadt', cost: '🌾🌾 ⚙️⚙️⚙️' },
+    { name: 'Stadt', cost: '🌾🌾 🪨🪨🪨' },
     { name: 'Straße', cost: '🪵 🧱' },
-    { name: 'Entwicklungskarte', cost: '🌾 🐑 ⚙️' }
+    { name: 'Entwicklungskarte', cost: '🌾 🐑 🪨' }
   ];
 
   const costsList = document.createElement('div');
