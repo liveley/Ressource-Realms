@@ -597,7 +597,7 @@ async function startGame() {
       resultDiv.style.borderRadius = '6px';
       resultDiv.style.backgroundColor = 'rgba(0,0,0,0.5)';
       resultDiv.style.padding = '0.2em';
-      resultDiv.textContent = '?'; // Platzhalter-Text
+      resultDiv.textContent = ''; // Platzhalter-Text
     }
     
     if (!diceWrapper) {
