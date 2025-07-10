@@ -781,7 +781,6 @@ async function startGame() {
       infoBtn.style.outline = 'none';
       infoBtn.style.color = '#222';
       infoBtn.style.display = 'inline-block';
-      infoBtn.style.marginRight = '0.5em';
       
       // Hover-Effekte (gleich wie Settings-Button)
       infoBtn.onmouseenter = () => {

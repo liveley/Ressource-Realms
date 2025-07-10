@@ -29,6 +29,9 @@ function createSettingsButton() {
     settingsContainer.style.top = '7em';
     settingsContainer.style.left = '2em';
     settingsContainer.style.zIndex = '15';
+    settingsContainer.style.display = 'flex';
+    settingsContainer.style.flexDirection = 'row';
+    settingsContainer.style.gap = '0.5em';
     document.body.appendChild(settingsContainer);
   }
 
