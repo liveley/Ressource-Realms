@@ -13,12 +13,13 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     container = document.createElement('div');
     container.id = 'player-overview-container';
     container.style.position = 'fixed';
-    container.style.top = '2%';
-    container.style.left = '17%';
-    container.style.transform = 'translateX(-50%)';
+    container.style.top = '18px';
+    container.style.left = '18px';
     container.style.display = 'flex';
+    container.style.flexDirection = 'row';
     container.style.gap = '2.5em';
-    container.style.zIndex = '5'; // niedriger als das Main-Menü
+    container.style.zIndex = '1002'; // sehr hoch, immer sichtbar
+    container.style.pointerEvents = 'none'; // Overlays nicht blockieren
     document.body.appendChild(container);
   }
 
@@ -31,26 +32,33 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
   // Für jeden Spieler eine kompakte Box erzeugen
   players.forEach((player, idx) => {
     const isActive = idx === getActivePlayerIdx();
-    
     // Initialize victory points if not already done
     if (!player.victoryPoints) {
       initializeVictoryPoints([player]);
     }
+    // Siegpunkte-Anzeige vorbereiten (vor Avatar-Kreis!)
+    let vpDisplay;
+    if (!player) {
+      vpDisplay = { display: '0', hidden: 0 };
+    } else {
+      vpDisplay = getVictoryPointsForDisplay(player, isActive);
+    }
 
     const box = document.createElement('div');
     box.className = 'player-overview-box';
-
-    // Box-Styling: kompakt, mit Rahmen und Schatten
-    box.style.minHeight = '20px';
+    // Box-Styling: kompakt, mit Rahmen und Schatten, nach links versetzt (Offset)
+    box.style.minHeight = '54px';
     box.style.background = isActive ? '#fff' : '#f4f4f4';
     box.style.border = `3px solid ${isActive ? '#ffd700' : '#ccc'}`;
     box.style.borderRadius = '12px';
     box.style.boxShadow = isActive ? '0 0 12px 4px #ffd70088' : '0 2px 6px #0002';
-    box.style.padding = '0.3em 0.6em 0.3em 0.6em' ; // weniger Padding oben/unten
+    box.style.padding = '0.7em 2.2em 0.7em 1.5em'; // mehr Platz für Text und Werte
     box.style.display = 'flex';
     box.style.flexDirection = 'column';
     box.style.justifyContent = 'center';
     box.style.transition = 'all 0.3s ease';
+    box.style.position = 'relative';
+    box.style.left = '0'; // Kein Offset mehr, Box startet am linken Rand
 
     // Kopfzeile mit Avatar, Name und Wertezeile nebeneinander
     const header = document.createElement('div');
@@ -60,16 +68,33 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     header.style.gap = '0.4em'; // enger
     header.style.width = '100%';
 
-    // Avatar-Kreis in Spielerfarbe (halb außerhalb der Box)
+    // Avatar-Kreis in Spielerfarbe mit Siegpunkte-Anzeige, halb über dem Info-Rechteck
     const avatar = document.createElement('div');
-    avatar.style.width = '57px';
-    avatar.style.height = '57px';
+    avatar.style.width = '54px';
+    avatar.style.height = '54px';
     avatar.style.borderRadius = '50%';
     avatar.style.background = player.color ? `#${player.color.toString(16).padStart(6, '0')}` : '#888';
-    avatar.style.border = '2px solid #333';
+    avatar.style.border = isActive ? '3.5px solid #ffd700' : '2px solid #333';
+    avatar.style.display = 'flex';
+    avatar.style.alignItems = 'center';
+    avatar.style.justifyContent = 'center';
+    avatar.style.boxShadow = isActive ? '0 0 16px 4px #ffd70088' : '0 2px 8px #0002';
+    avatar.style.marginRight = '0.7em';
     avatar.style.position = 'relative';
-    avatar.style.left = '-42px'; // Hälfte des Kreises nach links außerhalb
-    avatar.style.boxShadow = '0 2px 8px #0002';
+    avatar.style.left = '-20px'; // Avatar ragt nach links über die Box hinaus
+    avatar.style.right = 'unset';
+    avatar.style.top = 'unset';
+    avatar.style.transform = 'none';
+    avatar.style.pointerEvents = 'auto';
+    // Siegpunkte-Zahl in die Mitte
+    const vpNum = document.createElement('span');
+    vpNum.textContent = vpDisplay.display;
+    vpNum.title = `Siegpunkte${vpDisplay.hidden > 0 ? ' (inklusive versteckter Punkte)' : ''}`;
+    vpNum.style.fontWeight = 'bold';
+    vpNum.style.fontSize = '1.45em';
+    vpNum.style.color = isActive ? '#222' : '#333';
+    vpNum.style.textShadow = isActive ? '0 0 8px #ffd70088' : '0 1px 2px #fff8';
+    avatar.appendChild(vpNum);
     header.appendChild(avatar);
 
     // Name + Wertezeile in einer Spalte
@@ -88,39 +113,25 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     nameDiv.style.marginBottom = '0.05em'; // weniger Abstand
     infoBlock.appendChild(nameDiv);
 
-    // Kompakte Wertezeile mit Symbolen
+    // Kompakte Wertezeile mit Symbolen (ohne Siegpunkte)
     const stats = document.createElement('div');
     stats.style.display = 'flex';
     stats.style.flexWrap = 'wrap';
     stats.style.gap = '0.4em';
-    stats.style.fontSize = '0.85em';
-
-    // Victory Points with new system
-    let vpDisplay;
-    if (!player) {
-      console.warn('Player object is null or undefined in UI overview');
-      vpDisplay = { display: '0', hidden: 0 };
-    } else {
-      vpDisplay = getVictoryPointsForDisplay(player, isActive);
-    }
-    
+    stats.style.fontSize = '0.92em';
     // Check for special achievements
     const hasLongestRoad = player.victoryPoints?.longestRoad > 0;
     const hasLargestArmy = player.victoryPoints?.largestArmy > 0;
-    
     // Calculate total development cards (current + new)
     const totalDevCards = (player.developmentCards?.length ?? 0) + (player.newDevelopmentCards?.length ?? 0);
     const knightsPlayed = player.knightsPlayed ?? 0;
-
     stats.innerHTML = `
-      <span title="Siegpunkte${vpDisplay.hidden > 0 ? ' (inklusive versteckter Punkte)' : ''}" class="victory-points">🏆 ${vpDisplay.display}</span>
       <span title="Straßen (längste: ${player.longestRoadLength ?? 0})">🛣️ ${player.roads?.length ?? 0}</span>
       <span title="Siedlungen">🏠 ${player.settlements?.length ?? 0}</span>
       <span title="Städte">🏛️ ${player.cities?.length ?? 0}</span>
       <span title="Ressourcenkarten">📦 ${player.resources ? Object.values(player.resources).reduce((a,b)=>a+b,0) : 0}</span>
       <span title="Entwicklungskarten (Ritter gespielt: ${knightsPlayed})">🎴 ${totalDevCards}</span>
     `;
-
     infoBlock.appendChild(stats);
     header.appendChild(infoBlock);
     box.appendChild(header);
