@@ -161,8 +161,8 @@ function createOrUpdateAchievementDisplay(players, getActivePlayerIdx) {
     achievementContainer = document.createElement('div');
     achievementContainer.id = 'achievement-display';
     achievementContainer.style.position = 'fixed';
-    achievementContainer.style.top = '17%';
-    achievementContainer.style.left = '6%';
+    achievementContainer.style.top = '25%';
+    achievementContainer.style.left = '1.5%';
     achievementContainer.style.background = 'rgba(255, 255, 255, 0.95)';
     achievementContainer.style.borderRadius = '12px';
     achievementContainer.style.padding = '1em';
