@@ -31,6 +31,8 @@ import { createMainMenuSidebar } from './modules/uiMainMenu.js';
 
 import { createSettingsMenu } from './modules/uiSettingsMenu.js';
 import { initializeVictoryPoints, updateAllVictoryPoints, getVictoryPointsForDisplay, calculateLongestRoad } from './modules/victoryPoints.js';
+import { renderPorts, updatePortLabels, highlightPlayerPorts, getPlayerTradeRates } from './modules/portSystem.js';
+import { showPortTradeUI, hidePortTradeUI, togglePortTradeUI } from './modules/portTradeUI.js';
 import { enableRoadDebug, disableRoadDebug, analyzePlayerRoads, testRoadConnections, toggleRoadDebugTools, isRoadDebugToolsVisible } from './modules/debugging/longestRoadDebug.js';
 import { initRoadTestingUtils } from './modules/debugging/roadTestingUtils.js';
 import { initDebugKeyHandlers } from './modules/debugging/debugKeyHandlers.js';
@@ -241,6 +243,11 @@ function updateAllUI() {
   updateResourceUI(window.players[activePlayerIdx], activePlayerIdx);
   updatePlayerOverviews(window.players, () => activePlayerIdx);
   updateGameStatusDisplay();
+  
+  // Highlight available ports for current player
+  if (window.players && window.players[activePlayerIdx]) {
+    highlightPlayerPorts(window.players[activePlayerIdx]);
+  }
 }
 
 // === Preload Game Board ===
@@ -260,6 +267,13 @@ async function preloadGameBoard() {
     
     // After creating the game board: Number Tokens hinzufügen
     addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
+
+    // Initialize ports after game board is created
+    renderPorts(scene).then(() => {
+      console.log('Ports initialized successfully');
+    }).catch(error => {
+      console.error('Error initializing ports:', error);
+    });
 
     // Initialize robber on desert tile
     const initialRobberTileKey = '0,0';
@@ -436,6 +450,101 @@ async function startGame() {
     }
   } catch (e) {
     console.error('Fehler beim Erstellen des Markt-Buttons:', e);
+  }
+
+  try {
+    // === UI: Port-Handel-Button ===
+    let portBtn = document.getElementById('port-trade-btn');
+    if (!portBtn) {
+      portBtn = document.createElement('button');
+      portBtn.id = 'port-trade-btn';
+      portBtn.title = 'Hafen-Handel';
+      portBtn.style.fontSize = '2.5em';
+      portBtn.style.padding = '0.4em';
+      portBtn.style.margin = '0 0.5em';
+      portBtn.style.cursor = 'pointer';
+      portBtn.style.borderRadius = '6px';
+      portBtn.style.aspectRatio = '1 / 1';
+      portBtn.style.background = 'linear-gradient(90deg, #3498db 60%, #85c1e9 100%)';
+      portBtn.style.border = 'none';
+      portBtn.style.boxShadow = '0 2px 8px #0001';
+      portBtn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s, font-size 0.18s';
+      portBtn.style.outline = 'none';
+      portBtn.style.fontFamily = "'Montserrat', Arial, sans-serif";
+      portBtn.style.fontWeight = '700';
+      portBtn.style.color = '#fff';
+      portBtn.style.display = 'flex';
+      portBtn.style.flexDirection = 'column';
+      portBtn.style.alignItems = 'center';
+      portBtn.style.justifyContent = 'center';
+      
+      // Emoji
+      const emojiSpan = document.createElement('span');
+      emojiSpan.textContent = '🚢';
+      emojiSpan.style.display = 'block';
+      emojiSpan.style.fontSize = '1em';
+      emojiSpan.style.lineHeight = '1';
+      portBtn.appendChild(emojiSpan);
+      
+      // Click-Handler: Port-Trade-UI öffnen
+      portBtn.onclick = () => {
+        const player = window.players && window.players[window.activePlayerIdx || 0];
+        if (!player) {
+          console.warn('No active player for port trade');
+          return;
+        }
+        
+        // Prüfe ob Spieler Zugang zu Häfen hat
+        const rates = getPlayerTradeRates(player);
+        const hasPortAccess = Object.values(rates).some(rate => rate < 4);
+        
+        if (hasPortAccess) {
+          togglePortTradeUI();
+        } else {
+          // Feedback wenn kein Port-Zugang
+          let feedback = document.getElementById('global-feedback');
+          if (!feedback) {
+            feedback = document.createElement('div');
+            feedback.id = 'global-feedback';
+            feedback.style.cssText = `
+              position: fixed;
+              left: 50%;
+              bottom: 100px;
+              transform: translateX(-50%);
+              background: rgba(0, 0, 0, 0.9);
+              color: #e74c3c;
+              font-weight: bold;
+              font-size: 16px;
+              padding: 15px 25px;
+              border-radius: 10px;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+              z-index: 99999;
+              text-align: center;
+              font-family: 'Montserrat', Arial, sans-serif;
+              border: 2px solid currentColor;
+            `;
+            document.body.appendChild(feedback);
+          }
+          feedback.textContent = '🚢 Kein Zugang zu Häfen! Baue eine Siedlung an einem Hafen.';
+          feedback.style.display = 'block';
+          setTimeout(() => feedback.style.display = 'none', 3000);
+        }
+      };
+      
+      // Hover-Effekte
+      portBtn.onmouseover = () => {
+        portBtn.style.background = 'linear-gradient(90deg, #2980b9 60%, #5dade2 100%)';
+        portBtn.style.transform = 'translateY(-2px)';
+      };
+      portBtn.onmouseout = () => {
+        portBtn.style.background = 'linear-gradient(90deg, #3498db 60%, #85c1e9 100%)';
+        portBtn.style.transform = 'translateY(0)';
+      };
+      
+      actionBar.appendChild(portBtn);
+    }
+  } catch (e) {
+    console.error('Fehler beim Erstellen des Port-Handel-Buttons:', e);
   }
 
   // === UI: Kombinierter Würfeln- und Spielerwechsel-Button ===
@@ -858,6 +967,9 @@ window.addEventListener('click', (event) => {
 function animate() {
     // Update number tokens to face camera
     updateNumberTokensFacingCamera(scene, camera);
+    
+    // Update port labels to face camera
+    updatePortLabels(camera);
     
     // Update physics for dice
     updateDicePhysics();
