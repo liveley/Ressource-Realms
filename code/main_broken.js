@@ -20,7 +20,7 @@ import { setupBuildPreview } from './modules/uiBuildPreview.js';
 import CardManager from './modules/cards.js';
 import { createPlayerOverviews, updatePlayerOverviews } from './modules/ui_player_overview.js';
 import { placePlayerSwitchButton } from './modules/change_player.js';
-import { createBuildUI, showBuildPopupFeedback } from './modules/uiBuild.js';
+import { createBuildUI } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
 import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
@@ -386,6 +386,21 @@ async function startGame() {
   } catch (e) {
     console.error('Fehler beim Erstellen des Build-UI:', e);
   }
+
+  // === UI: Würfeln-Button ===
+  try {
+    createDiceUI(() => {
+      throwPhysicsDice(scene);
+      window.setDiceResultFromPhysics = (result) => {
+        setDiceResult(result.sum);
+        window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
+      };
+    }, actionBar);
+    console.log('Dice-UI erstellt:', document.getElementById('dice-ui'));
+  } catch (e) {
+    console.error('Fehler beim Erstellen des Dice-UI:', e);
+  }
+  
 
   try {
     // === UI: Markt-Button (unabhängig vom Würfeln-Button) ===
@@ -957,7 +972,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.minPolarAngle = Math.PI / 4; // 45° von oben
 controls.maxPolarAngle = Math.PI * 0.44; // ca. 79°, verhindert "unter das Feld schauen"
 controls.minDistance = 10;  // Näher ranzoomen von oben möglich
-controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
+controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
 
 
 // Create a raycaster for robber tile selection
@@ -1054,6 +1069,197 @@ function animate() {
     
     // Update port labels to face camera
     updatePortLabels(camera);
+    
+    // Update physics for dice
+    updateDicePhysics();
+    
+    // Animate the sunbeam effects - ensure this runs on every frame
+    animateHalos();
+    
+    // Render the scene
+    renderer.render(scene, camera);
+}
+
+// Resize
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.addEventListener('keydown', (e) => handleResourceKeydown(e)); // handleResourceKeydown uses current player
+
+// === Bandit-Logik: Verwalte Räuberplatzierung und -bewegung ===
+
+// Track which tile is currently blocked by the robber
+let blockedTileKey = "0,0"; // Initially desert tile
+
+// Handle robber movement events
+window.addEventListener('robberMoved', (e) => {
+    console.log(`Robber moved to tile ${e.detail.key} at coordinates (${e.detail.q},${e.detail.r})`);
+    // Update which tile is blocked for resource production
+    blockedTileKey = e.detail.key;
+    
+    // Use the accurate position function to ensure the robber is perfectly centered
+    // This is a fallback to ensure proper placement even after the event
+    const accuratePosition = getTileCenter(e.detail.q, e.detail.r, tileMeshes);
+    console.log("Ensuring robber is at accurate position:", accuratePosition);
+      // Update the number token colors to show which one is blocked
+    // Use setTimeout to ensure any tile updates complete first
+    setTimeout(() => {
+        console.log("Updating token colors for robber moved to", blockedTileKey);
+        updateNumberTokensForRobber(blockedTileKey);
+    }, 100);
+    
+    // Unblock dice rolls once the robber has been placed
+    unblockDiceRolls();
+});
+
+// Handle dice rolls
+window.addEventListener('diceRolled', (e) => {
+    // Highlight number tokens for the rolled number
+    highlightNumberTokens(scene, tileMeshes, tileNumbers, e.detail);
+    
+    // Special handling for rolling a 7
+    if (e.detail === 7) {
+        // Start robber placement mode
+        startRobberPlacement(tileMeshes, tileNumbers);
+        
+        // Block dice rolls until robber is placed
+        blockDiceRolls("Platziere zuerst den Räuber");
+    }
+});
+
+// === Place settlement/city mesh at corner ===
+
+// Globale Hilfsfunktion für Entwicklungskarten-Logik (z.B. Monopol)
+window.getAllPlayers = function() {
+  return window.players;
+};
+
+window.startRobberPlacement = startRobberPlacement;
+
+// === Undo Functionality ===
+function performUndo() {
+  if (typeof undoLastInitialPlacement === 'function') {
+    const result = undoLastInitialPlacement(activePlayerIdx, players);
+    
+    if (result.success) {
+      console.log('Undo successful:', result.message);
+      showBuildPopupFeedback(result.message, 'success');
+      
+      // Update all visual elements
+      updateAllUI();
+      
+      // Refresh the game board to reflect changes
+      if (typeof window.refreshGameBoard === 'function') {
+        window.refreshGameBoard();
+      }
+    } else {
+      console.log('Undo failed:', result.reason);
+      showBuildPopupFeedback(result.reason, 'error');
+    }
+  } else {
+    showBuildPopupFeedback('Undo-Funktion nicht verfügbar', 'error');
+  }
+}
+
+// Make undo function globally available
+window.performUndo = performUndo;
+controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
+
+
+// Create a raycaster for robber tile selection
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// Handle click events for robber placement
+window.addEventListener('click', (event) => {
+    // Only process click if we're in robber placement mode
+    if (!isInRobberPlacementMode()) {
+        console.log("Not in robber placement mode, ignoring click");
+        return;
+    }
+    
+    console.log("Click detected in robber placement mode");
+
+    // Calculate mouse position in normalized device coordinates
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+    // Update the raycaster
+    raycaster.setFromCamera(mouse, camera);
+
+    // Find intersections with all scene objects - true for recursive search through children
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    
+    console.log("Found", intersects.length, "intersections");
+
+    if (intersects.length > 0) {
+        // Log the first several intersections to help with debugging
+        for (let i = 0; i < Math.min(3, intersects.length); i++) {
+            const obj = intersects[i].object;
+            console.log(`Intersection ${i}:`, 
+                obj.name || "unnamed", 
+                "type:", obj.type, 
+                "userData:", obj.userData,
+                "parent:", obj.parent ? (obj.parent.name || "unnamed parent") : "no parent");
+        }
+        
+        // Try using handleTileSelection from the bandit module with the first intersection
+        let success = false;
+        
+        // Try each of the first 3 intersections in case the first one doesn't work
+        for (let i = 0; i < Math.min(3, intersects.length) && !success; i++) {
+            success = handleTileSelection(intersects[i], tileMeshes, getTileWorldPosition);
+            if (success) {
+                console.log(`Successfully placed robber using intersection ${i}`);
+                break;
+            }
+        }
+        
+        if (success) {
+            console.log("Successfully placed robber");
+        } else {
+            console.log("Failed to place robber at the selected location");
+            // === UI: Fehler-/Feedback-Popup ===
+            const errorMsg = document.createElement('div');
+            errorMsg.textContent = "Konnte den Räuber nicht auf diesem Feld platzieren. Versuche ein anderes Feld.";
+            errorMsg.style.position = 'fixed';
+            errorMsg.style.left = '50%';
+            errorMsg.style.top = '10%';
+            errorMsg.style.transform = 'translateX(-50%)';
+            errorMsg.style.background = 'rgba(255,50,50,0.9)';
+            errorMsg.style.color = 'white';
+            errorMsg.style.padding = '10px 20px';
+            errorMsg.style.borderRadius = '5px';
+            errorMsg.style.fontFamily = "'Montserrat', Arial, sans-serif";
+            errorMsg.style.zIndex = '1000';
+            document.body.appendChild(errorMsg);
+            setTimeout(() => document.body.removeChild(errorMsg), 3000);
+            
+            // DEBUG: Dump intersection details to console for debugging
+            console.log("DEBUG - All intersections:");
+            intersects.slice(0, 5).forEach((intersection, i) => {
+                console.log(`Intersection ${i} details:`, {
+                    object: intersection.object,
+                    distance: intersection.distance,
+                    point: intersection.point,
+                    face: intersection.face
+                });
+            });
+        }
+    } else {
+        console.log("No intersections found - nothing was clicked");
+    }
+});
+
+
+
+// Animation
+function animate() {
+    // Update number tokens to face camera
+    updateNumberTokensFacingCamera(scene, camera);
     
     // Update physics for dice
     updateDicePhysics();
