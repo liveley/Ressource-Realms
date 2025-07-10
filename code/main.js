@@ -9,7 +9,7 @@ import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera
 import { animateHalos, highlightNumberTokens, getTileWorldPosition } from './modules/tileHighlight.js'; 
 import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
-import { createPlaceholderCards } from './modules/placeholderCards.js';
+// import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
 import { initTileInfoOverlay } from './modules/uiTileInfo.js';
@@ -17,7 +17,7 @@ import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, h
 import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad, initializeInitialPlacement, getGamePhaseInfo, getCurrentPlayerPlacementInfo, undoLastInitialPlacement, getInitialPlacementUIState, getPlacementWarning } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
-import CardManager from './modules/cards.js';
+// import CardManager from './modules/cards.js';
 import { createPlayerOverviews, updatePlayerOverviews } from './modules/ui_player_overview.js';
 import { placePlayerSwitchButton } from './modules/change_player.js';
 import { createBuildUI, showBuildPopupFeedback } from './modules/uiBuild.js';
@@ -288,15 +288,15 @@ async function preloadGameBoard() {
         
         // Robber initialized, continue with cards
         setTimeout(() => {
-          createPlaceholderCards(scene);
-          const cardManager = new CardManager();
-          cardManager.loadAllCards().then(() => {
+          // createPlaceholderCards(scene);
+          // const cardManager = new CardManager();
+          // cardManager.loadAllCards().then(() => {
             console.log('Game board preloaded successfully');
             resolve(true);
-          }).catch(error => {
-            console.error("Fehler beim Laden der Karten:", error);
-            resolve(true); // Continue even if cards fail
-          });
+          // }).catch(error => {
+          //   console.error("Fehler beim Laden der Karten:", error);
+          //   resolve(true); // Continue even if cards fail
+          // });
         }, 300);
         
       } else if (retries > 0) {
