@@ -324,20 +324,15 @@ export function createMainMenuSidebar() {
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
     ">
       <p style="margin: 15px 0; font-size: 1.25em;">
-      Dieses Projekt ist als Teil des <strong>Projektmoduls Prozesse 2025</strong> an der <strong>Hochschule München</strong> im Studiengang Studiengang Informatik & Design entstanden.<strong> Gebaut von Gruppe 4</strong><br>
+      Dieses Projekt ist als Teil des <strong>Projektmoduls Prozesse 2025</strong> an der <strong>Hochschule München</strong> im Studiengang Informatik & Design entstanden.<strong> Gebaut von Gruppe 4.</strong><br>
       
     <p style="margin: 15px 0;">
       Eine 3D-Implementierung des beliebten Brettspiels 
-      <a href="https://www.catan.de/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">
-        Catan
-      </a>, entwickelt mit 
-      <a href="https://threejs.org/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">
-        Three.js
-      </a> und 
-      <a href="https://www.blender.org/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">
-        Blender
-      </a>.
+      <a href="https://www.catan.de/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">Catan</a>, entwickelt mit 
+      <a href="https://threejs.org/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">Three.js</a> und 
+      <a href="https://www.blender.org/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">Blender</a>.
     </p>
+
 
       <p>
         Weitere Informationen

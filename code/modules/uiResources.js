@@ -8,9 +8,9 @@ import { createBankTradeUI } from './bankTradeUI.js';
 const resources = [
   { key: 'wheat', symbol: '🌾', name: 'Weizen', color: '#ffe066' },
   { key: 'sheep', symbol: '🐑', name: 'Schaf', color: '#8fd19e' },
-  { key: 'wood', symbol: '🌲', name: 'Holz', color: '#deb887' },
+  { key: 'wood', symbol: '🪵', name: 'Holz', color: '#deb887' },
   { key: 'clay', symbol: '🧱', name: 'Lehm', color: '#e07a5f' },
-  { key: 'ore', symbol: '🪙', name: 'Erz', color: '#ffd700' }
+  { key: 'ore', symbol: '🪨', name: 'Erz', color: '#ffd700' }
 ];
 
 let resUI = null;
@@ -43,19 +43,18 @@ export function createResourceUI() {
 function updateBankUI() {
   if (!bankUI || !window.bank) return;
   
+  // Markt-UI im Stil des Hafens: große Icons, moderne Box, kompakt, keine Label
   const bankItems = resources.map(r => `
-    <div class="resource-item">
-      <div class="resource-content">
-        <span class="resource-icon">${r.symbol}</span>
-        <span class="resource-count" style="color:${r.color}">${window.bank[r.key] ?? 0}</span>
-      </div>
+    <div class="market-resource-item" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:54px; margin:0 0.5em;">
+      <span class="market-resource-icon" style="font-size:2.1em; margin-bottom:0.15em;">${r.symbol}</span>
+      <span class="market-resource-count" style="font-weight:bold; color:${r.color}; font-size:1.15em;">${window.bank[r.key] ?? 0}</span>
     </div>
   `).join('');
-  
+
   bankUI.innerHTML = `
-    <div class="resource-header">
-      <span class="resource-label">Bank:</span>
-      <div class="resource-items">
+    <div class="market-bank-box" style="background:#fff; border-radius:14px; box-shadow:0 2px 12px #0001; border:2.5px solid #bbb; padding:1.1em 1.5em 0.7em 1.5em; display:flex; flex-direction:column; align-items:center; min-width:320px;">
+      <div style="font-weight:bold; font-size:1.13em; color:#444; margin-bottom:0.5em; letter-spacing:0.01em;">Markt</div>
+      <div class="market-resource-list" style="display:flex; flex-direction:row; justify-content:center; gap:0.5em; width:100%;">
         ${bankItems}
       </div>
     </div>

@@ -4,12 +4,12 @@ import { scene } from './modules/scene.js';
 import { camera } from './modules/camera.js';
 import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
-import { createDirectionArrows } from './modules/directionArrows.js'; 
+// import { createDirectionArrows } from './modules/directionArrows.js'; 
 import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, updateNumberTokensForRobber } from './modules/game_board.js';
 import { animateHalos, highlightNumberTokens, getTileWorldPosition } from './modules/tileHighlight.js'; 
 import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
-import { createPlaceholderCards } from './modules/placeholderCards.js';
+// import { createPlaceholderCards } from './modules/placeholderCards.js';
 import { createResourceUI, updateResourceUI, handleResourceKeydown } from './modules/uiResources.js';
 import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
 import { initTileInfoOverlay } from './modules/uiTileInfo.js';
@@ -17,10 +17,10 @@ import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, h
 import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad, initializeInitialPlacement, getGamePhaseInfo, getCurrentPlayerPlacementInfo, undoLastInitialPlacement, getInitialPlacementUIState, getPlacementWarning } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
-import CardManager from './modules/cards.js';
+// import CardManager from './modules/cards.js';
 import { createPlayerOverviews, updatePlayerOverviews } from './modules/ui_player_overview.js';
 import { placePlayerSwitchButton } from './modules/change_player.js';
-import { createBuildUI } from './modules/uiBuild.js';
+import { createBuildUI, showBuildPopupFeedback } from './modules/uiBuild.js';
 import { setupBuildEventHandler } from './modules/buildEventHandlers.js';
 import { showDebugMessage } from './modules/debugging/debugTools.js';
 import { createDebugDiceIndicator, toggleDebugDiceMode } from './modules/debugging/diceDebug.js';
@@ -257,7 +257,7 @@ async function preloadGameBoard() {
   return new Promise((resolve) => {
     // Set up scene components that don't require UI
     scene.add(createHexGrid());
-    createDirectionArrows(scene);
+    // createDirectionArrows(scene);
     setupLights(scene);
 
     // Create the game board with all tiles
@@ -288,15 +288,15 @@ async function preloadGameBoard() {
         
         // Robber initialized, continue with cards
         setTimeout(() => {
-          createPlaceholderCards(scene);
-          const cardManager = new CardManager();
-          cardManager.loadAllCards().then(() => {
+          // createPlaceholderCards(scene);
+          // const cardManager = new CardManager();
+          // cardManager.loadAllCards().then(() => {
             console.log('Game board preloaded successfully');
             resolve(true);
-          }).catch(error => {
-            console.error("Fehler beim Laden der Karten:", error);
-            resolve(true); // Continue even if cards fail
-          });
+          // }).catch(error => {
+          //   console.error("Fehler beim Laden der Karten:", error);
+          //   resolve(true); // Continue even if cards fail
+          // });
         }, 300);
         
       } else if (retries > 0) {
@@ -372,27 +372,20 @@ async function startGame() {
       setActivePlayerIdx: setActivePlayerAndUpdateUI,  // Use centralized function
       parent: actionBar
     });
-    console.log('Build-UI erstellt:', document.getElementById('build-ui'));
+    // Passe die Höhe des Build-Menus an, damit alle Buttons sichtbar sind
+    const buildUI = document.getElementById('build-ui');
+    if (buildUI) {
+      buildUI.style.maxHeight = 'none';
+      buildUI.style.height = 'auto';
+      buildUI.style.overflowY = 'visible';
+      buildUI.style.display = 'flex';
+      buildUI.style.flexDirection = 'column';
+      buildUI.style.flexWrap = 'nowrap';
+    }
+    console.log('Build-UI erstellt und Höhe angepasst:', buildUI);
   } catch (e) {
     console.error('Fehler beim Erstellen des Build-UI:', e);
   }
-
-  // === UI: Würfeln- und Spielerwechsel-Button (kombiniert) ===
-  // Die alte createDiceUI bleibt auskommentiert erhalten:
-  /*
-  try {
-    createDiceUI(() => {
-      throwPhysicsDice(scene);
-      window.setDiceResultFromPhysics = (result) => {
-        setDiceResult(result.sum);
-        window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
-      };
-    }, actionBar);
-    console.log('Dice-UI erstellt:', document.getElementById('dice-ui'));
-  } catch (e) {
-    console.error('Fehler beim Erstellen des Dice-UI:', e);
-  }
-  */
 
   try {
     // === UI: Markt-Button (unabhängig vom Würfeln-Button) ===
@@ -604,7 +597,7 @@ async function startGame() {
       resultDiv.style.borderRadius = '6px';
       resultDiv.style.backgroundColor = 'rgba(0,0,0,0.5)';
       resultDiv.style.padding = '0.2em';
-      resultDiv.textContent = '?'; // Platzhalter-Text
+      resultDiv.textContent = ''; // Platzhalter-Text
     }
     
     if (!diceWrapper) {
@@ -755,12 +748,124 @@ async function startGame() {
     console.error('Fehler beim Erstellen der Player-Overviews:', e);
   }
 
+
+  // === UI: Info-Button (Regeln) ===
   try {
-    // === UI: Settings-Menu (Einstellungen & Info) ===
-    createSettingsMenu();
-    console.log('Settings-Menu erstellt:', document.getElementById('settings-button'));
+    // Settings-Button Container suchen oder erstellen
+    let settingsContainer = document.getElementById('settings-ui');
+    if (!settingsContainer) {
+      createSettingsMenu();
+      settingsContainer = document.getElementById('settings-ui');
+    }
+    
+    // Info-Button nur einmal anlegen
+    let infoBtn = document.getElementById('info-button');
+    if (!infoBtn) {
+      infoBtn = document.createElement('button');
+      infoBtn.id = 'info-button';
+      infoBtn.title = 'Spielregeln anzeigen';
+      infoBtn.textContent = 'ℹ️';
+      // Gleiche Styling wie Settings-Button
+      infoBtn.style.fontSize = '1.5em';
+      infoBtn.style.padding = '0.3em';
+      infoBtn.style.width = '2em';
+      infoBtn.style.height = '2em';
+      infoBtn.style.borderRadius = '7px';
+      infoBtn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
+      infoBtn.style.border = 'none';
+      infoBtn.style.fontFamily = "'Montserrat', Arial, sans-serif";
+      infoBtn.style.fontWeight = '700';
+      infoBtn.style.cursor = 'pointer';
+      infoBtn.style.boxShadow = '0 2px 8px #0001';
+      infoBtn.style.transition = 'background 0.18s, box-shadow 0.18s, transform 0.12s';
+      infoBtn.style.outline = 'none';
+      infoBtn.style.color = '#222';
+      infoBtn.style.display = 'inline-block';
+      
+      // Hover-Effekte (gleich wie Settings-Button)
+      infoBtn.onmouseenter = () => {
+        infoBtn.style.background = 'linear-gradient(90deg, #ffd700 70%, #fffbe6 100%)';
+        infoBtn.style.boxShadow = '0 4px 12px #ffe06644';
+        infoBtn.style.transform = 'translateY(-1px)';
+      };
+      infoBtn.onmouseleave = () => {
+        infoBtn.style.background = 'linear-gradient(90deg, #ffe066 60%, #fffbe6 100%)';
+        infoBtn.style.boxShadow = '0 2px 8px #0001';
+        infoBtn.style.transform = 'translateY(0)';
+      };
+      
+      // Button in den Settings-Container einfügen (vor dem Settings-Button)
+      if (settingsContainer) {
+        const settingsBtn = document.getElementById('settings-button');
+        if (settingsBtn) {
+          settingsContainer.insertBefore(infoBtn, settingsBtn);
+        } else {
+          settingsContainer.appendChild(infoBtn);
+        }
+      }
+    }
+    // Regeln-Popup Modal nur einmal anlegen
+    let rulesModal = document.getElementById('rules-modal');
+    if (!rulesModal) {
+      rulesModal = document.createElement('div');
+      rulesModal.id = 'rules-modal';
+      rulesModal.style.cssText = `
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #f8fafc 80%, #e0eafc 100%);
+        color: #222;
+        padding: 32px 28px 22px 28px;
+        border-radius: 18px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 1.1em;
+        z-index: 10010;
+        max-width: 520px;
+        min-width: 320px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        border: 2px solid #b6c6e3;
+        display: none;
+      `;
+      rulesModal.innerHTML = `
+        <div style="font-size:1.5em;font-weight:bold;margin-bottom:0.5em;text-align:center;">Spielregeln</div>
+        <div style="max-height:340px;overflow-y:auto;padding-right:8px;">
+          <ul style="padding-left:1.2em;">
+          <li>Jeder Spieler beginnt mit 2 Siedlungen und 2 Straßen.</li>  
+          <li>Baue Siedlungen, Städte und Straßen, um Siegpunkte zu sammeln.</li>
+            <li>Würfle zu Beginn deines Zuges und sammle Rohstoffe entsprechend der gewürfelten Zahl.</li>
+            <li>Handel mit der Bank, anderen Spielern oder an Häfen.</li>
+            <li>Der Räuber blockiert Felder, wenn eine 7 gewürfelt wird.</li>
+            <li>Entwicklungskarten bringen Vorteile wie Ritter, Fortschritt oder Siegpunkte.</li>
+            <li>Wer zuerst 10 Siegpunkte erreicht, gewinnt das Spiel!</li>
+          </ul>
+          <div style="margin-top:1em;font-size:0.95em;color:#444;">
+            Weitere Details findest du im 
+            <a href="https://www.catan.de/catan-verstehen/spielregeln" target="_blank" style="color:#2196F3;text-decoration:underline;">offiziellen Catan-Regelwerk</a>.
+          </div>
+        </div>
+        <button id="close-rules-modal" style="margin-top:1.5em;width:100%;background:linear-gradient(90deg,#b6c6e3 60%,#e0eafc 100%);color:#222;border:none;padding:10px 0;border-radius:8px;font-size:1.1em;font-weight:600;cursor:pointer;">Schließen</button>
+      `;
+      document.body.appendChild(rulesModal);
+      // Schließen-Button
+      rulesModal.querySelector('#close-rules-modal').onclick = () => {
+        rulesModal.style.display = 'none';
+      };
+    }
+    // Info-Button öffnet das Modal
+    infoBtn.onclick = () => {
+      rulesModal.style.display = 'block';
+    };
+    // Automatisch beim ersten Spielstart anzeigen
+    if (!window._rulesModalShownOnce) {
+      setTimeout(() => {
+        rulesModal.style.display = 'block';
+        window._rulesModalShownOnce = true;
+      }, 600);
+    }
+    console.log('Info-Button und Regeln-Popup erstellt:', infoBtn, rulesModal);
   } catch (e) {
-    console.error('Fehler beim Erstellen des Settings-Menu:', e);
+    console.error('Fehler beim Erstellen des Info-Buttons/Regeln-Popups:', e);
   }
 
   try {
@@ -873,7 +978,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.minPolarAngle = Math.PI / 4; // 45° von oben
 controls.maxPolarAngle = Math.PI * 0.44; // ca. 79°, verhindert "unter das Feld schauen"
 controls.minDistance = 10;  // Näher ranzoomen von oben möglich
-controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
+controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
 
 
 // Create a raycaster for robber tile selection
