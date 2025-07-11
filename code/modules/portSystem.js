@@ -4,10 +4,11 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { axialToWorld } from './game_board.js';
+import { getEquivalentCorners } from './buildLogic.js';
 
 // Port-Konfiguration basierend auf Standard Catan Layout
 // 9 Häfen total: 4 Generic (3:1) + 5 Resource-spezifisch (2:1)
-// Harbor ring: [3,-1], [3,-2], [3,-3], [2,-3], [1,-3], [0,-3], [-1,-2], [-2,-1], [-3,1], [-3,2], [-3,0], [-3,3], [-2,3], [-1,3], [0,3], [1,2], [2,1], [3,0]
+// Harbor ring: [3,-1], [3,-2], [3,-3], [2,-3], [1,-3], [0,-3], [-1,-2], [-2,-1], [-3,1], [-3,2], [-3,0], [-3,3], [-2,3], [-1,3], [0,3], // Debug-Funktion: Zeige alle gültigen Ecken für alle Häfen an
 // Systematische Verteilung für bessere Balance: jeden 2. Tile mit korrekten Edge-Werten
 export const PORTS = [
   // Index 0: [3, -1] - Generic port, Edge 5 (zeigt nach links oben)
@@ -88,6 +89,9 @@ export const PORTS = [
     resourceSymbol: '🐑'
   }
 ];
+
+// Alias for compatibility with existing code
+export const HARBORS = PORTS;
 
 // Constants
 const HEX_RADIUS = 3; // Must match game_board.js
@@ -297,69 +301,244 @@ export async function renderPorts(scene) {
 }
 
 /**
- * Findet alle Häfen in der Nähe einer Siedlung/Stadt
+ * Findet alle Häfen in der Nähe einer Siedlung/Stadt (ZURÜCK ZU EINFACHER ADJACENCY)
  * @param {number} q - Hex coordinate q of settlement (Land-Tile)
  * @param {number} r - Hex coordinate r of settlement (Land-Tile)  
  * @param {number} corner - Corner index (0-5) of settlement
  * @returns {Array<Object>} Array of nearby ports
  */
 export function getPortsNearSettlement(q, r, corner) {
+  console.log(`🔍 Checking for ports near settlement at (${q},${r}) corner ${corner} [CORRECTED GEOMETRY]`);
+  
   const nearbyPorts = [];
   
-  // Debug: Log the settlement position we're checking
-  console.log(`Checking for ports near settlement at land tile q=${q}, r=${r}, corner=${corner}`);
-  
   for (const port of PORTS) {
-    // Für jeden Port prüfen wir, ob die Siedlung an einer angrenzenden Ecke steht
-    // Ports sind an Wasser-Tiles, Siedlungen an Land-Tiles
-    const waterTileQ = port.position.q;
-    const waterTileR = port.position.r;
-    const portEdge = port.position.edge;
+    const isNear = isSettlementNearPortGeometry(q, r, corner, port);
     
-    // Berechne die Nachbar-Land-Tiles um das Wasser-Tile
-    // und prüfe, ob unsere Siedlung an einer relevanten Ecke steht
-    if (isSettlementNearPort(q, r, corner, waterTileQ, waterTileR, portEdge)) {
-      console.log(`Found port ${port.id} near settlement at q=${q}, r=${r}, corner=${corner}`);
+    if (isNear) {
+      console.log(`✓ Found accessible port: ${port.id}`);
       nearbyPorts.push(port);
     }
   }
   
-  console.log(`Found ${nearbyPorts.length} ports near settlement`);
+  console.log(`🎯 Total accessible ports: ${nearbyPorts.length}`);
   return nearbyPorts;
 }
 
 /**
- * Prüft ob eine Siedlung an einem Land-Tile in der Nähe eines Hafens steht
- * @param {number} settlementQ - Q-Koordinate der Siedlung (Land-Tile)
- * @param {number} settlementR - R-Koordinate der Siedlung (Land-Tile)
- * @param {number} settlementCorner - Ecken-Index der Siedlung (0-5)
+ * EMERGENCY DIRECT GEOMETRY TEST - Manuelle Harbor-Settlement Adjacency
+ * Verwende direkte geometrische Berechnungen anstatt getEquivalentCorners()
+ */
+function isSettlementNearPortBasic(settlementQ, settlementR, settlementCorner, portQ, portR, portEdge) {
+  console.log(`  [DEBUG] Settlement: (${settlementQ},${settlementR}) corner ${settlementCorner} vs Port: (${portQ},${portR}) edge ${portEdge}`);
+  
+  // SCHRITT 1: TESTE VERSCHIEDENE EDGE-ZU-DIRECTION MAPPINGS
+  // Die bisherige Annahme war falsch: edge != corner
+  // Edge könnte verschiedene Direction-Paare verbinden
+  
+  function neighborAxial(q, r, edge) {
+    const directions = [
+      [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+    ];
+    return [q + directions[edge][0], r + directions[edge][1]];
+  }
+  
+  // Teste verschiedene Mappings für harbor edge zu land directions
+  const possibleMappings = [
+    // Mapping 1: edge verbindet directions edge und (edge+1)%6  
+    {
+      name: 'consecutive',
+      dirs: [portEdge, (portEdge + 1) % 6]
+    },
+    // Mapping 2: edge verbindet directions edge und (edge+3)%6 (gegenüberliegend)
+    {
+      name: 'opposite',
+      dirs: [portEdge, (portEdge + 3) % 6]
+    },
+    // Mapping 3: edge verbindet directions (edge-1)%6 und edge
+    {
+      name: 'previous+current',
+      dirs: [(portEdge + 5) % 6, portEdge]
+    },
+    // Mapping 4: edge verbindet directions (edge-1)%6 und (edge+1)%6 (um edge herum)
+    {
+      name: 'around_edge',
+      dirs: [(portEdge + 5) % 6, (portEdge + 1) % 6]
+    }
+  ];
+  
+  console.log(`  [DEBUG] Testing different edge-to-direction mappings for edge ${portEdge}:`);
+  
+  for (const mapping of possibleMappings) {
+    const [dir1, dir2] = mapping.dirs;
+    const [land1Q, land1R] = neighborAxial(portQ, portR, dir1);
+    const [land2Q, land2R] = neighborAxial(portQ, portR, dir2);
+    
+    console.log(`  [DEBUG] ${mapping.name}: directions ${dir1},${dir2} -> lands (${land1Q},${land1R}) and (${land2Q},${land2R})`);
+    
+    // Prüfe ob Settlement auf einem der Landfelder ist
+    if ((settlementQ === land1Q && settlementR === land1R) || 
+        (settlementQ === land2Q && settlementR === land2R)) {
+      
+      const matchedLand = (settlementQ === land1Q && settlementR === land1R) ? 
+        {q: land1Q, r: land1R, dir: dir1} : 
+        {q: land2Q, r: land2R, dir: dir2};
+      
+      console.log(`    ✓ MAPPING MATCH: ${mapping.name} - settlement on land (${matchedLand.q},${matchedLand.r}) from direction ${matchedLand.dir}`);
+      
+      // Jetzt finde die Harbor-Corners auf diesem Landfeld
+      return findHarborCornersOnLand(settlementQ, settlementR, settlementCorner, portQ, portR, matchedLand.dir, mapping.name);
+    }
+  }
+  
+  console.log(`    ✗ No mapping matches settlement position`);
+  return { isNear: false, bestDistance: Infinity };
+}
+
+function findHarborCornersOnLand(landQ, landR, settlementCorner, portQ, portR, directionToPort, mappingName) {
+  console.log(`  [DEBUG] Finding harbor corners on land (${landQ},${landR}) connected to port via direction ${directionToPort}`);
+  
+  // Die edge zum port entspricht direction directionToPort
+  // Das bedeutet auf dem Landfeld: edge directionToPort verbindet corners directionToPort und (directionToPort+1)%6
+  const harborCorner1 = directionToPort;
+  const harborCorner2 = (directionToPort + 1) % 6;
+  
+  console.log(`  [DEBUG] Harbor corners on land: ${harborCorner1} and ${harborCorner2}`);
+  
+  // Teste direkte Übereinstimmung
+  if (settlementCorner === harborCorner1 || settlementCorner === harborCorner2) {
+    console.log(`    ✓ DIRECT MATCH: Settlement corner ${settlementCorner} matches harbor corner`);
+    return { isNear: true, bestDistance: 0, mapping: mappingName };
+  }
+  
+  // Teste equivalent corners
+  const equivalents1 = getEquivalentCorners(landQ, landR, harborCorner1);
+  const equivalents2 = getEquivalentCorners(landQ, landR, harborCorner2);
+  
+  for (const eq of [...equivalents1, ...equivalents2]) {
+    if (eq.q === landQ && eq.r === landR && eq.corner === settlementCorner) {
+      console.log(`    ✓ EQUIVALENT MATCH: Settlement corner ${settlementCorner} matches harbor via equivalent`);
+      return { isNear: true, bestDistance: 0, mapping: mappingName };
+    }
+  }
+  
+  console.log(`    ✗ Settlement corner ${settlementCorner} does not match harbor corners ${harborCorner1},${harborCorner2}`);
+  return { isNear: false, bestDistance: Infinity };
+}
+
+/**
+ * Berechnet alle gültigen Siedlungsecken für einen spezifischen Hafen
+ * KORRIGIERTE VERSION - Zurück zu bewährter Geometrie
  * @param {number} portQ - Q-Koordinate des Hafen-Wasser-Tiles
  * @param {number} portR - R-Koordinate des Hafen-Wasser-Tiles
  * @param {number} portEdge - Kanten-Index des Hafens (0-5)
- * @returns {boolean} True wenn die Siedlung nahe genug am Hafen ist
+ * @returns {Array<Object>} Array of valid settlement corners [{q, r, corner}, ...]
  */
-function isSettlementNearPort(settlementQ, settlementR, settlementCorner, portQ, portR, portEdge) {
-  // Berechne die 6 Nachbar-Tiles um das Wasser-Tile
+function getValidPortCorners(portQ, portR, portEdge) {
+  const validCorners = [];
+  
+  // RÜCKKEHR ZUR BEWÄHRTEN ABER PRÄZISEREN LOGIK:
+  // 1. Finde alle Land-Tiles um das Wasser-Tile
+  // 2. Aber berücksichtige nur die, die zur portEdge gehören
+  
   const waterNeighbors = getHexNeighbors(portQ, portR);
   
-  // Für jeden Nachbarn prüfen, ob unsere Siedlung dort steht
-  for (let i = 0; i < waterNeighbors.length; i++) {
-    const neighbor = waterNeighbors[i];
+  // Die Kante portEdge verbindet das Wasser-Tile mit dem Nachbar-Tile an Index portEdge
+  const primaryNeighbor = waterNeighbors[portEdge];
+  
+  if (primaryNeighbor) {
+    // Die Hafen-Kante entspricht zwei spezifischen Ecken
+    // auf dem angrenzenden Land-Tile
     
-    // Prüfe ob die Siedlung auf diesem Land-Tile steht
-    if (neighbor.q === settlementQ && neighbor.r === settlementR) {
-      // Jetzt prüfen wir, ob die Siedlungs-Ecke mit dem Hafen-Edge kompatibel ist
-      // Die Ecke der Siedlung muss zur Kante des Hafens zeigen
-      
-      // Vereinfachte Logik: Wenn die Siedlung auf einem angrenzenden Land-Tile steht
-      // und die Ecke in Richtung des Wasser-Tiles zeigt, dann ist sie am Hafen
-      const edgeToWater = (i + 3) % 6; // Gegenüberliegende Kante zeigt zum Wasser
-      const edgeToWater2 = (i + 2) % 6; // Angrenzende Kanten
-      const edgeToWater3 = (i + 4) % 6;
-      
-      if (settlementCorner === edgeToWater || 
-          settlementCorner === edgeToWater2 || 
-          settlementCorner === edgeToWater3) {
+    // Berechne welche Ecken auf dem Land-Tile zur Hafen-Kante gehören
+    // Wenn das Wasser-Tile edge X zum Land-Tile zeigt,
+    // dann zeigt das Land-Tile edge (X+3)%6 zurück zum Wasser
+    const landEdgeToWater = (portEdge + 3) % 6;
+    
+    // Die beiden Ecken dieser Kante sind landEdgeToWater und (landEdgeToWater + 1) % 6
+    const landCorner1 = landEdgeToWater;
+    const landCorner2 = (landEdgeToWater + 1) % 6;
+    
+    validCorners.push({
+      q: primaryNeighbor.q,
+      r: primaryNeighbor.r,
+      corner: landCorner1
+    });
+    
+    validCorners.push({
+      q: primaryNeighbor.q,
+      r: primaryNeighbor.r,
+      corner: landCorner2
+    });
+  }
+  
+  // ZUSÄTZLICH: Prüfe die beiden benachbarten Tiles für geteilte Ecken
+  // Ein Hafen kann an einer Ecke zwischen mehreren Land-Tiles liegen
+  const prevNeighborIndex = (portEdge + 5) % 6; // Vorherige Kante
+  const nextNeighborIndex = (portEdge + 1) % 6; // Nächste Kante
+  
+  const prevNeighbor = waterNeighbors[prevNeighborIndex];
+  const nextNeighbor = waterNeighbors[nextNeighborIndex];
+  
+  // Wenn das vorherige Nachbar-Tile existiert, 
+  // prüfe ob es eine geteilte Ecke mit dem primären Tile hat
+  if (prevNeighbor && primaryNeighbor) {
+    // Die geteilte Ecke ist portEdge auf dem Wasser-Tile
+    // Das entspricht einer spezifischen Ecke auf beiden Land-Tiles
+    const sharedCornerOnPrev = (prevNeighborIndex + 3 + 1) % 6; // +1 wegen Kanten-Verschiebung
+    
+    // Nur hinzufügen wenn es nicht bereits existiert
+    const exists = validCorners.some(vc => 
+      vc.q === prevNeighbor.q && vc.r === prevNeighbor.r && vc.corner === sharedCornerOnPrev
+    );
+    
+    if (!exists) {
+      validCorners.push({
+        q: prevNeighbor.q,
+        r: prevNeighbor.r,
+        corner: sharedCornerOnPrev
+      });
+    }
+  }
+  
+  // Dasselbe für das nächste Nachbar-Tile
+  if (nextNeighbor && primaryNeighbor) {
+    const sharedCornerOnNext = (nextNeighborIndex + 3) % 6;
+    
+    const exists = validCorners.some(vc => 
+      vc.q === nextNeighbor.q && vc.r === nextNeighbor.r && vc.corner === sharedCornerOnNext
+    );
+    
+    if (!exists) {
+      validCorners.push({
+        q: nextNeighbor.q,
+        r: nextNeighbor.r,
+        corner: sharedCornerOnNext
+      });
+    }
+  }
+  
+  console.log(`Port at water tile (${portQ}, ${portR}) edge ${portEdge} has ${validCorners.length} valid corners:`, validCorners);
+  
+  return validCorners;
+}
+
+/**
+ * Prüft ob eine Siedlung an einem Land-Tile in der Nähe eines Hafens steht (VERALTET)
+ * @deprecated Verwendet jetzt getValidPortCorners() für präzisere Logik
+ */
+function isSettlementNearPort(settlementQ, settlementR, settlementCorner, portQ, portR, portEdge) {
+  // Neue Implementierung nutzt getValidPortCorners
+  const validCorners = getValidPortCorners(portQ, portR, portEdge);
+  
+  const settlementEquivalents = getEquivalentCorners(settlementQ, settlementR, settlementCorner);
+  
+  // Prüfe ob eine der äquivalenten Ecken der Siedlung gültig für den Hafen ist
+  for (const validCorner of validCorners) {
+    for (const equivalent of settlementEquivalents) {
+      if (validCorner.q === equivalent.q && 
+          validCorner.r === equivalent.r && 
+          validCorner.corner === equivalent.corner) {
         return true;
       }
     }
@@ -472,5 +651,124 @@ export function highlightPlayerPorts(player) {
   }
 }
 
-// Export references for external access
-export { portMeshes, PORTS as PORT_CONFIGS };
+// Debug-Funktion: Zeige alle gültigen Ecken für alle Häfen an
+export function debugPortCorners() {
+  console.log('=== DEBUG: Port Valid Corners ===');
+  
+  for (const port of PORTS) {
+    const validCorners = getValidPortCorners(port.position.q, port.position.r, port.position.edge);
+    console.log(`Port ${port.id} (${port.type}, ${port.ratio}):`);
+    console.log(`  Water tile: (${port.position.q}, ${port.position.r}) edge ${port.position.edge}`);
+    console.log(`  Valid settlement corners:`, validCorners);
+    console.log('');
+  }
+  
+  console.log('=== Ende Debug ===');
+}
+
+// Export für externe Nutzung
+export { portMeshes, PORTS as PORT_CONFIGS, getValidPortCorners };
+
+/**
+ * CORRECTED HARBOR DETECTION - Geometrisch korrekt unter Verwendung der buildLogic.js-Muster
+ * @param {number} settlementQ - Q-Koordinate der Siedlung
+ * @param {number} settlementR - R-Koordinate der Siedlung  
+ * @param {number} settlementCorner - Corner-Index der Siedlung (0-5)
+ * @param {Object} harbor - Harbor configuration object
+ * @returns {boolean} true if settlement can access this harbor
+ */
+function isSettlementNearPortGeometry(settlementQ, settlementR, settlementCorner, harbor) {
+  const { q: portQ, r: portR, edge: portEdge } = harbor.position;
+  
+  console.log(`  [GEOMETRY] Checking harbor ${harbor.id} at (${portQ},${portR}) edge ${portEdge}`);
+  
+  // Verwenden Sie getEquivalentCorners, um alle physischen Darstellungen dieser Siedlung zu finden
+  const settlementEquivalents = getEquivalentCorners(settlementQ, settlementR, settlementCorner);
+  
+  console.log(`  [GEOMETRY] Settlement equivalents:`, settlementEquivalents.map(eq => `(${eq.q},${eq.r})c${eq.corner}`));
+  
+  // Hafenrand verbindet sich mit dem Land über "previous+current" Richtung Mapping (bewährt)
+  const directions = [
+    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+  ];
+  
+  function neighborAxial(q, r, edge) {
+    return [q + directions[edge][0], r + directions[edge][1]];
+  }
+  
+  const dir1 = (portEdge + 5) % 6; // Vorherige Richtung
+  const dir2 = portEdge;           // Aktuelle Richtung
+  
+  const [land1Q, land1R] = neighborAxial(portQ, portR, dir1);
+  const [land2Q, land2R] = neighborAxial(portQ, portR, dir2);
+  
+  console.log(`  [GEOMETRY] Harbor edge ${portEdge} connects to lands: (${land1Q},${land1R}) and (${land2Q},${land2R})`);
+  
+  // FIRST: Check if any settlement equivalent is DIRECTLY on the harbor water tile
+  // This means the settlement is directly adjacent to the harbor!
+  const settlementOnHarborTile = settlementEquivalents.find(eq => eq.q === portQ && eq.r === portR);
+  
+  if (settlementOnHarborTile) {
+    console.log(`  [GEOMETRY] ✓ DIRECT HARBOR MATCH: Settlement equivalent (${settlementOnHarborTile.q},${settlementOnHarborTile.r})c${settlementOnHarborTile.corner} is ON the harbor water tile!`);
+    return true;
+  }
+  
+  // SECOND: Check connected land tiles for harbor corner matches
+  // Überprüfen Sie jedes verbundene Landfeld
+  const connectedLands = [
+    {q: land1Q, r: land1R, fromDir: dir1},
+    {q: land2Q, r: land2R, fromDir: dir2}
+  ];
+  
+  for (const land of connectedLands) {
+    // Check if ANY settlement equivalent is on this connected land
+    const settlementOnThisLand = settlementEquivalents.find(eq => eq.q === land.q && eq.r === land.r);
+    
+    if (!settlementOnThisLand) {
+      continue;
+    }
+    
+    console.log(`  [GEOMETRY] Settlement equivalent found on connected land (${land.q},${land.r}): corner ${settlementOnThisLand.corner}`);
+    
+    // Calculate harbor corners on this land tile
+    // When harbor direction X points to land, the land has edge (X+3)%6 pointing back to harbor
+    const landEdgeToHarbor = (land.fromDir + 3) % 6;
+    const harborCorner1 = landEdgeToHarbor;
+    const harborCorner2 = (landEdgeToHarbor + 1) % 6;
+    
+    console.log(`  [GEOMETRY] Land direction to harbor: ${land.fromDir} → land edge: ${landEdgeToHarbor}`);
+    console.log(`  [GEOMETRY] Harbor corners on this land: ${harborCorner1}, ${harborCorner2}`);
+    
+    // Check if the settlement equivalent matches these harbor corners
+    if (settlementOnThisLand.corner === harborCorner1 || settlementOnThisLand.corner === harborCorner2) {
+      console.log(`  [GEOMETRY] ✓ MATCH: Settlement equivalent (${settlementOnThisLand.q},${settlementOnThisLand.r})c${settlementOnThisLand.corner} matches harbor corner!`);
+      return true;
+    } else {
+      console.log(`  [GEOMETRY] ✗ Settlement corner ${settlementOnThisLand.corner} doesn't match harbor corners ${harborCorner1}, ${harborCorner2}`);
+    }
+  }
+  
+  console.log(`  [GEOMETRY] ✗ No geometric match found`);
+  return false;
+}
+
+// === HARBOR DETECTION SYSTEM ===
+// Hauptfunktion zum Finden aller Häfen, die für eine Siedlung zugänglich sind
+export function findNearbyPorts(settlementQ, settlementR, settlementCorner) {
+  console.log(`🔍 Finding harbors near settlement at (${settlementQ},${settlementR}) corner ${settlementCorner}`);
+  
+  const nearbyPorts = [];
+  
+  for (const harbor of HARBORS) {
+    const isNear = isSettlementNearPortGeometry(settlementQ, settlementR, settlementCorner, harbor);
+    
+    console.log(`   Harbor ${harbor.id} at (${harbor.position.q},${harbor.position.r}) edge ${harbor.position.edge}: ${isNear ? '✓ ACCESSIBLE' : '✗ not accessible'}`);
+    
+    if (isNear) {
+      nearbyPorts.push(harbor);
+    }
+  }
+  
+  console.log(`🎯 Found ${nearbyPorts.length} accessible harbors:`, nearbyPorts.map(p => p.id));
+  return nearbyPorts;
+}
