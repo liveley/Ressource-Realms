@@ -146,6 +146,8 @@ function drawRoadMeshes(scene) {
 
 // Helper: Simulate tile numbers for demo purposes (real assignment according to Catan rules possible)
 const tileNumbers = {};
+const goldenFlags = new Set(); // Track which tiles have golden flags
+
 (function assignTileNumbers() {
   // Catan standard: 18 triangular flags (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
   const numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]; // 18 flags, no 7
@@ -168,11 +170,49 @@ const tileNumbers = {};
   tileNumbers['0,0'] = null;
 })();
 
+// Helper: Assign golden flags based on probability priority
+(function assignGoldenFlags() {
+  // Get all tiles with numbers and sort by probability (lowest first)
+  const tilesWithNumbers = Object.entries(tileNumbers)
+    .filter(([key, number]) => number !== null)
+    .map(([key, number]) => ({ key, number, coords: key.split(',').map(Number) }));
+  
+  // Probability priority: 2,12 -> 3,11 -> 4,10 -> 5,9 -> 6,8
+  const probabilityOrder = {
+    2: 1, 12: 1,  // Lowest probability
+    3: 2, 11: 2,
+    4: 3, 10: 3,
+    5: 4, 9: 4,
+    6: 5, 8: 5    // Highest probability
+  };
+  
+  // Sort tiles by probability priority (lowest first)
+  tilesWithNumbers.sort((a, b) => probabilityOrder[a.number] - probabilityOrder[b.number]);
+  
+  // Assign golden flags - approximately 30% of tiles (5-6 flags total)
+  const maxGoldenFlags = Math.min(6, Math.floor(tilesWithNumbers.length * 0.3));
+  
+  for (let i = 0; i < maxGoldenFlags && i < tilesWithNumbers.length; i++) {
+    goldenFlags.add(tilesWithNumbers[i].key);
+  }
+  
+  console.log(`Assigned ${goldenFlags.size} golden flags to tiles:`, Array.from(goldenFlags));
+  console.log('Tile numbers:', tileNumbers);
+  console.log('Golden flags details:', Array.from(goldenFlags).map(key => ({
+    key,
+    number: tileNumbers[key],
+    coords: key.split(',').map(Number)
+  })));
+})();
+
 // Store references to the tile meshes (exported for use with robber placement)
 export const tileMeshes = {}
 
+// Export golden flags for external access
+export const getGoldenFlags = () => goldenFlags;
+
 // Helper: Create a sprite with a triangular flag instead of circular chip
-function createNumberTokenSprite(number) {
+function createNumberTokenSprite(number, isGolden = false) {
     const size = 960; // Tripled from 320 for three times as big flag
     const canvas = document.createElement('canvas');
     canvas.width = size;
@@ -180,34 +220,45 @@ function createNumberTokenSprite(number) {
     const ctx = canvas.getContext('2d');
     
     // Flag colors matching the original chip design
-    let flagColor, fontColor, fontSize;
+    let flagColor, fontColor, fontSize, poleColor, borderColor;
+    
+    if (isGolden) {
+        // Golden flag styling
+        flagColor = '#FFD700'; // Golden flag background
+        fontColor = '#8B4513'; // Brown text on golden background
+        poleColor = '#DAA520'; // Golden pole color
+        borderColor = '#B8860B'; // Darker golden border
+    } else {
+        // Regular flag styling
+        poleColor = '#8B4513'; // Saddle brown color for regular poles
+        borderColor = '#444'; // Regular border color
+        
+        if (number === 6 || number === 8) {
+            flagColor = '#d7263d'; // strong red flag for high probability numbers
+            fontColor = '#ffffff'; // white text on red background
+        } else {
+            flagColor = '#fff8dc'; // cream flag
+            fontColor = '#222';
+        }
+    }
+    
+    // Font sizes based on number probability
     if (number === 6 || number === 8) {
-        flagColor = '#d7263d'; // strong red flag for high probability numbers
-        fontColor = '#ffffff'; // white text on red background
         fontSize = 140; // Increased from 120 for better readability
     } else if (number === 2 || number === 12) {
-        flagColor = '#fff8dc'; // cream flag for low probability
-        fontColor = '#222';
         fontSize = 70; // Increased from 60
     } else if (number === 3 || number === 11) {
-        flagColor = '#fff8dc'; // cream flag
-        fontColor = '#222';
         fontSize = 84; // Increased from 72
     } else if (number === 4 || number === 10) {
-        flagColor = '#fff8dc'; // cream flag
-        fontColor = '#222';
         fontSize = 98; // Increased from 84
     } else if (number === 5 || number === 9) {
-        flagColor = '#fff8dc'; // cream flag
-        fontColor = '#222';
         fontSize = 112; // Increased from 96
     } else { // fallback
-        flagColor = '#fff8dc'; // cream flag
-        fontColor = '#222';
         fontSize = 98; // Increased from 84
     }
     
     const defaultBackgroundColor = flagColor; // Store default flag color
+    const defaultPoleColor = poleColor; // Store default pole color
     
     // Center the pole in the canvas - make flag smaller
     const poleX = size / 2 - 30; // Reduced from 36 for smaller pole
@@ -215,8 +266,8 @@ function createNumberTokenSprite(number) {
     const poleTop = 80; // Moved down slightly
     const poleBottom = 680; // Reduced from 720
     
-    // Draw brown pole
-    ctx.fillStyle = '#8B4513'; // Saddle brown color
+    // Draw golden or brown pole
+    ctx.fillStyle = poleColor;
     ctx.fillRect(poleX, poleTop, poleWidth, poleBottom - poleTop);
     
     // Draw smaller triangular flag attached to the right side of the pole
@@ -245,7 +296,7 @@ function createNumberTokenSprite(number) {
     
     // Flag border for definition
     ctx.lineWidth = 12; // Tripled from 4
-    ctx.strokeStyle = '#444';
+    ctx.strokeStyle = borderColor;
     ctx.stroke();
     
     // Add the number text on the flag
@@ -283,12 +334,16 @@ function createNumberTokenSprite(number) {
     sprite.userData.ctx = ctx;
     sprite.userData.texture = texture;
     sprite.userData.number = number;
+    sprite.userData.isGolden = isGolden;
     sprite.userData.defaultBackgroundColor = defaultBackgroundColor;
     sprite.userData.defaultFontColor = fontColor;
+    sprite.userData.defaultPoleColor = defaultPoleColor;
+    sprite.userData.defaultBorderColor = borderColor;
     sprite.userData.fontSize = fontSize;
+    sprite.userData.isActivated = false; // Track activation state
     
     // Store function to update flag color and optionally text color
-    sprite.userData.updateBackgroundColor = function(bgColor, textColor = null) {
+    sprite.userData.updateBackgroundColor = function(bgColor, textColor = null, activated = false) {
         // Clear canvas
         ctx.clearRect(0, 0, size, size);
         
@@ -303,8 +358,25 @@ function createNumberTokenSprite(number) {
         const flagRight = size - 80; // Match the main function - narrower flag
         const flagMid = (flagTop + flagBottom) / 2;
         
-        // Redraw brown pole
-        ctx.fillStyle = '#8B4513';
+        // Determine pole color - golden flags keep golden poles
+        let currentPoleColor = defaultPoleColor;
+        let currentBorderColor = defaultBorderColor;
+        let currentFlagColor = bgColor;
+        
+        if (isGolden && activated) {
+            // Golden flag activated: orange middle, golden outline, golden pole
+            currentFlagColor = '#FF8C00'; // Orange middle when activated
+            currentBorderColor = '#DAA520'; // Keep golden border
+            currentPoleColor = '#DAA520'; // Keep golden pole
+        } else if (isGolden) {
+            // Golden flag not activated: keep golden appearance
+            currentFlagColor = bgColor || '#FFD700';
+            currentBorderColor = '#B8860B';
+            currentPoleColor = '#DAA520';
+        }
+        
+        // Redraw pole
+        ctx.fillStyle = currentPoleColor;
         ctx.fillRect(poleX, poleTop, poleWidth, poleBottom - poleTop);
         
         // Redraw triangular flag with new color
@@ -318,7 +390,7 @@ function createNumberTokenSprite(number) {
         ctx.shadowBlur = 48; // Tripled from 16
         ctx.shadowOffsetX = 12; // Tripled from 4
         ctx.shadowOffsetY = 12; // Tripled from 4
-        ctx.fillStyle = bgColor;
+        ctx.fillStyle = currentFlagColor;
         ctx.fill();
         ctx.shadowBlur = 0;
         ctx.shadowOffsetX = 0;
@@ -326,7 +398,7 @@ function createNumberTokenSprite(number) {
         
         // Flag border
         ctx.lineWidth = 12; // Tripled from 4
-        ctx.strokeStyle = '#444';
+        ctx.strokeStyle = currentBorderColor;
         ctx.stroke();
         
         // Redraw number with original or specified text color
@@ -340,6 +412,9 @@ function createNumberTokenSprite(number) {
         
         // Update texture to show changes
         texture.needsUpdate = true;
+        
+        // Update activation state
+        sprite.userData.isActivated = activated;
     };
     
     // Default position - will be overridden when added to tile
@@ -353,18 +428,24 @@ export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
     Object.entries(tileMeshes).forEach(([key, mesh]) => {
         const number = tileNumbers[key];
         if (number) {
-            const sprite = createNumberTokenSprite(number);            // Position the sprite at a moderate height above the tile so it's visible when the robber is present
+            const isGolden = goldenFlags.has(key);
+            const sprite = createNumberTokenSprite(number, isGolden);
+            
+            console.log(`Creating flag for tile ${key}: number=${number}, isGolden=${isGolden}`);
+            
+            // Position the sprite at a moderate height above the tile so it's visible when the robber is present
             sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden - etwas höher als der Räuber (3.2)
             
-            // Store useful data for robber placement
+            // Store useful data for robber placement and golden flag logic
             sprite.userData.number = number;
             sprite.userData.tileKey = key;
+            sprite.userData.isGolden = isGolden;
             const [q, r] = key.split(',').map(Number);
             sprite.userData.tileQ = q;
             sprite.userData.tileR = r;
             
             // Give the flag a descriptive name for easier identification
-            sprite.name = `flag_${number}_tile_${key}`;
+            sprite.name = `flag_${number}_tile_${key}${isGolden ? '_golden' : ''}`;
             
             // Make the flag clickable for robber placement - smaller size
             sprite.scale.set(0.65, 0.65, 0.65); // Slightly reduced from 0.8 to make smaller
@@ -424,89 +505,101 @@ function getShuffledResourceTiles() {
 }
 
 // Add the game board with tiles to the scene
-export function createGameBoard(scene) {    // --- Place the center desert tile ---
-    loadTile('center.glb', (centerTile) => {
-        const centerPos = axialToWorld(0, 0);
-        centerTile.position.set(...centerPos);
-        centerTile.name = '0,0';
+export function createGameBoard(scene) {
+    return new Promise((resolve) => {
+        let loadedTiles = 0;
+        const totalTiles = 1 + getLandTileAxials().filter(([q, r]) => !(q === 0 && r === 0)).length + tilePositions.water.length;
         
-        // Add userData to help with robber placement
-        centerTile.userData.tileKey = '0,0';
-        centerTile.userData.tileQ = 0;
-        centerTile.userData.tileR = 0;
-        centerTile.userData.type = 'desert';
-        centerTile.userData.isDesert = true;
-        
-        hexGroup.add(centerTile);
-        scene.add(hexGroup);
-        tileMeshes[`0,0`] = centerTile;
-        // No triangular flag for the center (desert)
-    });
+        function checkAllTilesLoaded() {
+            loadedTiles++;
+            if (loadedTiles === totalTiles) {
+                // All tiles loaded, now add flags
+                addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
+                
+                // After placing the tiles: draw outline around land tiles
+                drawLandTileOutline(scene);
 
-    // --- Randomize and place resource tiles ---
-    // Get all land tile axial coordinates except center
-    const landAxials = getLandTileAxials().filter(([q, r]) => !(q === 0 && r === 0));
-    const shuffledResources = getShuffledResourceTiles();
-    landAxials.forEach(([q, r], idx) => {
-        const resource = shuffledResources[idx];
-        loadTile(`${resource}.glb`, (tile) => {
-            // Set a proper name and userData for robber placement
-            const tileKey = `${q},${r}`;
-            tile.name = tileKey;
+                // After placing the tiles: draw road meshes
+                drawRoadMeshes(scene);
+                hexGroup.name = 'HexGroup'; // Name HexGroup for raycaster
+                
+                // Initialize the tile highlighting system
+                initializeHighlighting(hexGroup, tileNumbers, roadMeshes, tileMeshes);
+                
+                // Return for main.js
+                resolve({ tileMeshes, tileNumbers });
+            }
+        }
+        
+        // --- Place the center desert tile ---
+        loadTile('center.glb', (centerTile) => {
+            const centerPos = axialToWorld(0, 0);
+            centerTile.position.set(...centerPos);
+            centerTile.name = '0,0';
             
             // Add userData to help with robber placement
-            tile.userData.tileKey = tileKey;
-            tile.userData.tileQ = q;
-            tile.userData.tileR = r;
-            tile.userData.type = resource;
-            const pos = axialToWorld(q, r);
-            tile.position.set(...pos);
-            tile.name = `${resource}.glb`;
-            hexGroup.add(tile);
+            centerTile.userData.tileKey = '0,0';
+            centerTile.userData.tileQ = 0;
+            centerTile.userData.tileR = 0;
+            centerTile.userData.type = 'desert';
+            centerTile.userData.isDesert = true;
+            
+            hexGroup.add(centerTile);
             scene.add(hexGroup);
-            tileMeshes[`${q},${r}`] = tile;
-            // Triangular flag for this tile (if present)
-            const number = tileNumbers[`${q},${r}`];            
-            if (number) {
-                const sprite = createNumberTokenSprite(number);
-                // Position the triangular flag at a moderate height above the tile
-                sprite.position.set(0, 1.6, 0); // Reduzierte Höhe, aber immer noch über dem Räuber (3.2)
-                tile.add(sprite);
-            }
+            tileMeshes[`0,0`] = centerTile;
+            // No triangular flag for the center (desert)
+            
+            checkAllTilesLoaded();
         });
-    });
 
-    // --- Place water tiles (fixed positions) ---
-    tilePositions.water.forEach(([q, r]) => {
-        loadTile('water.glb', (tile) => {
-          tile.userData.q = q;
-          tile.userData.r = r;
-            const pos = axialToWorld(q, r);
-            tile.position.set(...pos);
-            tile.name = 'water.glb';
-            tile.traverse(child => {
-                if (child.isMesh) {
-                    child.material = new THREE.MeshStandardMaterial({ color: 0x2da7c1, transparent: true, opacity: 0.98 });
-                }
+        // --- Randomize and place resource tiles ---
+        // Get all land tile axial coordinates except center
+        const landAxials = getLandTileAxials().filter(([q, r]) => !(q === 0 && r === 0));
+        const shuffledResources = getShuffledResourceTiles();
+        landAxials.forEach(([q, r], idx) => {
+            const resource = shuffledResources[idx];
+            loadTile(`${resource}.glb`, (tile) => {
+                // Set a proper name and userData for robber placement
+                const tileKey = `${q},${r}`;
+                tile.name = tileKey;
+                
+                // Add userData to help with robber placement
+                tile.userData.tileKey = tileKey;
+                tile.userData.tileQ = q;
+                tile.userData.tileR = r;
+                tile.userData.type = resource;
+                const pos = axialToWorld(q, r);
+                tile.position.set(...pos);
+                tile.name = `${resource}.glb`;
+                hexGroup.add(tile);
+                scene.add(hexGroup);
+                tileMeshes[`${q},${r}`] = tile;
+                
+                checkAllTilesLoaded();
             });
-            hexGroup.add(tile);
-            scene.add(hexGroup);
-            tileMeshes[`${q},${r}`] = tile;
+        });
+
+        // --- Place water tiles (fixed positions) ---
+        tilePositions.water.forEach(([q, r]) => {
+            loadTile('water.glb', (tile) => {
+              tile.userData.q = q;
+              tile.userData.r = r;
+                const pos = axialToWorld(q, r);
+                tile.position.set(...pos);
+                tile.name = 'water.glb';
+                tile.traverse(child => {
+                    if (child.isMesh) {
+                        child.material = new THREE.MeshStandardMaterial({ color: 0x2da7c1, transparent: true, opacity: 0.98 });
+                    }
+                });
+                hexGroup.add(tile);
+                scene.add(hexGroup);
+                tileMeshes[`${q},${r}`] = tile;
+                
+                checkAllTilesLoaded();
+            });
         });
     });
-    
-    // After placing the tiles: draw outline around land tiles
-    drawLandTileOutline(scene);
-
-    // After placing the tiles: draw road meshes
-    drawRoadMeshes(scene);
-    hexGroup.name = 'HexGroup'; // Name HexGroup for raycaster
-    
-    // Initialize the tile highlighting system
-    initializeHighlighting(hexGroup, tileNumbers, roadMeshes, tileMeshes);
-    
-    // Return for main.js
-    return { tileMeshes, tileNumbers };
 }
 
 // Änderungen für game_board.js - ersetze den diceRolled Event Listener mit dieser Version:
@@ -556,35 +649,54 @@ window.addEventListener('diceRolled', (e) => {
           for (let playerIdx = 0; playerIdx < (window.players || []).length; playerIdx++) {
             const player = window.players[playerIdx];
             for (const pos of adjacent) {
-              // Siedlung: 1 Karte, Stadt: 2 Karten
+              // Check if this tile has a golden flag
+              const isGolden = goldenFlags.has(key);
+              
+              // Siedlung: 1 Karte (2 if golden flag)
               if (player.settlements && player.settlements.some(s => s.q === pos.q && s.r === pos.r && s.corner === pos.corner)) {
-                if (window.bank && window.bank[resourceType] > 0) {
-                  player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
-                  window.bank[resourceType]--;
-                  // Track gain for this player
-                  if (window.trackResourceGain) {
-                    window.trackResourceGain(playerIdx, resourceType, 1);
-                  // } else {
-                  // Optional: Hinweis, dass Bank leer ist
-                  // console.log(`Bank leer: ${resourceType}`);
-               
-                  }
-                }
-              }
-              // Stadt: 2 Karten
-              if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
+                const baseAmount = isGolden ? 2 : 1; // Golden flag gives +1 resource
                 let given = 0;
-                for (let i = 0; i < 2; i++) {
+                
+                for (let i = 0; i < baseAmount; i++) {
                   if (window.bank && window.bank[resourceType] > 0) {
                     player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
                     window.bank[resourceType]--;
                     given++;
                   }
                 }
-                                // if (given < 2) console.log(`Bank leer: ${resourceType} (nur ${given} von 2 Karten für Stadt)`);
+                
+                // Track gain for this player
+                if (given > 0 && window.trackResourceGain) {
+                  window.trackResourceGain(playerIdx, resourceType, given);
+                }
+                
+                // Log golden flag activation
+                if (isGolden && given > 0) {
+                  console.log(`[Golden Flag] ${player.name} got ${given} ${resourceType} from golden flag on tile ${key}`);
+                }
+              }
+              
+              // Stadt: 2 Karten (3 if golden flag, not 4 to keep balance)
+              if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
+                const baseAmount = isGolden ? 3 : 2; // Golden flag gives +1 resource (not double)
+                let given = 0;
+                
+                for (let i = 0; i < baseAmount; i++) {
+                  if (window.bank && window.bank[resourceType] > 0) {
+                    player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
+                    window.bank[resourceType]--;
+                    given++;
+                  }
+                }
+                
                 // Track gain for cities
                 if (given > 0 && window.trackResourceGain) {
                   window.trackResourceGain(playerIdx, resourceType, given);
+                }
+                
+                // Log golden flag activation
+                if (isGolden && given > 0) {
+                  console.log(`[Golden Flag] ${player.name} got ${given} ${resourceType} from golden flag city on tile ${key}`);
                 }
               }
             }
@@ -593,6 +705,30 @@ window.addEventListener('diceRolled', (e) => {
       }
     }
   });
+  
+  // Update golden flag visual states when activated
+  Object.entries(tileMeshes).forEach(([key, mesh]) => {
+    if (tileNumbers[key] === number && goldenFlags.has(key)) {
+      // This golden flag was activated, update its visual state
+      mesh.traverse(child => {
+        if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor && child.userData.isGolden) {
+          child.userData.updateBackgroundColor(null, null, true); // Activate golden flag (orange middle)
+          console.log(`[Golden Flag] Activated flag on tile ${key}`);
+        }
+      });
+    }
+  });
+  
+  // Reset golden flag visual states for non-activated flags
+  setTimeout(() => {
+    Object.values(tileMeshes).forEach(mesh => {
+      mesh.traverse(child => {
+        if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor && child.userData.isGolden) {
+          child.userData.updateBackgroundColor(null, null, false); // Reset to golden state
+        }
+      });
+    });
+  }, 2000); // Reset after 2 seconds
   
   // UI-Update für alle Spieler
   if (window.updateResourceUI && window.players) {
@@ -626,8 +762,13 @@ export function updateNumberTokensForRobber(robberTileKey) {
     Object.values(tileMeshes).forEach(mesh => {
         mesh.traverse(child => {
             if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
-                child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null); // Reset to default background with original text color
-                console.log(`Reset flag color on tile ${child.userData.tileKey || 'unknown'}`);
+                // For golden flags, reset to golden appearance; for regular flags, reset to default
+                if (child.userData.isGolden) {
+                    child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null, false); // Reset golden flag
+                } else {
+                    child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null, false); // Reset regular flag
+                }
+                console.log(`Reset flag color on tile ${child.userData.tileKey || 'unknown'} (Golden: ${child.userData.isGolden || false})`);
             }
         });
     });

@@ -5,7 +5,7 @@ import { camera } from './modules/camera.js';
 import { setupLights } from './modules/lights.js';
 import { createHexGrid } from './modules/hexGrid.js'; 
 // import { createDirectionArrows } from './modules/directionArrows.js'; 
-import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, updateNumberTokensForRobber } from './modules/game_board.js';
+import { createGameBoard, addNumberTokensToTiles, updateNumberTokensFacingCamera, updateNumberTokensForRobber, getGoldenFlags } from './modules/game_board.js';
 import { animateHalos, highlightNumberTokens, getTileWorldPosition } from './modules/tileHighlight.js'; 
 import { rollDice, showDice, throwPhysicsDice, updateDicePhysics } from './modules/dice.js';
 import { tileInfo } from './modules/tileInfo.js';
@@ -260,25 +260,23 @@ async function preloadGameBoard() {
     // createDirectionArrows(scene);
     setupLights(scene);
 
-    // Create the game board with all tiles
-    const result = createGameBoard(scene);
-    tileMeshes = result.tileMeshes;
-    tileNumbers = result.tileNumbers;
-    
-    // After creating the game board: Triangular flags hinzufügen
-    addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
+    // Create the game board with all tiles - now returns a Promise
+    createGameBoard(scene).then((result) => {
+        tileMeshes = result.tileMeshes;
+        tileNumbers = result.tileNumbers;
+        
+        console.log('Game board loaded with', Object.keys(tileMeshes).length, 'tiles');
+        console.log('Golden flags assigned to:', Array.from(getGoldenFlags()));
 
-    // Initialize ports after game board is created
-    renderPorts(scene).then(() => {
-      console.log('Ports initialized successfully');
-    }).catch(error => {
-      console.error('Error initializing ports:', error);
-    });
+        // Initialize ports after game board is created
+        renderPorts(scene).then(() => {
+          console.log('Ports initialized successfully');
+        }).catch(error => {
+          console.error('Error initializing ports:', error);
+        });
 
-    // Initialize robber on desert tile
-    const initialRobberTileKey = '0,0';
-    function waitForDesertTileAndInitRobber(retries = 30) {
-      if (tileMeshes[initialRobberTileKey]) {
+        // Initialize robber on desert tile
+        const initialRobberTileKey = '0,0';
         setTimeout(() => {
           console.log("Setting initial flag colors for robber on desert");
           updateNumberTokensForRobber(initialRobberTileKey);
@@ -288,25 +286,14 @@ async function preloadGameBoard() {
         
         // Robber initialized, continue with cards
         setTimeout(() => {
-          // createPlaceholderCards(scene);
-          // const cardManager = new CardManager();
-          // cardManager.loadAllCards().then(() => {
-            console.log('Game board preloaded successfully');
-            resolve(true);
-          // }).catch(error => {
-          //   console.error("Fehler beim Laden der Karten:", error);
-          //   resolve(true); // Continue even if cards fail
-          // });
+          console.log('Game board preloaded successfully');
+          resolve(true);
         }, 300);
-        
-      } else if (retries > 0) {
-        setTimeout(() => waitForDesertTileAndInitRobber(retries - 1), 100);
-      } else {
-        console.warn("Desert tile mesh (0,0) not found after waiting. Robber not initialized.");
-        resolve(true); // Continue anyway
-      }
-    }
-    waitForDesertTileAndInitRobber();
+
+    }).catch(error => {
+        console.error('Error creating game board:', error);
+        resolve();
+    });
   });
 }
 
