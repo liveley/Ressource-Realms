@@ -229,7 +229,7 @@ export function createMainMenuSidebar() {
     }
   });
 
-  // CATAN 3D ÜBERSCHRIFT dort, wo die ersten beiden Meerhexes übersprungen werden (Reihe 1)
+  // ÜBERSCHRIFT dort, wo die ersten beiden Meerhexes übersprungen werden (Reihe 1)
   // Diese werden in der Meerhex-Schleife mit continue übersprungen
   const titleRowIndex = 1;
   const titleYOffset = -1 * verticalOffset; // Gleiche Y-Position wie Reihe 1
@@ -328,7 +328,7 @@ export function createMainMenuSidebar() {
       
     <p style="margin: 15px 0;">
       Eine 3D-Implementierung des beliebten Brettspiels 
-      <a href="https://www.catan.de/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">Catan</a>, entwickelt mit 
+      <a href="https://www.resourcerealms.de/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">Resource Realms</a>, entwickelt mit 
       <a href="https://threejs.org/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">Three.js</a> und 
       <a href="https://www.blender.org/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">Blender</a>.
     </p>
