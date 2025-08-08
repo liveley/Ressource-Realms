@@ -262,7 +262,7 @@ function createNumberTokenSprite(number) {
     };
     
     // Default position - will be overridden when added to tile
-    sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden (moderat über dem Räuber)
+    sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden (moderat über dem Wächter)
     
     return sprite;
 }
@@ -273,7 +273,7 @@ export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
         const number = tileNumbers[key];
         if (number) {
             const sprite = createNumberTokenSprite(number);            // Position the sprite at a moderate height above the tile so it's visible when the robber is present
-            sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden - etwas höher als der Räuber (3.2)
+            sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden - etwas höher als der Wächter (3.2)
             
             // Store useful data for robber placement
             sprite.userData.number = number;
@@ -383,7 +383,7 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
             if (number) {
                 const sprite = createNumberTokenSprite(number);
                 // Position the number token at a moderate height above the tile
-                sprite.position.set(0, 1.6, 0); // Reduzierte Höhe, aber immer noch über dem Räuber (3.2)
+                sprite.position.set(0, 1.6, 0); // Reduzierte Höhe, aber immer noch über dem Wächter (3.2)
                 tile.add(sprite);
             }
         });
@@ -432,10 +432,10 @@ window.addEventListener('diceRolled', (e) => {
   // Reset gain trackers am Anfang des Events in uiResources.js
   
   Object.entries(tileMeshes).forEach(([key, mesh]) => {
-    // Blockiere Ressourcenverteilung, wenn Räuber auf diesem Feld steht
+    // Blockiere Ressourcenverteilung, wenn Wächter auf diesem Feld steht
     if (typeof window.blockedTileKey !== 'undefined' && key === window.blockedTileKey) {
       // Optional: Debug-Log
-      console.log(`[Räuber] Ressourcenverteilung auf Feld ${key} blockiert.`);
+      console.log(`[Wächter] Ressourcenverteilung auf Feld ${key} blockiert.`);
       return;
     }
     if (tileNumbers[key] === number) {
@@ -559,7 +559,7 @@ export function updateNumberTokensForRobber(robberTileKey) {
     }
 }
 
-// === Funktion: Nach Räuberplatzierung einen Rohstoff von einem betroffenen Spieler stehlen ===
+// === Funktion: Nach Wächterplatzierung einen Rohstoff von einem betroffenen Spieler stehlen ===
 function handleRobberSteal(q, r) {
   if (!window.players || typeof window.activePlayerIdx !== 'number') return;
   const activePlayer = window.players[window.activePlayerIdx];
@@ -711,7 +711,7 @@ function showRobberFeedback(msg, color = '#2a8c2a', duration = 2500) {
   el._hideTimeout = setTimeout(() => { el.style.display = 'none'; }, duration);
 }
 
-// Event-Listener für Räuberbewegung: Stehlen nach Platzierung
+// Event-Listener für Wächterbewegung: Stehlen nach Platzierung
 window.addEventListener('robberMoved', (e) => {
     // ...existing code...
     // Stehlen-Logik aufrufen

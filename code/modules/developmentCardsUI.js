@@ -202,12 +202,12 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
     }
     switch(card.type) {
       case 'knight':
-        // Ritter: Räuber verschieben + Largest Army tracking
+        // Ritter: Wächter verschieben + Largest Army tracking
         if (typeof getScene === 'function' && typeof getTileMeshes === 'function') {
           const scene = getScene();
           const tileMeshes = getTileMeshes();
-          // Starte Räuberplatzierung (UI/UX: Info anzeigen)
-          showGlobalFeedback('Ritter gespielt! Wähle ein Feld für den Räuber.', '#2a8c2a', 3000);
+          // Starte Wächterplatzierung (UI/UX: Info anzeigen)
+          showGlobalFeedback('Ritter gespielt! Wähle ein Feld für den Wächter.', '#2a8c2a', 3000);
           // Korrekt: tileNumbers als zweites Argument übergeben
           if (typeof window.startRobberPlacement === 'function') {
             window.startRobberPlacement(tileMeshes, window.tileNumbers);
@@ -223,7 +223,7 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
             }
           }
         } else {
-          showGlobalFeedback('Räuberplatzierung nicht möglich (Szene oder Tiles fehlen)', '#c00', 3000);
+          showGlobalFeedback('Wächterplatzierung nicht möglich (Szene oder Tiles fehlen)', '#c00', 3000);
         }
         break;
       case 'road_building': {

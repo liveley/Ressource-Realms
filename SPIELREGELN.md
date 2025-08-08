@@ -9,7 +9,7 @@
 6. [Bauaktionen](#bauaktionen)
 7. [Entwicklungskarten](#entwicklungskarten)
 8. [Handel](#handel)
-9. [Räuber/Bandit](#räuberbandit)
+9. [Wächter/Guardian](#wächterguardian)
 10. [Siegbedingungen](#siegbedingungen)
 11. [Sonderregeln](#sonderregeln)
 12. [Hinweise zur digitalen Umsetzung](#hinweise-zur-digitalen-umsetzung)
@@ -27,7 +27,7 @@ Der erste Spieler, der 10 Siegpunkte erreicht, gewinnt das Spiel. Siegpunkte erh
 - 60 Straßen (je 15 pro Spieler bei 4 Spielern)
 - 25 Entwicklungskarten (14 Ritter, 5 Fortschritt, 6 Siegpunkte)
 - 95 Rohstoffkarten (je 19 pro Rohstoff)
-- 1 Räuber/Bandit
+- 1 Wächter/Guardian
 - 2 Würfel
 - Hafenplättchen
 
@@ -43,7 +43,7 @@ Das Spiel verläuft in Runden. Jede Runde besteht aus folgenden Phasen:
 2. **Rohstoffe erhalten:** Alle Spieler, die an den gewürfelten Feldern Siedlungen/Städte haben, erhalten die entsprechenden Rohstoffe.
 3. **Handeln:** Der aktive Spieler kann mit anderen Spielern oder der Bank handeln.
 4. **Bauen/Entwickeln:** Der aktive Spieler kann Straßen, Siedlungen, Städte bauen oder Entwicklungskarten kaufen und ausspielen.
-5. **Räuber/Bandit:** Bei einer 7 wird der Räuber versetzt und ggf. Rohstoffe gestohlen.
+5. **Wächter/Guardian:** Bei einer 7 wird der Wächter versetzt und ggf. Rohstoffe gestohlen.
 
 ## Bauaktionen
 - **Straße:** 1x Holz, 1x Lehm
@@ -54,7 +54,7 @@ Das Spiel verläuft in Runden. Jede Runde besteht aus folgenden Phasen:
 ## Entwicklungskarten
 Entwicklungskarten bieten besondere Vorteile und können das Spielgeschehen maßgeblich beeinflussen. Es gibt drei Arten von Entwicklungskarten:
 
-- **Ritter:** Erlaubt das Versetzen des Räubers/Banditen. Wer als Erster mindestens 3 Ritter ausgespielt hat und die meisten Ritter besitzt, erhält die größte Rittermacht (2 Siegpunkte).
+- **Ritter:** Erlaubt das Versetzen des Wächters/Guardians. Wer als Erster mindestens 3 Ritter ausgespielt hat und die meisten Ritter besitzt, erhält die größte Rittermacht (2 Siegpunkte).
 - **Siegpunkt:** Diese Karte zählt sofort als zusätzlicher Siegpunkt. Sie bleibt verdeckt, bis der Spieler das Spiel gewinnt oder sie offenlegt.
 - **Fortschritt:** Spezialkarten mit einmaligen Effekten, z.B. Straßenbau (zwei kostenlose Straßen bauen), Monopol (alle Rohstoffe einer Sorte von allen Spielern erhalten) oder Erfindung (zwei beliebige Rohstoffe nehmen).
 
@@ -67,10 +67,10 @@ Entwicklungskarten bieten besondere Vorteile und können das Spielgeschehen maß
 - **Mitspielern:** Frei verhandelbar.
 - **Bank:** 4:1 für beliebige Rohstoffe, 3:1 oder 2:1 an Häfen.
 
-## Räuber/Bandit
+## Wächter/Guardian
 - Wird bei einer 7 oder durch Ritterkarten versetzt.
 - Spieler mit mehr als 7 Rohstoffkarten müssen die Hälfte abgeben.
-- Der aktive Spieler darf einem Mitspieler auf dem neuen Räuberfeld eine Rohstoffkarte stehlen.
+- Der aktive Spieler darf einem Mitspieler auf dem neuen Wächterfeld eine Rohstoffkarte stehlen.
 
 ## Siegbedingungen
 - 1 Siedlung = 1 Siegpunkt

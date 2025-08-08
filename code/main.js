@@ -275,18 +275,18 @@ async function preloadGameBoard() {
       console.error('Error initializing ports:', error);
     });
 
-    // Initialize robber on desert tile
+    // Initialize guardian on desert tile
     const initialRobberTileKey = '0,0';
     function waitForDesertTileAndInitRobber(retries = 30) {
       if (tileMeshes[initialRobberTileKey]) {
         setTimeout(() => {
-          console.log("Setting initial token colors for robber on desert");
+          console.log("Setting initial token colors for guardian on desert");
           updateNumberTokensForRobber(initialRobberTileKey);
         }, 200);
-        console.log("Initializing robber on the desert tile");
+        console.log("Initializing guardian on the desert tile");
         initializeRobber(scene, null, tileMeshes);
         
-        // Robber initialized, continue with cards
+        // Guardian initialized, continue with cards
         setTimeout(() => {
           // createPlaceholderCards(scene);
           // const cardManager = new CardManager();
@@ -302,7 +302,7 @@ async function preloadGameBoard() {
       } else if (retries > 0) {
         setTimeout(() => waitForDesertTileAndInitRobber(retries - 1), 100);
       } else {
-        console.warn("Desert tile mesh (0,0) not found after waiting. Robber not initialized.");
+        console.warn("Desert tile mesh (0,0) not found after waiting. Guardian not initialized.");
         resolve(true); // Continue anyway
       }
     }
@@ -662,12 +662,12 @@ async function startGame() {
             if (resultDiv) resultDiv.textContent = result.sum;
             // Event feuern wie gehabt
             window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
-            // Wenn KEIN Räuber (7), Button auf Spielerwechsel
+            // Wenn KEIN Wächter (7), Button auf Spielerwechsel
             if (result.sum !== 7) {
               state = 1;
               updateButtonUI();
             }
-            // Bei 7 bleibt der Button auf Würfeln (Räuber muss platziert werden)
+            // Bei 7 bleibt der Button auf Würfeln (Wächter muss platziert werden)
           };
         } else {
           // Fallback: Dummy-Logik
@@ -981,19 +981,19 @@ controls.minDistance = 10;  // Näher ranzoomen von oben möglich
 controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
 
 
-// Create a raycaster for robber tile selection
+// Create a raycaster for guardian tile selection
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-// Handle click events for robber placement
+// Handle click events for guardian placement
 window.addEventListener('click', (event) => {
-    // Only process click if we're in robber placement mode
+    // Only process click if we're in guardian placement mode
     if (!isInRobberPlacementMode()) {
-        console.log("Not in robber placement mode, ignoring click");
+        console.log("Not in guardian placement mode, ignoring click");
         return;
     }
     
-    console.log("Click detected in robber placement mode");
+    console.log("Click detected in guardian placement mode");
 
     // Calculate mouse position in normalized device coordinates
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -1025,18 +1025,18 @@ window.addEventListener('click', (event) => {
         for (let i = 0; i < Math.min(3, intersects.length) && !success; i++) {
             success = handleTileSelection(intersects[i], tileMeshes, getTileWorldPosition);
             if (success) {
-                console.log(`Successfully placed robber using intersection ${i}`);
+                console.log(`Successfully placed guardian using intersection ${i}`);
                 break;
             }
         }
         
         if (success) {
-            console.log("Successfully placed robber");
+            console.log("Successfully placed guardian");
         } else {
-            console.log("Failed to place robber at the selected location");
+            console.log("Failed to place guardian at the selected location");
             // === UI: Fehler-/Feedback-Popup ===
             const errorMsg = document.createElement('div');
-            errorMsg.textContent = "Konnte den Räuber nicht auf diesem Feld platzieren. Versuche ein anderes Feld.";
+            errorMsg.textContent = "Konnte den Wächter nicht auf diesem Feld platzieren. Versuche ein anderes Feld.";
             errorMsg.style.position = 'fixed';
             errorMsg.style.left = '50%';
             errorMsg.style.top = '10%';
@@ -1095,29 +1095,29 @@ window.addEventListener('resize', () => {
 
 window.addEventListener('keydown', (e) => handleResourceKeydown(e)); // handleResourceKeydown uses current player
 
-// === Bandit-Logik: Verwalte Räuberplatzierung und -bewegung ===
+// === Bandit-Logik: Verwalte Wächterplatzierung und -bewegung ===
 
-// Track which tile is currently blocked by the robber
+// Track which tile is currently blocked by the guardian
 let blockedTileKey = "0,0"; // Initially desert tile
 
-// Handle robber movement events
+// Handle guardian movement events
 window.addEventListener('robberMoved', (e) => {
-    console.log(`Robber moved to tile ${e.detail.key} at coordinates (${e.detail.q},${e.detail.r})`);
+    console.log(`Guardian moved to tile ${e.detail.key} at coordinates (${e.detail.q},${e.detail.r})`);
     // Update which tile is blocked for resource production
     blockedTileKey = e.detail.key;
     
-    // Use the accurate position function to ensure the robber is perfectly centered
+    // Use the accurate position function to ensure the guardian is perfectly centered
     // This is a fallback to ensure proper placement even after the event
     const accuratePosition = getTileCenter(e.detail.q, e.detail.r, tileMeshes);
-    console.log("Ensuring robber is at accurate position:", accuratePosition);
+    console.log("Ensuring guardian is at accurate position:", accuratePosition);
       // Update the number token colors to show which one is blocked
     // Use setTimeout to ensure any tile updates complete first
     setTimeout(() => {
-        console.log("Updating token colors for robber moved to", blockedTileKey);
+        console.log("Updating token colors for guardian moved to", blockedTileKey);
         updateNumberTokensForRobber(blockedTileKey);
     }, 100);
     
-    // Unblock dice rolls once the robber has been placed
+    // Unblock dice rolls once the guardian has been placed
     unblockDiceRolls();
 });
 
@@ -1128,11 +1128,11 @@ window.addEventListener('diceRolled', (e) => {
     
     // Special handling for rolling a 7
     if (e.detail === 7) {
-        // Start robber placement mode
+        // Start guardian placement mode
         startRobberPlacement(tileMeshes, tileNumbers);
         
-        // Block dice rolls until robber is placed
-        blockDiceRolls("Platziere zuerst den Räuber");
+        // Block dice rolls until guardian is placed
+        blockDiceRolls("Platziere zuerst den Wächter");
     }
 });
 
