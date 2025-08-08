@@ -46,7 +46,7 @@ export function createMainMenuSidebar() {
   }
 
   const sidebar = document.createElement('div');
-  sidebar.id = 'catan-hex-sidebar';
+  sidebar.id = 'resource-realms-hex-sidebar';
   sidebar.style.position = 'fixed';
   sidebar.style.top = '0';
   sidebar.style.bottom = '0';
@@ -240,19 +240,19 @@ export function createMainMenuSidebar() {
   const titleLeft = titleXStart + row1Length * (hexWidth + hexSpacing) + shiftX;
   const titleWidth = 2 * hexWidth + hexSpacing; // Breite von 2 Hex-Tiles plus Spacing
   
-  const catanTitle = document.createElement('div');
-  catanTitle.id = 'catan-title';
-  catanTitle.style.position = 'absolute';
-  catanTitle.style.left = `${titleLeft}px`;
-  catanTitle.style.top = `calc(50% + ${titleYOffset}px)`;
-  catanTitle.style.transform = 'translateY(-50%)';
-  catanTitle.style.width = `${titleWidth}px`;
-  catanTitle.style.height = `${hexHeight}px`;
-  catanTitle.style.display = 'flex';
-  catanTitle.style.alignItems = 'center';
-  catanTitle.style.justifyContent = 'center';
-  catanTitle.style.pointerEvents = 'none';
-  catanTitle.style.zIndex = '10001'; // Über den Hex-Tiles
+  const resourceRealmsTitle = document.createElement('div');
+  resourceRealmsTitle.id = 'resource-realms-title';
+  resourceRealmsTitle.style.position = 'absolute';
+  resourceRealmsTitle.style.left = `${titleLeft}px`;
+  resourceRealmsTitle.style.top = `calc(50% + ${titleYOffset}px)`;
+  resourceRealmsTitle.style.transform = 'translateY(-50%)';
+  resourceRealmsTitle.style.width = `${titleWidth}px`;
+  resourceRealmsTitle.style.height = `${hexHeight}px`;
+  resourceRealmsTitle.style.display = 'flex';
+  resourceRealmsTitle.style.alignItems = 'center';
+  resourceRealmsTitle.style.justifyContent = 'center';
+  resourceRealmsTitle.style.pointerEvents = 'none';
+  resourceRealmsTitle.style.zIndex = '10001'; // Über den Hex-Tiles
   
   // Dynamische Schriftgröße - aggressivere Skalierung für höhere Auflösungen
   const baseFontSize = titleWidth / 7; // Etwas größere Basis für bessere Ausnutzung des Platzes
@@ -265,8 +265,8 @@ export function createMainMenuSidebar() {
   // Begrenzung: Mindestens 28px, maximal 90px
   const finalFontSize = Math.max(28, Math.min(90, dynamicFontSize));
   
-  catanTitle.innerHTML = `
-    <h1 id="animated-catan-title" style="
+  resourceRealmsTitle.innerHTML = `
+    <h1 id="animated-resource-realms-title" style="
       color: #fff;
       font-family: 'Montserrat', sans-serif;
       font-weight: 700;
@@ -278,10 +278,10 @@ export function createMainMenuSidebar() {
       filter: drop-shadow(0 0 12px #ffe066);
       line-height: 1.2;
       animation: titleGlow 2s ease-in-out infinite;
-    ">Catan 3D</h1>
+    ">Resource Realms</h1>
   `;
   
-  sidebar.appendChild(catanTitle);
+  sidebar.appendChild(resourceRealmsTitle);
 
   document.body.appendChild(sidebar);
 
@@ -362,13 +362,13 @@ function handleSidebarResize() {
 }
 
 export function removeMainMenuSidebar() {
-  const oldSidebar = document.getElementById('catan-hex-sidebar');
+  const oldSidebar = document.getElementById('resource-realms-hex-sidebar');
   if (oldSidebar) oldSidebar.remove();
   
   const oldInfoContainer = document.getElementById('project-info-container');
   if (oldInfoContainer) oldInfoContainer.remove();
   
-  const oldTitle = document.getElementById('catan-title');
+  const oldTitle = document.getElementById('resource-realms-title');
   if (oldTitle) oldTitle.remove();
   
   // HTML-Titel nur einblenden wenn wir ins Spiel wechseln (als Fallback)

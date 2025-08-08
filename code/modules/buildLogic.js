@@ -924,7 +924,7 @@ export function getGamePhaseInfo() {
   } else {
     return {
       phase: 'Normales Spiel',
-      description: 'Alle Catan-Regeln aktiv',
+      description: 'Alle Resource Realms-Regeln aktiv',
       remaining: null
     };
   }
