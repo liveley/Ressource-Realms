@@ -66,27 +66,27 @@
   },
   "developmentCards": {
     "knight": {
-      "name": "Ritter",
+      "name": "development_guardian_card",
       "count": 14,
       "effect": "moveRobber"
     },
     "victoryPoint": {
-      "name": "Siegpunkt",
+      "name": "development_victory_point",
       "count": 5,
       "effect": "victoryPoint"
     },
     "roadBuilding": {
-      "name": "Straßenbau",
+      "name": "development_pathfinder_card",
       "count": 2,
       "effect": "buildTwoRoads"
     },
     "yearOfPlenty": {
-      "name": "Erfindung",
+      "name": "development_inventor_card",
       "count": 2,
       "effect": "chooseTwoResources"
     },
     "monopoly": {
-      "name": "Monopol",
+      "name": "development_trade_master_card",
       "count": 2,
       "effect": "collectAllOfOneResource"
     }
