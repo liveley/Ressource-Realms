@@ -147,8 +147,8 @@ function drawRoadMeshes(scene) {
 // Helper: Simulate tile numbers for demo purposes (real assignment according to Catan rules possible)
 const tileNumbers = {};
 (function assignTileNumbers() {
-  // Catan standard: 18 number tokens (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
-  const numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]; // 18 chips, no 7
+  // Catan standard: 18 triangular flags (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
+  const numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]; // 18 flags, no 7
   // Get all land tiles except center (desert)
   const landTypes = ['clay', 'ore', 'sheep', 'wheat', 'wood'];
   let coords = [];
@@ -171,103 +171,184 @@ const tileNumbers = {};
 // Store references to the tile meshes (exported for use with robber placement)
 export const tileMeshes = {}
 
-// Helper: Create a sprite with a number and background
+// Helper: Create a sprite with a triangular flag instead of circular chip
 function createNumberTokenSprite(number) {
-    const size = 128;
+    const size = 960; // Tripled from 320 for three times as big flag
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext('2d');    
+    const ctx = canvas.getContext('2d');
     
-    // Background (circle)
-    const defaultBackgroundColor = '#fff8dc'; // Default cream background color
+    // Flag colors matching the original chip design
+    let flagColor, fontColor, fontSize;
+    if (number === 6 || number === 8) {
+        flagColor = '#d7263d'; // strong red flag for high probability numbers
+        fontColor = '#ffffff'; // white text on red background
+        fontSize = 140; // Increased from 120 for better readability
+    } else if (number === 2 || number === 12) {
+        flagColor = '#fff8dc'; // cream flag for low probability
+        fontColor = '#222';
+        fontSize = 70; // Increased from 60
+    } else if (number === 3 || number === 11) {
+        flagColor = '#fff8dc'; // cream flag
+        fontColor = '#222';
+        fontSize = 84; // Increased from 72
+    } else if (number === 4 || number === 10) {
+        flagColor = '#fff8dc'; // cream flag
+        fontColor = '#222';
+        fontSize = 98; // Increased from 84
+    } else if (number === 5 || number === 9) {
+        flagColor = '#fff8dc'; // cream flag
+        fontColor = '#222';
+        fontSize = 112; // Increased from 96
+    } else { // fallback
+        flagColor = '#fff8dc'; // cream flag
+        fontColor = '#222';
+        fontSize = 98; // Increased from 84
+    }
+    
+    const defaultBackgroundColor = flagColor; // Store default flag color
+    
+    // Center the pole in the canvas - make flag smaller
+    const poleX = size / 2 - 30; // Reduced from 36 for smaller pole
+    const poleWidth = 60; // Reduced from 72 for smaller pole
+    const poleTop = 80; // Moved down slightly
+    const poleBottom = 680; // Reduced from 720
+    
+    // Draw brown pole
+    ctx.fillStyle = '#8B4513'; // Saddle brown color
+    ctx.fillRect(poleX, poleTop, poleWidth, poleBottom - poleTop);
+    
+    // Draw smaller triangular flag attached to the right side of the pole
+    const flagLeft = poleX + poleWidth; // Start at right edge of pole
+    const flagTop = poleTop; // Start at top of pole
+    const flagBottom = poleTop + 400; // Make flag smaller (400px instead of 480px)
+    const flagRight = size - 80; // Make flag narrower (80px from edge instead of 60px)
+    const flagMid = (flagTop + flagBottom) / 2;
+    
     ctx.beginPath();
-    ctx.arc(size/2, size/2, size/2 - 8, 0, 2 * Math.PI);
-    ctx.fillStyle = defaultBackgroundColor;
+    ctx.moveTo(flagLeft, flagTop); // Start at pole, top
+    ctx.lineTo(flagLeft, flagBottom); // Down along pole
+    ctx.lineTo(flagRight, flagMid); // Point to the right (triangle tip)
+    ctx.closePath();
+    
+    // Fill flag with color and shadow
     ctx.shadowColor = '#000';
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 48; // Tripled from 16
+    ctx.shadowOffsetX = 12; // Tripled from 4
+    ctx.shadowOffsetY = 12; // Tripled from 4
+    ctx.fillStyle = flagColor;
     ctx.fill();
     ctx.shadowBlur = 0;
-    // Border for better visibility
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = '#222';
-    ctx.stroke();    
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
     
-    // === Dynamic size and color for the number ===
-    let fontSize, fontColor;
-    if (number === 6 || number === 8) {
-        fontSize = 90;
-        fontColor = '#d7263d'; // strong red
-    } else if (number === 2 || number === 12) {
-        fontSize = 45;
-        fontColor = '#222';
-    } else if (number === 3 || number === 11) {
-        fontSize = 54;
-        fontColor = '#222';
-    } else if (number === 4 || number === 10) {
-        fontSize = 62;
-        fontColor = '#222';
-    } else if (number === 5 || number === 9) {
-        fontSize = 76;
-        fontColor = '#222';    } else { // fallback
-        fontSize = 60;
-        fontColor = '#222';
-    }
+    // Flag border for definition
+    ctx.lineWidth = 12; // Tripled from 4
+    ctx.strokeStyle = '#444';
+    ctx.stroke();
+    
+    // Add the number text on the flag
     ctx.font = `bold ${fontSize}px Arial`;
     ctx.fillStyle = fontColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(number, size/2, size/2);
+    // Position text in the center of the triangular flag (adjusted for new coordinates)
+    const textX = flagLeft + (flagRight - flagLeft) * 0.4; // Position text in flag center
+    const textY = flagMid; // Vertical center of flag
+    ctx.fillText(number, textX, textY);
     
     // Create texture and sprite
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.95 });
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(0.9, 0.9, 1); // slightly larger
+    sprite.scale.set(0.5, 0.5, 1); // Made even smaller from 0.6
     
-    // Store variables needed for updating the token color
+    // Add distance-based scaling for better visibility
+    sprite.userData.originalScale = { x: 0.5, y: 0.5, z: 1 }; // Updated base scale
+    sprite.userData.scaleWithDistance = function(camera) {
+        const distance = sprite.position.distanceTo(camera.position);
+        // Scale up when further away, minimum scale 0.5, maximum scale 1.5
+        const scaleFactor = Math.max(0.5, Math.min(1.5, distance * 0.10));
+        sprite.scale.set(scaleFactor, scaleFactor, 1);
+        
+        // Debug logging (remove after testing)
+        if (Math.random() < 0.001) { // Only log occasionally to avoid spam
+            console.log(`Flag ${sprite.userData.number}: distance=${distance.toFixed(2)}, scale=${scaleFactor.toFixed(2)}`);
+        }
+    };
+    
+    // Store variables needed for updating the flag color
     sprite.userData.canvas = canvas;
     sprite.userData.ctx = ctx;
     sprite.userData.texture = texture;
     sprite.userData.number = number;
     sprite.userData.defaultBackgroundColor = defaultBackgroundColor;
-      // Store function to update background color and optionally text color
+    sprite.userData.defaultFontColor = fontColor;
+    sprite.userData.fontSize = fontSize;
+    
+    // Store function to update flag color and optionally text color
     sprite.userData.updateBackgroundColor = function(bgColor, textColor = null) {
         // Clear canvas
         ctx.clearRect(0, 0, size, size);
         
-        // Redraw background with new color
+        // Recalculate coordinates (same as above) - updated to match main function
+        const poleX = size / 2 - 30; // Match the main function - smaller pole
+        const poleWidth = 60; // Match the main function - smaller pole
+        const poleTop = 80; // Match the main function
+        const poleBottom = 680; // Match the main function
+        const flagLeft = poleX + poleWidth;
+        const flagTop = poleTop; // Match the main function - flag starts at top of pole
+        const flagBottom = poleTop + 400; // Match the main function - smaller flag (400px)
+        const flagRight = size - 80; // Match the main function - narrower flag
+        const flagMid = (flagTop + flagBottom) / 2;
+        
+        // Redraw brown pole
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(poleX, poleTop, poleWidth, poleBottom - poleTop);
+        
+        // Redraw triangular flag with new color
         ctx.beginPath();
-        ctx.arc(size/2, size/2, size/2 - 8, 0, 2 * Math.PI);
-        ctx.fillStyle = bgColor;
+        ctx.moveTo(flagLeft, flagTop);
+        ctx.lineTo(flagLeft, flagBottom);
+        ctx.lineTo(flagRight, flagMid);
+        ctx.closePath();
+        
         ctx.shadowColor = '#000';
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 48; // Tripled from 16
+        ctx.shadowOffsetX = 12; // Tripled from 4
+        ctx.shadowOffsetY = 12; // Tripled from 4
+        ctx.fillStyle = bgColor;
         ctx.fill();
         ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
         
-        // Border for better visibility
-        ctx.lineWidth = 6;
-        ctx.strokeStyle = '#222';
+        // Flag border
+        ctx.lineWidth = 12; // Tripled from 4
+        ctx.strokeStyle = '#444';
         ctx.stroke();
         
         // Redraw number with original or specified text color
         ctx.font = `bold ${fontSize}px Arial`;
-        ctx.fillStyle = textColor || fontColor; // Use specified text color or fall back to original
+        ctx.fillStyle = textColor || fontColor;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(number, size/2, size/2);
+        const textX = flagLeft + (flagRight - flagLeft) * 0.4;
+        const textY = flagMid;
+        ctx.fillText(number, textX, textY);
         
         // Update texture to show changes
         texture.needsUpdate = true;
     };
     
     // Default position - will be overridden when added to tile
-    sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden (moderat über dem Räuber)
+    sprite.position.set(0, 2.5, 0);
     
     return sprite;
 }
 
-// Add number tokens to all land tiles
+// Add triangular flags to all land tiles
 export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
     Object.entries(tileMeshes).forEach(([key, mesh]) => {
         const number = tileNumbers[key];
@@ -282,9 +363,11 @@ export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
             sprite.userData.tileQ = q;
             sprite.userData.tileR = r;
             
-            // Give the token a descriptive name for easier identification
-            sprite.name = `token_${number}_tile_${key}`;            // Make the token larger and more clickable for robber placement
-            sprite.scale.set(1.2, 1.2, 1.2);
+            // Give the flag a descriptive name for easier identification
+            sprite.name = `flag_${number}_tile_${key}`;
+            
+            // Make the flag clickable for robber placement - smaller size
+            sprite.scale.set(0.65, 0.65, 0.65); // Slightly reduced from 0.8 to make smaller
             
             // Add the sprite to the tile mesh
             mesh.add(sprite);
@@ -292,11 +375,15 @@ export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
     });
 }
 
-// Animation: Always face number tokens towards the camera
+// Animation: Always face triangular flags towards the camera and scale based on distance
 export function updateNumberTokensFacingCamera(scene, camera) {
     scene.traverse(obj => {
         if (obj.type === 'Sprite' && obj.userData.number) {
             obj.quaternion.copy(camera.quaternion);
+            // Apply distance-based scaling if available
+            if (obj.userData.scaleWithDistance) {
+                obj.userData.scaleWithDistance(camera);
+            }
         }
     });
 }
@@ -353,7 +440,7 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
         hexGroup.add(centerTile);
         scene.add(hexGroup);
         tileMeshes[`0,0`] = centerTile;
-        // No number token for the center (desert)
+        // No triangular flag for the center (desert)
     });
 
     // --- Randomize and place resource tiles ---
@@ -378,11 +465,11 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
             hexGroup.add(tile);
             scene.add(hexGroup);
             tileMeshes[`${q},${r}`] = tile;
-            // Number token for this tile (if present)
+            // Triangular flag for this tile (if present)
             const number = tileNumbers[`${q},${r}`];            
             if (number) {
                 const sprite = createNumberTokenSprite(number);
-                // Position the number token at a moderate height above the tile
+                // Position the triangular flag at a moderate height above the tile
                 sprite.position.set(0, 1.6, 0); // Reduzierte Höhe, aber immer noch über dem Räuber (3.2)
                 tile.add(sprite);
             }
@@ -528,31 +615,31 @@ window.addEventListener('diceRolled', (e) => {
 // Re-export the highlight functions from tileHighlight module
 export { animateHalos, testBorderHighlighting };
 
-// Function to update number token colors when the robber is moved
-// Function to update number token colors based on robber position
+// Function to update triangular flag colors when the robber is moved
+// Function to update flag colors based on robber position
 export function updateNumberTokensForRobber(robberTileKey) {
     const ROBBER_BLOCKED_COLOR = '#FF4D00'; // Vibrant orange color for blocked tile
     
-    console.log(`Updating number token colors, robber on tile ${robberTileKey}`);
+    console.log(`Updating triangular flag colors, robber on tile ${robberTileKey}`);
     
-    // Reset all number tokens to default color first
+    // Reset all flags to default color first
     Object.values(tileMeshes).forEach(mesh => {
         mesh.traverse(child => {
             if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
                 child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null); // Reset to default background with original text color
-                console.log(`Reset token color on tile ${child.userData.tileKey || 'unknown'}`);
+                console.log(`Reset flag color on tile ${child.userData.tileKey || 'unknown'}`);
             }
         });
     });
     
-    // If we have a blocked tile, change its token color
+    // If we have a blocked tile, change its flag color
     if (robberTileKey && tileMeshes[robberTileKey]) {
         const blockedTileMesh = tileMeshes[robberTileKey];
         
-        // Find the number token in this tile and change its color
+        // Find the triangular flag in this tile and change its color
         blockedTileMesh.traverse(child => {
             if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
-                console.log(`Changing token color on blocked tile ${robberTileKey} to #FF4D00`);
+                console.log(`Changing flag color on blocked tile ${robberTileKey} to #FF4D00`);
                 child.userData.updateBackgroundColor(ROBBER_BLOCKED_COLOR, '#000000'); // Orange background with black text
             }
         });

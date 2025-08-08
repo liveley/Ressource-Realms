@@ -184,7 +184,7 @@ export function animateHalos() {
   });
 }
 
-// Highlight number tokens on tiles that match a rolled number
+// Highlight triangular flags on tiles that match a rolled number
 export function highlightNumberTokens(scene, tileMeshes, tileNumbers, rolledNumber) {
     Object.entries(tileMeshes).forEach(([key, mesh]) => {
         const number = tileNumbers[key];

@@ -265,7 +265,7 @@ async function preloadGameBoard() {
     tileMeshes = result.tileMeshes;
     tileNumbers = result.tileNumbers;
     
-    // After creating the game board: Number Tokens hinzufügen
+    // After creating the game board: Triangular flags hinzufügen
     addNumberTokensToTiles(scene, tileMeshes, tileNumbers);
 
     // Initialize ports after game board is created
@@ -280,7 +280,7 @@ async function preloadGameBoard() {
     function waitForDesertTileAndInitRobber(retries = 30) {
       if (tileMeshes[initialRobberTileKey]) {
         setTimeout(() => {
-          console.log("Setting initial token colors for robber on desert");
+          console.log("Setting initial flag colors for robber on desert");
           updateNumberTokensForRobber(initialRobberTileKey);
         }, 200);
         console.log("Initializing robber on the desert tile");
@@ -1070,7 +1070,7 @@ window.addEventListener('click', (event) => {
 
 // Animation
 function animate() {
-    // Update number tokens to face camera
+    // Update triangular flags to face camera
     updateNumberTokensFacingCamera(scene, camera);
     
     // Update port labels to face camera
@@ -1110,10 +1110,10 @@ window.addEventListener('robberMoved', (e) => {
     // This is a fallback to ensure proper placement even after the event
     const accuratePosition = getTileCenter(e.detail.q, e.detail.r, tileMeshes);
     console.log("Ensuring robber is at accurate position:", accuratePosition);
-      // Update the number token colors to show which one is blocked
+      // Update the triangular flag colors to show which one is blocked
     // Use setTimeout to ensure any tile updates complete first
     setTimeout(() => {
-        console.log("Updating token colors for robber moved to", blockedTileKey);
+        console.log("Updating flag colors for robber moved to", blockedTileKey);
         updateNumberTokensForRobber(blockedTileKey);
     }, 100);
     
@@ -1123,7 +1123,7 @@ window.addEventListener('robberMoved', (e) => {
 
 // Handle dice rolls
 window.addEventListener('diceRolled', (e) => {
-    // Highlight number tokens for the rolled number
+    // Highlight triangular flags for the rolled number
     highlightNumberTokens(scene, tileMeshes, tileNumbers, e.detail);
     
     // Special handling for rolling a 7
