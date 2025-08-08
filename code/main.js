@@ -835,8 +835,8 @@ async function startGame() {
           <li>Baue Siedlungen, Städte und Straßen, um Siegpunkte zu sammeln.</li>
             <li>Würfle zu Beginn deines Zuges und sammle Rohstoffe entsprechend der gewürfelten Zahl.</li>
             <li>Handel mit der Bank, anderen Spielern oder an Häfen.</li>
-            <li>Der Räuber blockiert Felder, wenn eine 7 geworfen wird.</li>
-            <li>Entwicklungskarten bringen Vorteile wie Ritter, Fortschritt oder Siegpunkte.</li>
+            <li>Der Guardian blockiert Felder, wenn eine 7 geworfen wird.</li>
+            <li>Entwicklungskarten bringen Vorteile wie Soldaten, Fortschritt oder Siegpunkte.</li>
             <li>Wer zuerst 10 Siegpunkte erreicht, gewinnt das Spiel!</li>
           </ul>
           <div style="margin-top:1em;font-size:0.95em;color:#444;">
