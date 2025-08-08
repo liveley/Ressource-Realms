@@ -144,10 +144,10 @@ function drawRoadMeshes(scene) {
   });
 }
 
-// Helper: Simulate tile numbers for demo purposes (real assignment according to Catan rules possible)
+// Helper: Simulate tile numbers for demo purposes (real assignment according to Resource Realms rules possible)
 const tileNumbers = {};
 (function assignTileNumbers() {
-  // Catan standard: 18 number tokens (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
+  // Resource Realms standard: 18 number tokens (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
   const numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]; // 18 chips, no 7
   // Get all land tiles except center (desert)
   const landTypes = ['clay', 'ore', 'sheep', 'wheat', 'wood'];
@@ -320,7 +320,7 @@ function drawLandTileOutline(scene) {
 
 // Returns a shuffled array of resource tile types (excluding desert)
 function getShuffledResourceTiles() {
-    // Standard Catan: 4 sheep, 4 wheat, 4 wood, 3 clay, 3 ore, 1 desert (center)
+    // Standard Resource Realms: 4 sheep, 4 wheat, 4 wood, 3 clay, 3 ore, 1 desert (center)
     const resourceTiles = [
         ...Array(4).fill('sheep'),
         ...Array(4).fill('wheat'),

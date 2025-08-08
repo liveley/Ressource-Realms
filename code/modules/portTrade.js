@@ -1,5 +1,5 @@
 // modules/portTrade.js
-// Port-Handels-Logik für Catan 3D - adaptiert von bankTrade.js
+// Port-Handels-Logik für Resource Realms 3D - adaptiert von bankTrade.js
 // Ermöglicht 2:1 und 3:1 Handel über Häfen
 
 import { resources } from './uiResources.js';

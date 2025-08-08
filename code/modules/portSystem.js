@@ -1,11 +1,11 @@
 // modules/portSystem.js
-// Port-System für Catan 3D - Häfen-Definitionen, 3D-Rendering und Positioning
+// Port-System für Resource Realms 3D - Häfen-Definitionen, 3D-Rendering und Positioning
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { axialToWorld } from './game_board.js';
 
-// Port-Konfiguration basierend auf Standard Catan Layout
+// Port-Konfiguration basierend auf Standard Resource Realms Layout
 // 9 Häfen total: 4 Generic (3:1) + 5 Resource-spezifisch (2:1)
 // Harbor ring: [3,-1], [3,-2], [3,-3], [2,-3], [1,-3], [0,-3], [-1,-2], [-2,-1], [-3,1], [-3,2], [-3,0], [-3,3], [-2,3], [-1,3], [0,3], [1,2], [2,1], [3,0]
 // Systematische Verteilung für bessere Balance: jeden 2. Tile mit korrekten Edge-Werten

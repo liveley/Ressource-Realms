@@ -1,6 +1,6 @@
 // === UI: Ressourcenanzeige für Spieler und Bank ===
 // modules/uiResources.js
-// Ressourcen-UI für Catan 3D mit Gain Counter
+// Ressourcen-UI für Resource Realms 3D mit Gain Counter
 
 import { doBankTrade, canBankTrade } from './bankTrade.js';
 import { createBankTradeUI } from './bankTradeUI.js';

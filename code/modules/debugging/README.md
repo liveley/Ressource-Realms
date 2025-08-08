@@ -1,6 +1,6 @@
 # Debug Modules Documentation
 
-This directory contains all debug and testing utilities for the Catan 3D game, refactored out of the main game logic files.
+This directory contains all debug and testing utilities for the Resource Realms game, refactored out of the main game logic files.
 
 ## 🎯 Cleanup Summary
 
