@@ -5,7 +5,7 @@
 ### 1. Fixed Longest Road Algorithm
 - **BEFORE**: Node-based DFS with incorrect branching logic
 - **AFTER**: Edge-based DFS that correctly follows single paths
-- **Result**: Longest Road achievement now works according to official Catan rules
+- **Result**: Longest Road achievement now works according to official Resource Realms rules
 
 ### 2. Fixed Road Network Building
 - **BEFORE**: Vertices not properly merged across hex boundaries
@@ -73,4 +73,4 @@ toggleRoadDebugTools()                   // Show/hide road debug UI
 - ✅ **Code Quality**: Clean separation of production and debug code
 - ✅ **Performance**: No debug overhead in production builds
 
-The Catan 3D victory points and longest road system is now complete and production-ready!
+The Resource Realms 3D victory points and longest road system is now complete and production-ready!

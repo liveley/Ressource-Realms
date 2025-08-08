@@ -610,7 +610,7 @@ export function startRegularPlay() {
   gameState.phase = GAME_PHASES.REGULAR_PLAY;
   console.log('Switched to regular play phase');
   
-  // According to Catan rules, the first player starts the first regular turn after initial placement
+  // According to Resource Realms rules, the first player starts the first regular turn after initial placement
   // Set active player to first player (index 0)
   if (typeof window.setActivePlayerToFirstPlayer === 'function') {
     window.setActivePlayerToFirstPlayer();

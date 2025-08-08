@@ -15,7 +15,7 @@
 12. [Hinweise zur digitalen Umsetzung](#hinweise-zur-digitalen-umsetzung)
 
 ## Einleitung
-Dieses Spiel basiert auf dem bekannten Brettspiel "Die Siedler von Catan". Ziel ist es, durch geschicktes Bauen, Handeln und Entwickeln als Erster 10 Siegpunkte zu erreichen.
+Dieses Spiel "Resource Realms" ist eine Abwandlung eines Brettspiels. Ziel ist es, durch geschicktes Bauen, Handeln und Entwickeln als Erster 10 Siegpunkte zu erreichen.
 
 ## Ziel des Spiels
 Der erste Spieler, der 10 Siegpunkte erreicht, gewinnt das Spiel. Siegpunkte erhält man durch Siedlungen, Städte, Entwicklungskarten sowie Sonderpunkte für die längste Straße und die größte Rittermacht.
