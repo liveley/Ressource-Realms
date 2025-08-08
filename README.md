@@ -1,15 +1,15 @@
-# Projektmodul Prozesse: Gruppe 4 Siedler von Catan
+# Projektmodul Prozesse: Gruppe 4 Resource Realms
 
 Figmaboard:
 https://www.figma.com/design/nPyNCJghkiwbXPaKluS5ZL/Gruppe-4-Spielideen?node-id=0-1&t=nNiI9fz8gmXSjIHG-1
 
 
-# Siedler von Catan 3D – Projektübersicht
+# Resource Realms – Projektübersicht
 
-Dieses Projekt ist eine 3D-Visualisierung des Spiels *Die Siedler von Catan*, entwickelt mit **Three.js**. Ziel ist es, die Spielwelt dreidimensional darzustellen, inklusive Landschaften, Rohstoffen und Spielfiguren.
+Dieses Projekt ist eine 3D-Visualisierung des Spiels *Resource Realms*, entwickelt mit **Three.js**. Ziel ist es, die Spielwelt dreidimensional darzustellen, inklusive Landschaften, Rohstoffen und Spielfiguren.
 
-## 🏝️ Was ist *Die Siedler von Catan*?
-*Catan* ist eines der bekanntesten Brettspiele weltweit und wurde 1995 von Klaus Teuber veröffentlicht. Spieler erkunden eine Insel, bauen Straßen und Siedlungen und handeln mit Rohstoffen wie Holz, Erz und Getreide. Das Spiel kombiniert Strategie, Handel und Zufall auf spannende Weise und bleibt durch seinen variablen Spielaufbau immer frisch.
+## 🏝️ Was ist *Resource Realms*?
+In *Resource Realms* erkunden Spieler eine Insel, bauen Straßen und Siedlungen und handeln mit Rohstoffen wie Holz, Erz und Getreide. Das Spiel kombiniert Strategie, Handel und Zufall auf spannende Weise und bleibt durch seinen variablen Spielaufbau immer frisch.
 
 ## 🎮 Features des Projekts:
 - **Detaillierte 3D-Modelle** – Erstellt mit **Blender** und externen Asset-Sammlungen

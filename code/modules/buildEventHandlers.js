@@ -76,7 +76,7 @@ export function setupBuildEventHandler({
         showBuildPopupFeedback(warning.message, 'warning');
         // Give user a moment to see the warning, then proceed
         setTimeout(() => {
-          // Use proper Catan rules for settlement placement
+          // Use proper Resource Realms rules for settlement placement
           result = tryBuildSettlement(player, q, r, nearest, players);
           if (result.success) {
             placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'settlement', player.color);

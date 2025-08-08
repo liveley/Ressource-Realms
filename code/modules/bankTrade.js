@@ -1,5 +1,5 @@
 // modules/bankTrade.js
-// Standard 4:1 Banktausch für Catan 3D
+// Standard 4:1 Banktausch für Resource Realms
 // Exportierte Funktion für UI und Logik
 
 import { resources } from './uiResources.js';

@@ -832,11 +832,11 @@ async function startGame() {
             <li>Baue Siedlungen, Städte und Straßen, um Siegpunkte zu sammeln.</li>
             <li>Würfle zu Beginn deines Zuges und sammle Rohstoffe entsprechend der gewürfelten Zahl.</li>
             <li>Handel mit der Bank, anderen Spielern oder an Häfen.</li>
-            <li>Der Räuber blockiert Felder und kann Rohstoffe stehlen, wenn eine 7 gewürfelt wird.</li>
+            <li>Der Räuber blockiert Felder und kann Rohstoffe stehlen, wenn eine 7 geworfen wird.</li>
             <li>Entwicklungskarten bringen Vorteile wie Ritter, Fortschritt oder Siegpunkte.</li>
             <li>Wer zuerst 10 Siegpunkte erreicht, gewinnt das Spiel!</li>
           </ul>
-          <div style="margin-top:1em;font-size:0.95em;color:#444;">Weitere Details findest du im offiziellen Catan-Regelwerk.</div>
+          <div style="margin-top:1em;font-size:0.95em;color:#444;">Weitere Details findest du im offiziellen Resource Realms-Regelwerk.</div>
         </div>
         <button id="close-rules-modal" style="margin-top:1.5em;width:100%;background:linear-gradient(90deg,#b6c6e3 60%,#e0eafc 100%);color:#222;border:none;padding:10px 0;border-radius:8px;font-size:1.1em;font-weight:600;cursor:pointer;">Schließen</button>
       `;
@@ -908,7 +908,7 @@ async function startGame() {
   // Note: gameReady event is now dispatched by the initializeGame event handler
 }
 
-// === Catan-Bank: Ressourcenlimitierung ===
+// === Resource Realms-Bank: Ressourcenlimitierung ===
 window.bank = {
   wood: 19,
   clay: 19,
