@@ -1,6 +1,6 @@
 // === UI: Würfeln-Button ===
 // modules/uiDice.js
-// Würfel-UI für Catan 3D
+// Würfel-UI für Resource Realms
 
 let diceUI = null;
 let diceResult = null;

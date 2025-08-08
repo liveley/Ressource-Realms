@@ -75,7 +75,7 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
     let shouldShowPreview = true; // New flag to control preview visibility
     
     if (buildMode === 'settlement') {
-      // Use proper Catan rules for settlement placement
+      // Use proper Resource Realms rules for settlement placement
       const res = canPlaceSettlement(player, q, r, nearest, players);
       canBuild = res.success;
       
