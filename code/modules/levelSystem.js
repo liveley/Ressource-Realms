@@ -512,3 +512,22 @@ export function createLevelSystem(players, options = {}) {
 
 // Export der Klasse als Default
 export default LevelSystem;
+
+/*
+// --- LevelSystem Integration für Spieler-Avatar-Kreis (UI) ---
+// Ersetze die Siegpunkte-Anzeige im Avatar-Kreis durch die Level-Anzeige.
+//
+// In modules/ui_player_overview.js:
+//
+// const levelNum = document.createElement('span');
+// levelNum.textContent = window.levelSystem ? window.levelSystem.getPlayerLevel(idx) : '1';
+// levelNum.title = window.levelSystem ? `Level: ${window.levelSystem.getCurrentObjectives(idx)}` : 'Level';
+// levelNum.style.fontWeight = 'bold';
+// levelNum.style.fontSize = '1.45em';
+// levelNum.style.color = isActive ? '#222' : '#333';
+// levelNum.style.textShadow = isActive ? '0 0 8px #ffd70088' : '0 1px 2px #fff8';
+// avatar.appendChild(levelNum);
+// header.appendChild(avatar);
+//
+// Damit wird im Avatar-Kreis das aktuelle Level des Spielers angezeigt.
+*/
