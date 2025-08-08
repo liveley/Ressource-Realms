@@ -1,5 +1,5 @@
 // modules/developmentCards.js
-// Entwicklungskarten-Deck und Spieler-Logik für Resource Realms 3D
+// Entwicklungskarten-Deck und Spieler-Logik für Resource Realms
 
 import { addVictoryPointCard, checkWinCondition } from './victoryPoints.js';
 
