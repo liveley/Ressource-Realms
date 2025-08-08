@@ -15,7 +15,7 @@ export function createRobberSelectionIndicator() {
   // Create new indicator
   const indicator = document.createElement('div');
   indicator.id = 'robber-selection-indicator';
-  indicator.textContent = '🔴 RÄUBERAUSWAHL AKTIV';
+  indicator.textContent = '🔴 WÄCHTERAUSWAHL AKTIV';
   indicator.style.position = 'fixed';
   indicator.style.top = '10em';
   indicator.style.right = '20px';

@@ -1,4 +1,4 @@
-// Handles loading, showing, and positioning the bandit (Räuber) model on the board
+// Handles loading, showing, and positioning the bandit (Wächter) model on the board
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { 
@@ -156,7 +156,7 @@ export function showRobberSelectionMessage(customMessage) {
         document.body.appendChild(msg);
     }    
     // Display message - use custom message or default
-    msg.textContent = customMessage || 'Eine 7 wurde gewürfelt! Wähle ein Feld für den Räuber.';
+    msg.textContent = customMessage || 'Eine 7 wurde gewürfelt! Wähle ein Feld für den Wächter.';
     msg.style.display = 'block';
 }
 
@@ -183,7 +183,7 @@ function showBanditMessage() {
     }
 
     // Simple confirmation message
-    msg.textContent = 'Der Räuber wurde bewegt!';
+    msg.textContent = 'Der Wächter wurde bewegt!';
     msg.style.display = 'block';
     
     setTimeout(() => { 
@@ -309,7 +309,7 @@ export function startRobberPlacement(tileMeshes, tileNumbers) {
     
     // Show debug indicator for robber selection mode
     createRobberSelectionIndicator();    // Display message
-    showRobberSelectionMessage('Wähle ein Feld für den Räuber');
+    showRobberSelectionMessage('Wähle ein Feld für den Wächter');
     
     // Return true to indicate we're in selection mode
     return true;
@@ -503,7 +503,7 @@ export function handleTileSelection(intersection, tileMeshes, getTilePosition) {
                 reason = ' (aktuell blockiert)';
             }
             showBanditActionMessage(
-                `Der Räuber kann nicht auf diesem Feld platziert werden${reason}`,
+                `Der Wächter kann nicht auf diesem Feld platziert werden${reason}`,
                 3000
             );
         }
@@ -566,7 +566,7 @@ export function cancelRobberPlacement() {
 
       // Show simple cancellation message
     const cancelMsg = document.createElement('div');
-    cancelMsg.textContent = 'Räuberplatzierung abgebrochen';
+    cancelMsg.textContent = 'Wächterplatzierung abgebrochen';
     cancelMsg.style.position = 'fixed';
     cancelMsg.style.left = '50%';
     cancelMsg.style.bottom = '3em';
