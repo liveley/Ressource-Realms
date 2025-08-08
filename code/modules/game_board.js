@@ -170,30 +170,48 @@ const goldenFlags = new Set(); // Track which tiles have golden flags
   tileNumbers['0,0'] = null;
 })();
 
-// Helper: Assign golden flags based on probability priority
+// Helper: Assign golden flags based on probability priority (more balanced)
 (function assignGoldenFlags() {
   // Get all tiles with numbers and sort by probability (lowest first)
   const tilesWithNumbers = Object.entries(tileNumbers)
     .filter(([key, number]) => number !== null)
     .map(([key, number]) => ({ key, number, coords: key.split(',').map(Number) }));
   
-  // Probability priority: 2,12 -> 3,11 -> 4,10 -> 5,9 -> 6,8
-  const probabilityOrder = {
-    2: 1, 12: 1,  // Lowest probability
-    3: 2, 11: 2,
-    4: 3, 10: 3,
-    5: 4, 9: 4,
-    6: 5, 8: 5    // Highest probability
+  // More balanced probability weighting: lower numbers still preferred but less extreme
+  const probabilityWeights = {
+    2: 0.4, 12: 0.4,   // Highest chance for golden flags
+    3: 0.35, 11: 0.35, // High chance
+    4: 0.25, 10: 0.25, // Medium-high chance
+    5: 0.2, 9: 0.2,    // Medium chance
+    6: 0.15, 8: 0.15   // Lower chance (but still possible)
   };
   
-  // Sort tiles by probability priority (lowest first)
-  tilesWithNumbers.sort((a, b) => probabilityOrder[a.number] - probabilityOrder[b.number]);
+  // Create weighted list for random selection
+  const weightedTiles = [];
+  tilesWithNumbers.forEach(tile => {
+    const weight = probabilityWeights[tile.number] || 0.1;
+    const copies = Math.ceil(weight * 100); // Convert to integer weight
+    for (let i = 0; i < copies; i++) {
+      weightedTiles.push(tile.key);
+    }
+  });
   
-  // Assign golden flags - approximately 30% of tiles (5-6 flags total)
+  // Randomly select golden flags (approximately 30% of tiles)
   const maxGoldenFlags = Math.min(6, Math.floor(tilesWithNumbers.length * 0.3));
+  const usedKeys = new Set();
   
-  for (let i = 0; i < maxGoldenFlags && i < tilesWithNumbers.length; i++) {
-    goldenFlags.add(tilesWithNumbers[i].key);
+  for (let i = 0; i < maxGoldenFlags; i++) {
+    let attempts = 0;
+    let selectedKey;
+    do {
+      selectedKey = weightedTiles[Math.floor(Math.random() * weightedTiles.length)];
+      attempts++;
+    } while (usedKeys.has(selectedKey) && attempts < 100);
+    
+    if (!usedKeys.has(selectedKey)) {
+      goldenFlags.add(selectedKey);
+      usedKeys.add(selectedKey);
+    }
   }
   
   console.log(`Assigned ${goldenFlags.size} golden flags to tiles:`, Array.from(goldenFlags));
@@ -223,11 +241,11 @@ function createNumberTokenSprite(number, isGolden = false) {
     let flagColor, fontColor, fontSize, poleColor, borderColor;
     
     if (isGolden) {
-        // Golden flag styling
-        flagColor = '#FFD700'; // Golden flag background
-        fontColor = '#8B4513'; // Brown text on golden background
-        poleColor = '#DAA520'; // Golden pole color
-        borderColor = '#B8860B'; // Darker golden border
+        // Golden flag styling with brown/bronze shades for authentic gold look
+        flagColor = '#CD7F32'; // Bronze/golden brown flag background
+        fontColor = '#2F1B14'; // Dark brown text for contrast
+        poleColor = '#8B4513'; // Saddle brown pole
+        borderColor = '#A0522D'; // Sienna brown border
     } else {
         // Regular flag styling
         poleColor = '#8B4513'; // Saddle brown color for regular poles
@@ -242,19 +260,19 @@ function createNumberTokenSprite(number, isGolden = false) {
         }
     }
     
-    // Font sizes based on number probability
+    // Font sizes based on number probability - increased sizes
     if (number === 6 || number === 8) {
-        fontSize = 140; // Increased from 120 for better readability
+        fontSize = 160; // Increased from 140
     } else if (number === 2 || number === 12) {
-        fontSize = 70; // Increased from 60
+        fontSize = 85; // Increased from 70
     } else if (number === 3 || number === 11) {
-        fontSize = 84; // Increased from 72
+        fontSize = 100; // Increased from 84
     } else if (number === 4 || number === 10) {
-        fontSize = 98; // Increased from 84
+        fontSize = 115; // Increased from 98
     } else if (number === 5 || number === 9) {
-        fontSize = 112; // Increased from 96
+        fontSize = 130; // Increased from 112
     } else { // fallback
-        fontSize = 98; // Increased from 84
+        fontSize = 115; // Increased from 98
     }
     
     const defaultBackgroundColor = flagColor; // Store default flag color
@@ -299,13 +317,13 @@ function createNumberTokenSprite(number, isGolden = false) {
     ctx.strokeStyle = borderColor;
     ctx.stroke();
     
-    // Add the number text on the flag
+    // Add the number text on the flag - moved closer to pole
     ctx.font = `bold ${fontSize}px Arial`;
     ctx.fillStyle = fontColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    // Position text in the center of the triangular flag (adjusted for new coordinates)
-    const textX = flagLeft + (flagRight - flagLeft) * 0.4; // Position text in flag center
+    // Position text closer to the pole (moved left from 0.4 to 0.25)
+    const textX = flagLeft + (flagRight - flagLeft) * 0.25; // Moved closer to pole
     const textY = flagMid; // Vertical center of flag
     ctx.fillText(number, textX, textY);
     
@@ -358,21 +376,24 @@ function createNumberTokenSprite(number, isGolden = false) {
         const flagRight = size - 80; // Match the main function - narrower flag
         const flagMid = (flagTop + flagBottom) / 2;
         
-        // Determine pole color - golden flags keep golden poles
+        // Determine pole color and styling
         let currentPoleColor = defaultPoleColor;
         let currentBorderColor = defaultBorderColor;
         let currentFlagColor = bgColor;
         
-        if (isGolden && activated) {
-            // Golden flag activated: orange middle, golden outline, golden pole
-            currentFlagColor = '#FF8C00'; // Orange middle when activated
-            currentBorderColor = '#DAA520'; // Keep golden border
-            currentPoleColor = '#DAA520'; // Keep golden pole
+        if (activated) {
+            // Any activated flag (golden or regular) gets consistent orange highlighting
+            currentFlagColor = '#FF8C00'; // Consistent orange for all activated flags
+            currentBorderColor = '#FF4500'; // Orange border when activated
+            // Keep original pole color for consistency
         } else if (isGolden) {
-            // Golden flag not activated: keep golden appearance
-            currentFlagColor = bgColor || '#FFD700';
-            currentBorderColor = '#B8860B';
-            currentPoleColor = '#DAA520';
+            // Golden flag not activated: use golden brown appearance
+            currentFlagColor = bgColor || '#CD7F32'; // Bronze/golden brown
+            currentBorderColor = '#A0522D'; // Sienna brown border
+            currentPoleColor = '#8B4513'; // Saddle brown pole
+        } else {
+            // Regular flag: use provided or default colors
+            currentFlagColor = bgColor || defaultBackgroundColor;
         }
         
         // Redraw pole
@@ -401,12 +422,12 @@ function createNumberTokenSprite(number, isGolden = false) {
         ctx.strokeStyle = currentBorderColor;
         ctx.stroke();
         
-        // Redraw number with original or specified text color
+        // Redraw number with original or specified text color - moved closer to pole
         ctx.font = `bold ${fontSize}px Arial`;
         ctx.fillStyle = textColor || fontColor;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const textX = flagLeft + (flagRight - flagLeft) * 0.4;
+        const textX = flagLeft + (flagRight - flagLeft) * 0.25; // Closer to pole
         const textY = flagMid;
         ctx.fillText(number, textX, textY);
         
@@ -417,8 +438,8 @@ function createNumberTokenSprite(number, isGolden = false) {
         sprite.userData.isActivated = activated;
     };
     
-    // Default position - will be overridden when added to tile
-    sprite.position.set(0, 2.5, 0);
+    // Default position - moved down for better tile association
+    sprite.position.set(0, 1.8, 0); // Lowered from 2.5 to 1.8
     
     return sprite;
 }
@@ -433,8 +454,8 @@ export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
             
             console.log(`Creating flag for tile ${key}: number=${number}, isGolden=${isGolden}`);
             
-            // Position the sprite at a moderate height above the tile so it's visible when the robber is present
-            sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden - etwas höher als der Räuber (3.2)
+            // Position the sprite at a lower height above the tile for better association
+            sprite.position.set(0, 1.8, 0); // Lowered from 2.5 to 1.8
             
             // Store useful data for robber placement and golden flag logic
             sprite.userData.number = number;
@@ -754,7 +775,7 @@ export { animateHalos, testBorderHighlighting };
 // Function to update triangular flag colors when the robber is moved
 // Function to update flag colors based on robber position
 export function updateNumberTokensForRobber(robberTileKey) {
-    const ROBBER_BLOCKED_COLOR = '#FF4D00'; // Vibrant orange color for blocked tile
+    const ROBBER_BLOCKED_COLOR = '#FF8C00'; // Consistent orange color for all blocked tiles
     
     console.log(`Updating triangular flag colors, robber on tile ${robberTileKey}`);
     
@@ -762,26 +783,22 @@ export function updateNumberTokensForRobber(robberTileKey) {
     Object.values(tileMeshes).forEach(mesh => {
         mesh.traverse(child => {
             if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
-                // For golden flags, reset to golden appearance; for regular flags, reset to default
-                if (child.userData.isGolden) {
-                    child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null, false); // Reset golden flag
-                } else {
-                    child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null, false); // Reset regular flag
-                }
+                // Reset to default appearance (golden or regular)
+                child.userData.updateBackgroundColor(child.userData.defaultBackgroundColor, null, false);
                 console.log(`Reset flag color on tile ${child.userData.tileKey || 'unknown'} (Golden: ${child.userData.isGolden || false})`);
             }
         });
     });
     
-    // If we have a blocked tile, change its flag color
+    // If we have a blocked tile, change its flag color to consistent orange
     if (robberTileKey && tileMeshes[robberTileKey]) {
         const blockedTileMesh = tileMeshes[robberTileKey];
         
         // Find the triangular flag in this tile and change its color
         blockedTileMesh.traverse(child => {
             if (child.type === 'Sprite' && child.userData && child.userData.updateBackgroundColor) {
-                console.log(`Changing flag color on blocked tile ${robberTileKey} to #FF4D00`);
-                child.userData.updateBackgroundColor(ROBBER_BLOCKED_COLOR, '#000000'); // Orange background with black text
+                console.log(`Changing flag color on blocked tile ${robberTileKey} to consistent orange`);
+                child.userData.updateBackgroundColor(ROBBER_BLOCKED_COLOR, '#000000', true); // Orange with black text and activated state
             }
         });
     }
