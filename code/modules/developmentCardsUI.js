@@ -149,26 +149,26 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
   function getCardImage(card) {
     switch(card.type) {
       case 'knight':
-        return 'assets/development_guardian_card.jpg';
+        return 'assets/development_guardian_card.png';
       case 'road_building':
-        return 'assets/development_pathfinder_card.jpg';
+        return 'assets/development_pathfinder_card.png';
       case 'monopoly':
-        return 'assets/development_trade_master_card.jpg';
+        return 'assets/development_trade_master_card.png';
       case 'year_of_plenty':
-        return 'assets/development_inventor_card.jpg';
+        return 'assets/development_inventor_card.png';
       case 'victory_point':
         // Zufällig eine der Siegpunktkarten (Bibliothek, Kathedrale, Universität, Parlament, Marktplatz)
         const vpImgs = [
-          'assets/development_library_card.jpg',
-          'assets/development_cathedral_card.jpg',
-          'assets/development_university_card.jpg',
-          'assets/development_council_card.jpg',
-          'assets/development_market_card.jpg'
+          'assets/development_library_card.png',
+          'assets/development_cathedral_card.png',
+          'assets/development_university_card.png',
+          'assets/development_council_card.png',
+          'assets/development_market_card.png'
         ];
         // Optional: Karte merken, damit sie nicht wechselt (hier: zufällig pro Anzeige)
         return vpImgs[Math.floor(Math.random() * vpImgs.length)];
       default:
-        return 'assets/item_card_back.jpeg';
+        return 'assets/item_card_back.png';
     }
   }
 
