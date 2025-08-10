@@ -6,22 +6,36 @@ import * as THREE from 'three';
 import { loadTile } from '../loader.js'; // Import the function to load a single tile
 import { initializeHighlighting, animateHalos, testBorderHighlighting } from './tileHighlight.js';
 import { getEquivalentCorners } from './buildLogic.js';
+import { PORTS } from './portSystem.js'; // Import harbor positions
 
 const HEX_RADIUS = 3;
 const hexGroup = new THREE.Group();
 
+// Create set of harbor positions for quick lookup
+const harborPositions = new Set(PORTS.map(port => `${port.position.q},${port.position.r}`));
+
+// Debug: Log harbor positions
+console.log('Harbor positions:', Array.from(harborPositions));
+
 // Axial coordinates for all tile types. Resource tiles will be randomized, water tiles are fixed.
+const originalWaterTiles = [
+  [3, -1], [3, -2], [3, -3], [2, -3], [1, -3], [0, -3], [-1, -2], [-2, -1], [-3, 1], [-3, 2], [-3, 0], [-3, 3], [-2, 3], [-1, 3], [0, 3], [1, 2], [2, 1], [3, 0], // 1st harbor ring
+  [4, -1], [4, -2], [4, -3], [3, -4], [2, -4], [1, -4], [0, -4], [-1, -3], [-2, -2], [-3, -1], [-4, 0], [-4, 1], [-4, 2], [-4, 3], [-3, 4], [-2, 4], [-1, 4], [0, 4], [1, 3], [2, 2], [3, 1], [4, 0], [4, -4], [-4 , 4], // 1st water ring
+  [5, -1], [5, -2], [5, -3], [5, -4], [4, -5], [3, -5], [2, -5], [1, -5], [0, -5], [-1, -4], [-2, -3], [-3, -2], [-4, -1], [-5, 0], [-5, 1], [-5, 2], [-5, 3], [-5, 4], [-4, 5], [-3, 5], [-2, 5], [-1, 5], [0, 5], [1, 4], [2, 3], [3, 2], [4, 1], [5, 0], [-5, 5], [5, -5] // 2nd water ring
+];
+
+const filteredWaterTiles = originalWaterTiles.filter(([q, r]) => !harborPositions.has(`${q},${r}`));
+
+// Debug: Log filtering results
+console.log(`Water tiles: ${originalWaterTiles.length} → ${filteredWaterTiles.length} (removed ${originalWaterTiles.length - filteredWaterTiles.length} harbor positions)`);
+
 const tilePositions = {
   'clay': [[-1, -1], [-2, 0], [1, -1]], // 3/3 clay tiles placed
   'ore': [[-1, 2], [1, 0], [2, -2]], // 3/3 ore tiles placed
   'sheep': [[2, 0], [0, 2], [-2, 2], [-1, 0]], // 4/4 sheep tiles placed
   'wheat': [[2, -1], [1, -2], [0, -1], [-2, 1]], // 4/4 wheat tiles placed
   'wood': [[-1, 1], [0, 1], [0, -2], [1, 1]], // 4/4 wood tiles placed
-  'water': [
-    [3, -1], [3, -2], [3, -3], [2, -3], [1, -3], [0, -3], [-1, -2], [-2, -1], [-3, 1], [-3, 2], [-3, 0], [-3, 3], [-2, 3], [-1, 3], [0, 3], [1, 2], [2, 1], [3, 0], // 1st harbor ring
-    [4, -1], [4, -2], [4, -3], [3, -4], [2, -4], [1, -4], [0, -4], [-1, -3], [-2, -2], [-3, -1], [-4, 0], [-4, 1], [-4, 2], [-4, 3], [-3, 4], [-2, 4], [-1, 4], [0, 4], [1, 3], [2, 2], [3, 1], [4, 0], [4, -4], [-4 , 4], // 1st water ring
-    [5, -1], [5, -2], [5, -3], [5, -4], [4, -5], [3, -5], [2, -5], [1, -5], [0, -5], [-1, -4], [-2, -3], [-3, -2], [-4, -1], [-5, 0], [-5, 1], [-5, 2], [-5, 3], [-5, 4], [-4, 5], [-3, 5], [-2, 5], [-1, 5], [0, 5], [1, 4], [2, 3], [3, 2], [4, 1], [5, 0], [-5, 5], [5, -5] // 2nd water ring
-  ]
+  'water': filteredWaterTiles
 };
 
 // Converts axial coordinates (q, r) to world coordinates (x, y, z) for tile placement
@@ -30,6 +44,24 @@ export function axialToWorld(q, r) {
   const y = HEX_RADIUS * Math.sqrt(3) * (r + q/2);
   const z = 0; // All tiles are on the same plane
   return [x, y, z];
+}
+
+// Helper function: Check if a position is a harbor position
+export function isHarborPosition(q, r) {
+  return harborPositions.has(`${q},${r}`);
+}
+
+// Helper function: Check if a position allows building (not water, not harbor)
+export function allowsBuilding(q, r) {
+  // Water tiles don't allow building
+  const isWater = tilePositions.water.some(([wq, wr]) => wq === q && wr === r);
+  if (isWater) return false;
+  
+  // Harbor positions don't allow building
+  if (isHarborPosition(q, r)) return false;
+  
+  // Land tiles allow building
+  return true;
 }
 
 // === Helper function for main.js: World coordinates of a tile (axial) ===
@@ -417,6 +449,10 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
     
     // Initialize the tile highlighting system
     initializeHighlighting(hexGroup, tileNumbers, roadMeshes, tileMeshes);
+    
+    // Make helper functions globally available for buildLogic.js
+    window.isHarborPosition = isHarborPosition;
+    window.allowsBuilding = allowsBuilding;
     
     // Return for main.js
     return { tileMeshes, tileNumbers };

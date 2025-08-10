@@ -228,7 +228,7 @@ function isRoadAdjacentToCorner(road, q, r, corner) {
   return false;
 }
 
-// Helper: Prüft, ob ein Tile ein Landfeld ist (kein Wasser, keine Wüste)
+// Helper: Prüft, ob ein Tile ein Landfeld ist (kein Wasser, keine Wüste, kein Hafen)
 export function isLandTile(q, r) {
   // Prüfe, ob das Tile laut tileMeshes ein Wasserfeld ist
   if (typeof window.tileMeshes === 'object') {
@@ -236,10 +236,19 @@ export function isLandTile(q, r) {
     if (!mesh) return false;
     // Wasser-Tiles haben name === 'water.glb'
     if (mesh.name && mesh.name.startsWith('water')) return false;
+    // Harbor-Tiles haben name === 'harbor.glb' 
+    if (mesh.name && mesh.name.startsWith('harbor')) return false;
     // Wüste (center) ist jetzt erlaubt!
     return true;
   }
+  
+  // Prüfe explizit auf Hafen-Position
+  if (typeof window.isHarborPosition === 'function' && window.isHarborPosition(q, r)) {
+    return false;
+  }
+  
   // Fallback: explizite Liste der Wasserkoordinaten (aus game_board.js)
+  // NOTE: Diese Liste sollte bereits gefiltert sein (Häfen entfernt)
   const waterCoords = [
     [3,-1],[3,-2],[3,-3],[2,-3],[1,-3],[0,-3],[-1,-2],[-2,-1],[-3,1],[-3,2],[-3,0],[-3,3],[-2,3],[-1,3],[0,3],[1,2],[2,1],[3,0],
     [4,-1],[4,-2],[4,-3],[3,-4],[2,-4],[1,-4],[0,-4],[-1,-3],[-2,-2],[-3,-1],[-4,0],[-4,1],[-4,2],[-4,3],[-3,4],[-2,4],[-1,4],[0,4],[1,3],[2,2],[3,1],[4,0],[4,-4],[-4,4],
