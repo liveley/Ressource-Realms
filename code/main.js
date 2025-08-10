@@ -14,7 +14,8 @@ import { createResourceUI, updateResourceUI, handleResourceKeydown } from './mod
 import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
 import { initTileInfoOverlay } from './modules/uiTileInfo.js';
 import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, handleTileSelection, isInRobberPlacementMode, getTileCenter } from './modules/bandit.js';
-import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad, initializeInitialPlacement, getGamePhaseInfo, getCurrentPlayerPlacementInfo, undoLastInitialPlacement, getInitialPlacementUIState, getPlacementWarning } from './modules/buildLogic.js';
+// Wichtig: 'players' NICHT importieren, um Verwechslung zweier Spieler-Arrays zu vermeiden
+import { tryBuildSettlement, tryBuildCity, tryBuildRoad, initializeInitialPlacement, getGamePhaseInfo, getCurrentPlayerPlacementInfo, undoLastInitialPlacement, getInitialPlacementUIState, getPlacementWarning } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 // import CardManager from './modules/cards.js';
@@ -38,6 +39,7 @@ import { initRoadTestingUtils } from './modules/debugging/roadTestingUtils.js';
 import { initDebugKeyHandlers } from './modules/debugging/debugKeyHandlers.js';
 import { initDebugControls } from './modules/debugging/debugControls.js';
 import { initVictoryPointsTestingUtils } from './modules/debugging/victoryPointsTestingUtils.js';
+import { debug } from './modules/debugging/logging.js';
 
 
 window.players = window.players || [
@@ -252,7 +254,7 @@ function updateAllUI() {
 
 // === Preload Game Board ===
 async function preloadGameBoard() {
-  console.log('Preloading game board...');
+  debug('performance', 'Preloading game board');
   
   return new Promise((resolve) => {
     // Set up scene components that don't require UI
@@ -270,7 +272,7 @@ async function preloadGameBoard() {
 
     // Initialize ports after game board is created
     renderPorts(scene).then(() => {
-      console.log('Ports initialized successfully');
+      debug('ports', 'Ports initialized');
     }).catch(error => {
       console.error('Error initializing ports:', error);
     });
@@ -280,10 +282,10 @@ async function preloadGameBoard() {
     function waitForDesertTileAndInitRobber(retries = 30) {
       if (tileMeshes[initialRobberTileKey]) {
         setTimeout(() => {
-          console.log("Setting initial token colors for guardian on desert");
+          debug('performance', 'Initial token colors for guardian desert');
           updateNumberTokensForRobber(initialRobberTileKey);
         }, 200);
-        console.log("Initializing guardian on the desert tile");
+  debug('performance', 'Initializing guardian on desert');
         initializeRobber(scene, null, tileMeshes);
         
         // Guardian initialized, continue with cards
@@ -291,7 +293,7 @@ async function preloadGameBoard() {
           // createPlaceholderCards(scene);
           // const cardManager = new CardManager();
           // cardManager.loadAllCards().then(() => {
-            console.log('Game board preloaded successfully');
+            debug('performance', 'Game board preloaded successfully');
             resolve(true);
           // }).catch(error => {
           //   console.error("Fehler beim Laden der Karten:", error);
@@ -312,16 +314,16 @@ async function preloadGameBoard() {
 
 // === Event Listeners for Game Initialization ===
 window.addEventListener('initializeGame', async () => {
-  console.log('Game initialization requested...');
+  debug('performance', 'Game initialization requested');
   try {
     // First preload the game board
-    console.log('Starting preload...');    
-    await preloadGameBoard();
-    console.log('Game board preloaded, now starting UI...');
+  debug('performance', 'Starting preload');    
+  await preloadGameBoard();
+  debug('performance', 'Game board preloaded, start UI');
     
     // Then start the game UI
     await startGame();
-    console.log('Game UI started, dispatching gameReady event...');
+  debug('performance', 'Game UI started -> dispatch gameReady');
     window.dispatchEvent(new CustomEvent('gameReady'));
   } catch (error) {
     console.error('Error during game initialization:', error);
@@ -350,7 +352,7 @@ async function startGame() {
     return;
   }
   
-  console.log('startGame() wurde aufgerufen!');
+  // startGame invoked (verbose log removed)
   let actionBar = document.getElementById('main-action-bar');
   console.log('actionBar:', actionBar);
 
@@ -1023,6 +1025,23 @@ controls.maxPolarAngle = Math.PI * 0.44; // ca. 79°, verhindert "unter das Feld
 controls.minDistance = 10;  // Näher ranzoomen von oben möglich
 controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
 
+// --- Performance Optimierung: Kamera-change getriebene Billboard-Updates ---
+// Statt jede Frame die Number-Tokens & Port-Labels neu zur Kamera auszurichten,
+// machen wir das nur wenn sich die Kameraorientierung ändert (OrbitControls 'change').
+// Fallback: In der animate-Schleife wird nur noch ein Quaternion-Vergleich gemacht (minimaler Overhead).
+let _lastCamQuat = new THREE.Quaternion();
+function updateFacing(force = false) {
+  if (force || !_lastCamQuat.equals(camera.quaternion)) {
+    updateNumberTokensFacingCamera(scene, camera);
+    updatePortLabels(camera);
+    _lastCamQuat.copy(camera.quaternion);
+  }
+}
+// Initial einmal ausführen wenn Szene startklar ist
+updateFacing(true);
+// Reagiere auf Benutzerinteraktion (OrbitControls feuert 'change' bei Rotation/Zoom/Pan)
+controls.addEventListener('change', () => updateFacing(true));
+
 
 // Create a raycaster for guardian tile selection
 const raycaster = new THREE.Raycaster();
@@ -1113,20 +1132,14 @@ window.addEventListener('click', (event) => {
 
 // Animation
 function animate() {
-    // Update number tokens to face camera
-    updateNumberTokensFacingCamera(scene, camera);
-    
-    // Update port labels to face camera
-    updatePortLabels(camera);
-    
-    // Update physics for dice
-    updateDicePhysics();
-    
-    // Animate the sunbeam effects - ensure this runs on every frame
-    animateHalos();
-    
-    // Render the scene
-    renderer.render(scene, camera);
+  // Kamera-Facing nur wenn nötig (Quaternion Vergleich)
+  updateFacing(false);
+  // Update physics for dice
+  updateDicePhysics();
+  // Effekte
+  animateHalos();
+  // Render
+  renderer.render(scene, camera);
 }
 
 // Resize
@@ -1207,7 +1220,12 @@ window.startRobberPlacement = startRobberPlacement;
 // === Undo Functionality ===
 function performUndo() {
   if (typeof undoLastInitialPlacement === 'function') {
-    const result = undoLastInitialPlacement(activePlayerIdx, players);
+    // Anstehende verzögerte Builds (Warnungs-Timeouts) abbrechen, damit sie nicht nachträglich erneut platzieren
+    if (window._pendingBuildTimeouts && Array.isArray(window._pendingBuildTimeouts)) {
+      window._pendingBuildTimeouts.forEach(id => clearTimeout(id));
+      window._pendingBuildTimeouts.length = 0;
+    }
+    const result = undoLastInitialPlacement(activePlayerIdx, window.players);
     
     if (result.success) {
       console.log('Undo successful:', result.message);
@@ -1220,6 +1238,20 @@ function performUndo() {
       if (typeof window.refreshGameBoard === 'function') {
         window.refreshGameBoard();
       }
+
+      // --- Neu: Szene mit Spielzustand synchronisieren (entferne verwaiste Meshes) ---
+      // Falls beim Undo die Logik-Objekte entfernt wurden, aber das 3D-Mesh bestehen blieb,
+      // wird es hier bereinigt. Dadurch werden Abstands-/Belegtheitsregeln nicht mehr durch
+      // alte Meshes visuell verwechselt.
+      try {
+        syncMeshesWithState();
+      } catch (e) {
+        console.warn('Konnte Mesh-Sync nach Undo nicht durchführen:', e);
+      }
+      // Nach Abbruch evtl. Preview resetten
+      if (typeof window._resetBuildPreview === 'function') {
+        try { window._resetBuildPreview(); } catch(e) {}
+      }
     } else {
       console.log('Undo failed:', result.reason);
       showBuildPopupFeedback(result.reason, 'error');
@@ -1231,3 +1263,44 @@ function performUndo() {
 
 // Make undo function globally available
 window.performUndo = performUndo;
+
+// Hilfsfunktion: Entfernt alle Gebäude-/Straßen-Meshes, die nicht (mehr) in den Spielerlisten vorkommen
+function syncMeshesWithState() {
+  if (!scene) return;
+  const settlementKeys = new Set();
+  const cityKeys = new Set();
+  const roadKeys = new Set();
+  // Erzeuge Soll-Mengen aus Spielzustand
+  for (const p of window.players) {
+    (p.settlements || []).forEach(s => settlementKeys.add(`${s.q},${s.r},${s.corner}`));
+    (p.cities || []).forEach(c => cityKeys.add(`${c.q},${c.r},${c.corner}`));
+    (p.roads || []).forEach(r => {
+      // Primäre Repräsentation: q,r,edge (älteres Format) oder fallback q,r,edge falls vorhanden
+      if (r.q !== undefined && r.r !== undefined && r.edge !== undefined) {
+        roadKeys.add(`${r.q},${r.r},${r.edge}`);
+      } else if (r.q1 !== undefined && r.r1 !== undefined && r.edge !== undefined) {
+        roadKeys.add(`${r.q1},${r.r1},${r.edge}`);
+      }
+    });
+  }
+  const toRemove = [];
+  scene.traverse(obj => {
+    if (!obj.userData) return;
+    const { type, q, r, corner, edge } = obj.userData;
+    if (type === 'settlement') {
+      if (!settlementKeys.has(`${q},${r},${corner}`)) toRemove.push(obj);
+    } else if (type === 'city') {
+      if (!cityKeys.has(`${q},${r},${corner}`)) toRemove.push(obj);
+    } else if (type === 'road') {
+      if (!roadKeys.has(`${q},${r},${edge}`)) toRemove.push(obj);
+    }
+  });
+  toRemove.forEach(o => {
+    if (o.parent) o.parent.remove(o);
+  });
+  if (toRemove.length) {
+    console.log(`Mesh-Sync: ${toRemove.length} verwaiste Objekte entfernt.`);
+  }
+}
+// Global verfügbar machen für Debug
+window.syncMeshesWithState = syncMeshesWithState;

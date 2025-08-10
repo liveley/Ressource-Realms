@@ -12,7 +12,7 @@ export function setupBuildEventHandler({
   scene,
   camera,
   tileMeshes,
-  players,
+  players, // original array (will be treated as reference), but we prefer window.players if available
   getBuildMode,
   getActivePlayerIdx,
   tryBuildSettlement,
@@ -21,8 +21,19 @@ export function setupBuildEventHandler({
   getCornerWorldPosition,
   updateAllUI // now includes player overviews and achievement display
 }) {
+  // Track delayed build timeouts (warnings) globally so undo can cancel them
+  if (!window._pendingBuildTimeouts) window._pendingBuildTimeouts = [];
+  function registerBuildTimeout(fn, delay) {
+    const id = setTimeout(() => {
+      try { fn(); } finally {
+        // remove id from list
+        window._pendingBuildTimeouts = window._pendingBuildTimeouts.filter(x => x !== id);
+      }
+    }, delay);
+    window._pendingBuildTimeouts.push(id);
+  }
   function onBoardClick(event) {
-    console.log('BuildEventHandler: click event');
+  // suppressed verbose click log
     // Only if menu is hidden
     const menu = document.getElementById('main-menu');
     if (menu && menu.style.display !== 'none') return;
@@ -64,20 +75,20 @@ export function setupBuildEventHandler({
     // Only allow if close enough (e.g. <1.5 units)
     if (minDist > 1.5) return;
     // Try to build
-    const player = players[getActivePlayerIdx()];
-    const playerId = getActivePlayerIdx();
+  const livePlayers = window.players || players;
+  const playerId = getActivePlayerIdx();
+  const player = livePlayers[playerId];
     let result;
     let meshPlaced = false;
     
     if (getBuildMode() === 'settlement') {
       // Check for placement warning before building
-      const warning = getPlacementWarning(playerId, players, 'settlements', q, r, nearest);
+  const warning = getPlacementWarning(playerId, livePlayers, 'settlements', q, r, nearest);
       if (warning) {
         showBuildPopupFeedback(warning.message, 'warning');
         // Give user a moment to see the warning, then proceed
-        setTimeout(() => {
-          // Use proper Resource Realms rules for settlement placement
-          result = tryBuildSettlement(player, q, r, nearest, players);
+        registerBuildTimeout(() => {
+          result = tryBuildSettlement(player, q, r, nearest, livePlayers);
           if (result.success) {
             placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'settlement', player.color);
             meshPlaced = true;
@@ -90,7 +101,7 @@ export function setupBuildEventHandler({
         return; // Exit early to show warning
       } else {
         // No warning, proceed immediately
-        result = tryBuildSettlement(player, q, r, nearest, players);
+  result = tryBuildSettlement(player, q, r, nearest, livePlayers);
         if (result.success) {
           placeBuildingMesh(scene, getCornerWorldPosition, q, r, nearest, 'settlement', player.color);
           meshPlaced = true;
@@ -122,17 +133,16 @@ export function setupBuildEventHandler({
       }
       if (typeof tryBuildRoad === 'function') {
         // Check for placement warning before building roads
-        const warning = getPlacementWarning(playerId, players, 'roads', q, r, null, nearestEdge);
+    const warning = getPlacementWarning(playerId, livePlayers, 'roads', q, r, null, nearestEdge);
         if (warning) {
           showBuildPopupFeedback(warning.message, 'warning');
           // Give user a moment to see the warning, then proceed
-          setTimeout(() => {
-            result = tryBuildRoad(player, q, r, nearestEdge, players, { ignoreResourceRule });
+          registerBuildTimeout(() => {
+            result = tryBuildRoad(player, q, r, nearestEdge, livePlayers, { ignoreResourceRule });
             if (result.success) {
               placeRoadMesh(scene, getCornerWorldPosition, q, r, nearestEdge, player.color);
               meshPlaced = true;
               showBuildPopupFeedback('Straße gebaut', 'success');
-              // Straßenbau-Modus: Zähler runterzählen und ggf. beenden
               if (ignoreResourceRule && window._roadBuildingMode && window._roadBuildingMode.player === player) {
                 window._roadBuildingMode.roadsLeft--;
                 if (window._roadBuildingMode.roadsLeft <= 0) {
@@ -147,7 +157,7 @@ export function setupBuildEventHandler({
           return; // Exit early to show warning
         } else {
           // No warning, proceed immediately
-          result = tryBuildRoad(player, q, r, nearestEdge, players, { ignoreResourceRule });
+          result = tryBuildRoad(player, q, r, nearestEdge, livePlayers, { ignoreResourceRule });
           if (result.success) {
             placeRoadMesh(scene, getCornerWorldPosition, q, r, nearestEdge, player.color);
             meshPlaced = true;

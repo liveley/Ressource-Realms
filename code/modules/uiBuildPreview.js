@@ -11,7 +11,7 @@ let previewMesh = null;
 
 export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, getBuildMode, getActivePlayerIdx) {
   renderer.domElement.addEventListener('mousemove', (event) => {
-    console.log('BuildPreview: mousemove event');
+  // verbose preview mousemove suppressed (enable if needed)
     const menu = document.getElementById('main-menu');
     if (menu && menu.style.display !== 'none') {
       removePreviewMesh(scene, renderer, camera);

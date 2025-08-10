@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { axialToWorld } from './game_board.js';
+import { debug } from './debugging/logging.js';
 
 // Port-Konfiguration basierend auf Standard Resource Realms Layout
 // 9 Häfen total: 4 Generic (3:1) + 5 Resource-spezifisch (2:1)
@@ -107,12 +108,12 @@ async function loadHarborModel() {
     loader.load(
       './models/harbor.glb',
       (gltf) => {
-        harborModel = gltf.scene;
-        console.log('Harbor model loaded successfully');
+  harborModel = gltf.scene;
+  debug('ports', 'Harbor model loaded');
         resolve(harborModel.clone());
       },
       (progress) => {
-        console.log('Loading harbor model...', (progress.loaded / progress.total * 100) + '%');
+        debug('ports', 'Harbor model loading', (progress.loaded / progress.total * 100) + '%');
       },
       (error) => {
         console.error('Error loading harbor model:', error);
@@ -225,7 +226,7 @@ function createPortLabel(port) {
  * @returns {Promise<Object>} Object with port mesh references
  */
 export async function renderPorts(scene) {
-  console.log('Rendering ports...');
+  debug('ports', 'Rendering ports start');
   
   try {
     // Harbor-Modell laden
@@ -250,7 +251,7 @@ export async function renderPorts(scene) {
       harborMesh.userData = { portId: port.id, portConfig: port };
       
       // Debug: Log position and rotation
-      console.log(`Port ${port.id} (${port.type}, edge ${port.position.edge}):`, {
+  debug('ports', `Port ${port.id} (${port.type}, edge ${port.position.edge})`, {
         landTile: `q=${port.position.q}, r=${port.position.r}`,
         position: {
           x: position.x.toFixed(2),
@@ -281,13 +282,13 @@ export async function renderPorts(scene) {
         config: port
       };
       
-      console.log(`Port ${port.id} rendered at`, position);
+  debug('ports', `Port ${port.id} rendered`, position);
     }
     
     // Gruppe zur Szene hinzufügen
     scene.add(portsGroup);
     
-    console.log(`${PORTS.length} ports rendered successfully`);
+  debug('ports', `${PORTS.length} ports rendered successfully`);
     return portMeshes;
     
   } catch (error) {
@@ -307,7 +308,7 @@ export function getPortsNearSettlement(q, r, corner) {
   const nearbyPorts = [];
   
   // Debug: Log the settlement position we're checking
-  console.log(`Checking for ports near settlement at land tile q=${q}, r=${r}, corner=${corner}`);
+  debug('ports', `Check settlement q=${q} r=${r} corner=${corner}`);
   
   for (const port of PORTS) {
     // Für jeden Port prüfen wir, ob die Siedlung an einer angrenzenden Ecke steht
@@ -319,12 +320,12 @@ export function getPortsNearSettlement(q, r, corner) {
     // Berechne die Nachbar-Land-Tiles um das Wasser-Tile
     // und prüfe, ob unsere Siedlung an einer relevanten Ecke steht
     if (isSettlementNearPort(q, r, corner, waterTileQ, waterTileR, portEdge)) {
-      console.log(`Found port ${port.id} near settlement at q=${q}, r=${r}, corner=${corner}`);
+  debug('ports', `Found port ${port.id} near settlement`);
       nearbyPorts.push(port);
     }
   }
   
-  console.log(`Found ${nearbyPorts.length} ports near settlement`);
+  debug('ports', `Ports near settlement: ${nearbyPorts.length}`);
   return nearbyPorts;
 }
 
