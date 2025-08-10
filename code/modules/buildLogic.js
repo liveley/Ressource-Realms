@@ -230,34 +230,81 @@ function isRoadAdjacentToCorner(road, q, r, corner) {
 
 // Helper: Prüft, ob ein Tile ein Landfeld ist (kein Wasser, keine Wüste, kein Hafen)
 export function isLandTile(q, r) {
-  // Prüfe, ob das Tile laut tileMeshes ein Wasserfeld ist
+  // ERSTE PRÜFUNG: Ist das Tile überhaupt auf dem Spielbrett?
+  // Prüfe, ob das Tile laut tileMeshes existiert
   if (typeof window.tileMeshes === 'object') {
     const mesh = window.tileMeshes[`${q},${r}`];
-    if (!mesh) return false;
+    if (!mesh) {
+      console.log(`isLandTile(${q},${r}): FALSE - Tile nicht auf Brett vorhanden`);
+      return false; // Tile existiert nicht auf dem Brett
+    }
+    
     // Wasser-Tiles haben name === 'water.glb'
-    if (mesh.name && mesh.name.startsWith('water')) return false;
+    if (mesh.name && mesh.name.startsWith('water')) {
+      console.log(`isLandTile(${q},${r}): FALSE - Ist Wassertile`);
+      return false;
+    }
     // Harbor-Tiles haben name === 'harbor.glb' 
-    if (mesh.name && mesh.name.startsWith('harbor')) return false;
-    // Wüste (center) ist jetzt erlaubt!
+    if (mesh.name && mesh.name.startsWith('harbor')) {
+      console.log(`isLandTile(${q},${r}): FALSE - Ist Hafentile`);
+      return false;
+    }
+    
+    // Wenn das Tile existiert und kein Wasser/Hafen ist, dann ist es ein Landfeld
+    console.log(`isLandTile(${q},${r}): TRUE - Gültiges Landfeld (${mesh.name})`);
     return true;
+  }
+  
+  // FALLBACK: Verwende globale Funktionen aus game_board.js falls verfügbar
+  if (typeof window.isValidLandTile === 'function') {
+    const isValid = window.isValidLandTile(q, r);
+    if (!isValid) {
+      console.log(`isLandTile(${q},${r}): FALSE - Nicht in gültigen Landfeldern`);
+      return false;
+    }
+    
+    // Prüfe auf Hafen-Position
+    if (typeof window.isHarborPosition === 'function' && window.isHarborPosition(q, r)) {
+      console.log(`isLandTile(${q},${r}): FALSE - Ist Hafenposition`);
+      return false;
+    }
+    
+    console.log(`isLandTile(${q},${r}): TRUE - Gültiges Landfeld (fallback)`);
+    return true;
+  }
+  
+  // LETZTER FALLBACK: Explizite Prüfung gegen bekannte Landfeld-Koordinaten
+  const validLandTiles = [
+    // Desert/Center
+    [0, 0],
+    // Clay tiles
+    [-1, -1], [-2, 0], [1, -1],
+    // Ore tiles  
+    [-1, 2], [1, 0], [2, -2],
+    // Sheep tiles
+    [2, 0], [0, 2], [-2, 2], [-1, 0],
+    // Wheat tiles
+    [2, -1], [1, -2], [0, -1], [-2, 1],
+    // Wood tiles
+    [-1, 1], [0, 1], [0, -2], [1, 1]
+  ];
+  
+  // Prüfe, ob die gegebenen Koordinaten in der Liste der gültigen Landfelder sind
+  const isValidLand = validLandTiles.some(([landQ, landR]) => landQ === q && landR === r);
+  
+  if (!isValidLand) {
+    console.log(`isLandTile(${q},${r}): FALSE - Nicht in statischer Landfeld-Liste`);
+    return false;
   }
   
   // Prüfe explizit auf Hafen-Position
   if (typeof window.isHarborPosition === 'function' && window.isHarborPosition(q, r)) {
+    console.log(`isLandTile(${q},${r}): FALSE - Ist Hafenposition (statisch)`);
     return false;
   }
   
-  // Fallback: explizite Liste der Wasserkoordinaten (aus game_board.js)
-  // NOTE: Diese Liste sollte bereits gefiltert sein (Häfen entfernt)
-  const waterCoords = [
-    [3,-1],[3,-2],[3,-3],[2,-3],[1,-3],[0,-3],[-1,-2],[-2,-1],[-3,1],[-3,2],[-3,0],[-3,3],[-2,3],[-1,3],[0,3],[1,2],[2,1],[3,0],
-    [4,-1],[4,-2],[4,-3],[3,-4],[2,-4],[1,-4],[0,-4],[-1,-3],[-2,-2],[-3,-1],[-4,0],[-4,1],[-4,2],[-4,3],[-3,4],[-2,4],[-1,4],[0,4],[1,3],[2,2],[3,1],[4,0],[4,-4],[-4,4],
-    [5,-1],[5,-2],[5,-3],[5,-4],[4,-5],[3,-5],[2,-5],[1,-5],[0,-5],[-1,-4],[-2,-3],[-3,-2],[-4,-1],[-5,0],[-5,1],[-5,2],[-5,3],[-5,4],[-4,5],[-3,5],[-2,5],[-1,5],[0,5],[1,4],[2,3],[3,2],[4,1],[5,0],[-5,5],[5,-5]
-  ];
-  for (const [wq, wr] of waterCoords) {
-    if (q === wq && r === wr) return false;
-  }
-  // Wüste (0,0) ist jetzt erlaubt!
+  // Wenn es ein gültiges Landfeld ist und kein Hafen, dann ist es bebaubar
+  console.log(`isLandTile(${q},${r}): TRUE - Gültiges Landfeld (statisch)`);
   return true;
 }
 

@@ -51,16 +51,35 @@ export function isHarborPosition(q, r) {
   return harborPositions.has(`${q},${r}`);
 }
 
-// Helper function: Check if a position allows building (not water, not harbor)
+// Helper function: Get all valid land tile coordinates
+export function getValidLandTiles() {
+  return [
+    // Desert/Center
+    [0, 0],
+    // Resource tiles
+    ...tilePositions.clay,
+    ...tilePositions.ore,
+    ...tilePositions.sheep,
+    ...tilePositions.wheat,
+    ...tilePositions.wood
+  ];
+}
+
+// Helper function: Check if a position is a valid land tile
+export function isValidLandTile(q, r) {
+  const validLandTiles = getValidLandTiles();
+  return validLandTiles.some(([landQ, landR]) => landQ === q && landR === r);
+}
+
+// Helper function: Check if a position allows building (not water, not harbor, must be valid land)
 export function allowsBuilding(q, r) {
-  // Water tiles don't allow building
-  const isWater = tilePositions.water.some(([wq, wr]) => wq === q && wr === r);
-  if (isWater) return false;
+  // Must be a valid land tile
+  if (!isValidLandTile(q, r)) return false;
   
   // Harbor positions don't allow building
   if (isHarborPosition(q, r)) return false;
   
-  // Land tiles allow building
+  // Valid land tiles that are not harbors allow building
   return true;
 }
 
@@ -453,6 +472,8 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
     // Make helper functions globally available for buildLogic.js
     window.isHarborPosition = isHarborPosition;
     window.allowsBuilding = allowsBuilding;
+    window.isValidLandTile = isValidLandTile;
+    window.getValidLandTiles = getValidLandTiles;
     
     // Return for main.js
     return { tileMeshes, tileNumbers };
