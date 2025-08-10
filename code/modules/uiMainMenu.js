@@ -327,23 +327,12 @@ export function createMainMenuSidebar() {
       Dieses Projekt ist als Teil des <strong>Projektmoduls Prozesse 2025</strong> an der <strong>Hochschule München</strong> im Studiengang Informatik & Design entstanden.<strong> Gebaut von Gruppe 4.</strong><br>
       
     <p style="margin: 15px 0;">
-      Eine 3D-Implementierung des beliebten Brettspiels 
-      <a href="https://www.resourcerealms.de/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">Resource Realms</a>, entwickelt mit 
+      Eine 3D-Implementierung des Spiels
+      <a style="color: #4B94C2; font-weight: bold;">Resource Realms</a>, entwickelt mit 
       <a href="https://threejs.org/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">Three.js</a> und 
       <a href="https://www.blender.org/" target="_blank" style="color: #4B94C2; font-weight: bold; text-decoration: underline;">Blender</a>.
     </p>
 
-
-      <p>
-        Weitere Informationen
-        <a 
-          href="https://gitlab.lrz.de/ab-2025sose/pp/groupprojects/projektrepo-gruppe4" 
-          target="_blank"
-          style="color: #4B94C2; font-weight: bold; text-decoration: underline;"
-        >
-          auf Gitlab.
-        </a>
-      </p>
 
     </div>
   `;
