@@ -537,7 +537,7 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
         labelDiv.style.fontSize = '1em';
         labelDiv.style.color = isNew ? '#c00' : '#222';
         cardDiv.appendChild(labelDiv);
-        // Play-Button (immer anzeigen außer Siegpunkte)
+        // Play-Button (immer anzeigen außer Punkte)
         if (card.type !== 'victory_point') {
           const playBtn = document.createElement('button');
           playBtn.textContent = 'Spielen';

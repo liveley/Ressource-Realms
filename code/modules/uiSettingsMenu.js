@@ -280,7 +280,7 @@ function createRulesSection() {
     '🏬 Im Markt: Ressourcen tauschen & Karten kaufen',
     '🎯 Bei 7: Wächter versetzen',
     '🃏 Entwicklungskarten spielen für Vorteile',
-    '🏆 Ziel: 10 Siegpunkte erreichen'
+    '🏆 Ziel: 10 Punkte erreichen'
   ];
 
   const rulesList = document.createElement('div');
