@@ -18,14 +18,14 @@
 Dieses Spiel "Resource Realms" ist eine Abwandlung eines Brettspiels. Ziel ist es, durch geschicktes Bauen, Handeln und Entwickeln als Erster 10 Siegpunkte zu erreichen.
 
 ## Ziel des Spiels
-Der erste Spieler, der 10 Siegpunkte erreicht, gewinnt das Spiel. Siegpunkte erhält man durch Siedlungen, Städte, Entwicklungskarten sowie Sonderpunkte für die längste Straße und die größte Rittermacht.
+Der erste Spieler, der 10 Siegpunkte erreicht, gewinnt das Spiel. Siegpunkte erhält man durch Siedlungen, Städte, Entwicklungskarten sowie Sonderpunkte für die längste Straße und die größte Wächtermacht.
 
 ## Spielmaterial
 - 19 Hexfelder (je 3x Holz, Lehm, Getreide, Wolle; 4x Erz; 1x Wüste; 9x Wasser)
 - 16 Städte (je 4 pro Spieler bei 4 Spielern)
 - 20 Siedlungen (je 5 pro Spieler bei 4 Spielern)
 - 60 Straßen (je 15 pro Spieler bei 4 Spielern)
-- 25 Entwicklungskarten (14 Ritter, 5 Fortschritt, 6 Siegpunkte)
+- 25 Entwicklungskarten (14 Wächter, 5 Fortschritt, 6 Siegpunkte)
 - 95 Rohstoffkarten (je 19 pro Rohstoff)
 - 1 Wächter/Guardian
 - 2 Würfel
@@ -54,7 +54,7 @@ Das Spiel verläuft in Runden. Jede Runde besteht aus folgenden Phasen:
 ## Entwicklungskarten
 Entwicklungskarten bieten besondere Vorteile und können das Spielgeschehen maßgeblich beeinflussen. Es gibt drei Arten von Entwicklungskarten:
 
-- **Ritter:** Erlaubt das Versetzen des Wächters/Guardians. Wer als Erster mindestens 3 Ritter ausgespielt hat und die meisten Ritter besitzt, erhält die größte Rittermacht (2 Siegpunkte).
+- **Wächter:** Erlaubt das Versetzen des Wächters/Guardians. Wer als Erster mindestens 3 Wächter ausgespielt hat und die meisten Wächter besitzt, erhält die größte Wächtermacht (2 Siegpunkte).
 - **Siegpunkt:** Diese Karte zählt sofort als zusätzlicher Siegpunkt. Sie bleibt verdeckt, bis der Spieler das Spiel gewinnt oder sie offenlegt.
 - **Fortschritt:** Spezialkarten mit einmaligen Effekten, z.B. Straßenbau (zwei kostenlose Straßen bauen), Monopol (alle Rohstoffe einer Sorte von allen Spielern erhalten) oder Erfindung (zwei beliebige Rohstoffe nehmen).
 
@@ -68,7 +68,7 @@ Entwicklungskarten bieten besondere Vorteile und können das Spielgeschehen maß
 - **Bank:** 4:1 für beliebige Rohstoffe, 3:1 oder 2:1 an Häfen.
 
 ## Wächter/Guardian
-- Wird bei einer 7 oder durch Ritterkarten versetzt.
+- Wird bei einer 7 oder durch Wächterkarten versetzt.
 - Spieler mit mehr als 7 Rohstoffkarten müssen die Hälfte abgeben.
 - Der aktive Spieler darf einem Mitspieler auf dem neuen Wächterfeld eine Rohstoffkarte stehlen.
 
@@ -77,7 +77,7 @@ Entwicklungskarten bieten besondere Vorteile und können das Spielgeschehen maß
 - 1 Stadt = 2 Siegpunkte
 - Entwicklungskarten mit Siegpunkten
 - Längste Straße (mind. 5 Straßen, 2 Siegpunkte)
-- Größte Rittermacht (mind. 3 Ritter, 2 Siegpunkte)
+- Macht der Wächter (mind. 3 Wächterkarten, 2 Siegpunkte)
 - Wer zuerst 10 Siegpunkte erreicht, gewinnt sofort.
 
 ## Sonderregeln

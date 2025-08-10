@@ -130,7 +130,7 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
       <span title="Siedlungen">🏠 ${player.settlements?.length ?? 0}</span>
       <span title="Städte">🏛️ ${player.cities?.length ?? 0}</span>
       <span title="Ressourcenkarten">📦 ${player.resources ? Object.values(player.resources).reduce((a,b)=>a+b,0) : 0}</span>
-      <span title="Entwicklungskarten (Ritter gespielt: ${knightsPlayed})">🎴 ${totalDevCards}</span>
+      <span title="Entwicklungskarten (Wächter gespielt: ${knightsPlayed})">🎴 ${totalDevCards}</span>
     `;
     infoBlock.appendChild(stats);
     header.appendChild(infoBlock);
@@ -190,18 +190,18 @@ function createOrUpdateAchievementDisplay(players, getActivePlayerIdx) {
       <span style="font-size: 0.9em;">Noch niemand (min. 5 Straßen)</span>
     </div>`;
   }
-  
-  // Größte Rittermacht
+
+  // Macht der Wächter
   const largestArmyPlayer = players.find(p => p.victoryPoints?.largestArmy > 0);
   if (largestArmyPlayer) {
     content += `<div style="margin-bottom: 0.5em; padding: 0.5em; background: linear-gradient(90deg, #d4edda, #c3e6cb); border-radius: 6px; border-left: 4px solid #28a745;">
-      <strong>⚔️ Größte Rittermacht</strong><br>
-      <span style="color: #155724;">${largestArmyPlayer.name}</span> (${largestArmyPlayer.knightsPlayed || 0} Ritter)
+      <strong>⚔️ Macht der Wächter</strong><br>
+      <span style="color: #155724;">${largestArmyPlayer.name}</span> (${largestArmyPlayer.knightsPlayed || 0} Wächter)
     </div>`;
   } else {
     content += `<div style="margin-bottom: 0.5em; padding: 0.5em; background: #f8f9fa; border-radius: 6px; color: #666;">
-      <strong>⚔️ Größte Rittermacht</strong><br>
-      <span style="font-size: 0.9em;">Noch niemand (min. 3 Ritter)</span>
+      <strong>⚔️ Macht der Wächter</strong><br>
+      <span style="font-size: 0.9em;">Noch niemand (min. 3 Wächter)</span>
     </div>`;
   }
   
