@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { loadTile } from '../loader.js'; // Import the function to load a single tile
 import { initializeHighlighting, animateHalos, testBorderHighlighting } from './tileHighlight.js';
-import { getEquivalentCorners } from './buildLogic.js';
+import { getEquivalentCorners } from './geometryUtils.js';
 import { PORTS } from './portSystem.js'; // Import harbor positions
 
 const HEX_RADIUS = 3;
@@ -197,6 +197,9 @@ function drawRoadMeshes(scene) {
 
 // Helper: Simulate tile numbers for demo purposes (real assignment according to Resource Realms rules possible)
 const tileNumbers = {};
+const numberToTilesIndex = {}; // number -> array of tileKeys (filled after assignment)
+// predeclare directions (reused in multiple places)
+const AXIAL_DIRECTIONS = [ [+1,0],[0,+1],[-1,+1],[-1,0],[0,-1],[+1,-1] ];
 (function assignTileNumbers() {
   // Resource Realms standard: 18 number tokens (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
   const numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]; // 18 chips, no 7
@@ -213,7 +216,12 @@ const tileNumbers = {};
   }
   // Assign numbers to shuffled land tiles
   coords.forEach(([q, r], i) => {
-    tileNumbers[`${q},${r}`] = numbers[i] || null;
+    const num = numbers[i] || null;
+    tileNumbers[`${q},${r}`] = num;
+    if(num != null){
+      if(!numberToTilesIndex[num]) numberToTilesIndex[num] = [];
+      numberToTilesIndex[num].push(`${q},${r}`);
+    }
   });
   // Center (desert) gets no number
   tileNumbers['0,0'] = null;
@@ -481,104 +489,68 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
 
 // Änderungen für game_board.js - ersetze den diceRolled Event Listener mit dieser Version:
 
-// Highlight logic for tiles (e.g. after dice roll)
+// --- Performance Optimierung: diceRolled Handler (reduziert Iterationen & Objekte) ---
+const cornerAdjacencyCache = new Map(); // tileKey -> Array[6] of arrays (3 adjacent vertex positions)
+function getCornerAdjacency(tileQ, tileR){
+  const key = `${tileQ},${tileR}`;
+  if(cornerAdjacencyCache.has(key)) return cornerAdjacencyCache.get(key);
+  const perCorner = new Array(6);
+  for(let corner=0; corner<6; corner++){
+    const prev = (corner + 5) % 6;
+    const [dqPrev, drPrev] = AXIAL_DIRECTIONS[prev];
+    const [dqMain, drMain] = AXIAL_DIRECTIONS[corner];
+    perCorner[corner] = [
+      { q: tileQ, r: tileR, corner },
+      { q: tileQ + dqPrev, r: tileR + drPrev, corner: (corner + 2) % 6 },
+      { q: tileQ + dqMain, r: tileR + drMain, corner: (corner + 4) % 6 }
+    ];
+  }
+  cornerAdjacencyCache.set(key, perCorner);
+  return perCorner;
+}
+
 window.addEventListener('diceRolled', (e) => {
-    // --- Entferne asynchrone window.players/updateResourceUI-Initialisierung (Fehlerquelle) ---
   const number = e.detail;
-  
-  // Reset gain trackers am Anfang des Events in uiResources.js
-  
-  Object.entries(tileMeshes).forEach(([key, mesh]) => {
-    // Blockiere Ressourcenverteilung, wenn Wächter auf diesem Feld steht
-    if (typeof window.blockedTileKey !== 'undefined' && key === window.blockedTileKey) {
-      // Optional: Debug-Log
-      console.log(`[Wächter] Ressourcenverteilung auf Feld ${key} blockiert.`);
-      return;
-    }
-    if (tileNumbers[key] === number) {
-      // === Ressourcenverteilung (fix: alle angrenzenden Hexes/Corners prüfen) ===
-      // Ermittle Rohstofftyp aus userData.type (sicher und eindeutig)
-      let resourceType = mesh.userData && mesh.userData.type ? mesh.userData.type : null;
-      // Debug: Log resourceType und userData
-      // console.log('DEBUG resourceType:', resourceType, mesh.userData);
-      if (resourceType && resourceType !== 'center' && resourceType !== 'water' && resourceType !== 'desert') {
-        for (let corner = 0; corner < 6; corner++) {
-          const adjacent = [
-            { q: mesh.userData.tileQ ?? mesh.userData.q, r: mesh.userData.tileR ?? mesh.userData.r, corner },
-            (() => {
-              const directions = [
-                [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-              ];
-              const prev = (corner + 5) % 6;
-              const [dq, dr] = directions[prev];
-              return { q: (mesh.userData.tileQ ?? mesh.userData.q) + dq, r: (mesh.userData.tileR ?? mesh.userData.r) + dr, corner: (corner + 2) % 6 };
-            })(),
-            (() => {
-              const directions = [
-                [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-              ];
-              const [dq, dr] = directions[corner];
-              return { q: (mesh.userData.tileQ ?? mesh.userData.q) + dq, r: (mesh.userData.tileR ?? mesh.userData.r) + dr, corner: (corner + 4) % 6 };
-            })()
-          ];
-          
-          // Iteriere über alle Spieler mit Index für Gain Tracking
-          for (let playerIdx = 0; playerIdx < (window.players || []).length; playerIdx++) {
-            const player = window.players[playerIdx];
-            for (const pos of adjacent) {
-              // Siedlung: 1 Karte, Stadt: 2 Karten
-              if (player.settlements && player.settlements.some(s => s.q === pos.q && s.r === pos.r && s.corner === pos.corner)) {
-                if (window.bank && window.bank[resourceType] > 0) {
-                  player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
-                  window.bank[resourceType]--;
-                  // Track gain for this player
-                  if (window.trackResourceGain) {
-                    window.trackResourceGain(playerIdx, resourceType, 1);
-                  // } else {
-                  // Optional: Hinweis, dass Bank leer ist
-                  // console.log(`Bank leer: ${resourceType}`);
-               
-                  }
-                }
-              }
-              // Stadt: 2 Karten
-              if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
-                let given = 0;
-                for (let i = 0; i < 2; i++) {
-                  if (window.bank && window.bank[resourceType] > 0) {
-                    player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
-                    window.bank[resourceType]--;
-                    given++;
-                  }
-                }
-                                // if (given < 2) console.log(`Bank leer: ${resourceType} (nur ${given} von 2 Karten für Stadt)`);
-                // Track gain for cities
-                if (given > 0 && window.trackResourceGain) {
-                  window.trackResourceGain(playerIdx, resourceType, given);
-                }
-              }
+  const tiles = numberToTilesIndex[number];
+  if(!tiles || tiles.length===0) return; // kein Treffer -> fertig
+  const players = window.players || [];
+  if(players.length===0) return;
+  for(const tileKey of tiles){
+    if (typeof window.blockedTileKey !== 'undefined' && tileKey === window.blockedTileKey) continue;
+    const mesh = tileMeshes[tileKey];
+    if(!mesh) continue; // noch nicht geladen
+    const resourceType = mesh.userData && mesh.userData.type;
+    if(!resourceType || resourceType==='center' || resourceType==='water' || resourceType==='desert') continue;
+    const [tileQ, tileR] = tileKey.split(',').map(Number);
+    const adjPerCorner = getCornerAdjacency(tileQ, tileR);
+    for(let corner=0; corner<6; corner++){
+      const triplet = adjPerCorner[corner];
+      for(let pIdx=0; pIdx<players.length; pIdx++){
+        const pl = players[pIdx];
+        if(pl.settlements){
+          if(triplet.some(pos => pl.settlements.some(s=> s.q===pos.q && s.r===pos.r && s.corner===pos.corner))){
+            if(window.bank && window.bank[resourceType]>0){
+              pl.resources[resourceType] = (pl.resources[resourceType]||0)+1;
+              window.bank[resourceType]--;
+              if(window.trackResourceGain) window.trackResourceGain(pIdx, resourceType, 1);
             }
+          }
+        }
+        if(pl.cities){
+          if(triplet.some(pos => pl.cities.some(c=> c.q===pos.q && c.r===pos.r && c.corner===pos.corner))){
+            let granted=0;
+            for(let k=0;k<2;k++) if(window.bank && window.bank[resourceType]>0){
+              pl.resources[resourceType] = (pl.resources[resourceType]||0)+1;
+              window.bank[resourceType]--; granted++; }
+            if(granted>0 && window.trackResourceGain) window.trackResourceGain(pIdx, resourceType, granted);
           }
         }
       }
     }
-  });
-  
-  // UI-Update für alle Spieler
-  if (window.updateResourceUI && window.players) {
-    // Debug: Log Ressourcen nach Verteilung
-    window.players.forEach(p => console.log(`[Ressourcen nach Verteilung] ${p.name}:`, p.resources));
-
-    // UI-Update für aktiven Spieler mit globalem Index
-    if (typeof window.activePlayerIdx === 'number') {
-      window.updateResourceUI(window.players[window.activePlayerIdx], window.activePlayerIdx);
-    } else {
-      window.updateResourceUI(window.players[0], 0);
-    }
   }
-  // Debug: Log Bank-Bestand
-  if (window.bank) {
-    console.log('[Bank nach Verteilung]', JSON.stringify(window.bank));
+  if(window.updateResourceUI && players.length){
+    const idx = (typeof window.activePlayerIdx==='number') ? window.activePlayerIdx : 0;
+    window.updateResourceUI(players[idx], idx);
   }
 });
 

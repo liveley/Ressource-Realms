@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { getEquivalentCorners } from './buildLogic.js';
+import { getEquivalentCorners } from './geometryUtils.js';
 // modules/gamePieces.js
 // Platzhalter-Spielsteine für Prototyp
 
