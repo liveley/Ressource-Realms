@@ -91,13 +91,40 @@ export function blockDiceRolls(reason = "Aktion erforderlich") {
   
   // Store the original click handler
   diceBtn._origOnClick = diceBtn.onclick;
-  diceBtn.onclick = () => {}; // Empty handler
+  
+  // Replace with blocking handler that shows message
+  diceBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log(`Würfeln blockiert: ${reason}`);
+    
+    // Show visual feedback
+    const msg = document.createElement('div');
+    msg.textContent = reason;
+    msg.style.position = 'fixed';
+    msg.style.left = '50%';
+    msg.style.top = '20%';
+    msg.style.transform = 'translateX(-50%)';
+    msg.style.background = 'rgba(255,100,100,0.9)';
+    msg.style.color = 'white';
+    msg.style.padding = '10px 20px';
+    msg.style.borderRadius = '5px';
+    msg.style.fontFamily = "'Montserrat', Arial, sans-serif";
+    msg.style.zIndex = '1000';
+    document.body.appendChild(msg);
+    
+    setTimeout(() => {
+      if (msg.parentNode) {
+        document.body.removeChild(msg);
+      }
+    }, 2000);
+  };
   
   // Add visual indication
   diceBtn.style.opacity = "0.5";
   diceBtn.style.cursor = "not-allowed";
   diceBtn.disabled = true;
-    // Show reason only as tooltip
+  // Show reason only as tooltip
   diceBtn.title = `Würfeln blockiert: ${reason}`;
 }
 

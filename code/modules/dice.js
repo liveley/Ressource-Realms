@@ -3,11 +3,18 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { getDebugDiceValue } from './debugging/diceDebug.js';
+import { isInRobberPlacementMode } from './bandit.js';
 
 // Re-export debug functions for backward compatibility
 export { setDebugDiceValue, toggleDebugDiceMode } from './debugging/diceDebug.js';
 
 export function rollDice() {
+  // Check if robber placement is active - block dice if so
+  if (isInRobberPlacementMode()) {
+    console.log('Dice roll blocked: Robber placement in progress');
+    return null; // Return null to indicate blocked roll
+  }
+  
   // Check if we're forcing a specific value for debugging
   const debugValue = getDebugDiceValue();
   if (debugValue !== null) {

@@ -626,14 +626,28 @@ async function startGame() {
         // During initial placement: always show player switch
         emoji.textContent = '🔄';
         btn.title = 'Spieler wechseln';
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
       } else {
         // During regular play: switch between dice and player change
         if (state === 0) {
           emoji.textContent = '🎲';
-          btn.title = 'Würfeln';
+          
+          // Check if bandit placement is active
+          if (isInRobberPlacementMode()) {
+            btn.title = 'Wächter muss platziert werden';
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+          } else {
+            btn.title = 'Würfeln';
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+          }
         } else {
           emoji.textContent = '🔄';
           btn.title = 'Spieler wechseln';
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
         }
       }
     }
@@ -653,7 +667,35 @@ async function startGame() {
         setActivePlayerAndUpdateUI(nextIdx);
         
       } else if (state === 0) {
-        // Regular play: Würfeln
+        // PRÜFUNG: Ist Bandit-Platzierung aktiv?
+        if (isInRobberPlacementMode()) {
+          console.log('Würfeln blockiert: Wächter muss platziert werden');
+          
+          // Zeige Warnung
+          const msg = document.createElement('div');
+          msg.textContent = 'Platziere zuerst den Wächter!';
+          msg.style.position = 'fixed';
+          msg.style.left = '50%';
+          msg.style.top = '20%';
+          msg.style.transform = 'translateX(-50%)';
+          msg.style.background = 'rgba(255,100,100,0.9)';
+          msg.style.color = 'white';
+          msg.style.padding = '10px 20px';
+          msg.style.borderRadius = '5px';
+          msg.style.fontFamily = "'Montserrat', Arial, sans-serif";
+          msg.style.zIndex = '1000';
+          document.body.appendChild(msg);
+          
+          setTimeout(() => {
+            if (msg.parentNode) {
+              document.body.removeChild(msg);
+            }
+          }, 2000);
+          
+          return; // Würfeln blockieren
+        }
+        
+        // Regular play: Würfeln (nur wenn Bandit nicht aktiv)
         if (typeof throwPhysicsDice === 'function' && typeof scene !== 'undefined') {
           throwPhysicsDice(scene);
           window.setDiceResultFromPhysics = (result) => {
@@ -692,6 +734,12 @@ async function startGame() {
     
     // Make button update function globally available for phase changes
     window.updateDiceButtonForPhaseChange = function() {
+      updateButtonUI();
+    };
+
+    // Make function to switch to player change mode after bandit placement
+    window.setDiceButtonToPlayerSwitch = function() {
+      state = 1; // Set to player switch mode
       updateButtonUI();
     };
 
@@ -1119,6 +1167,17 @@ window.addEventListener('robberMoved', (e) => {
     
     // Unblock dice rolls once the guardian has been placed
     unblockDiceRolls();
+    
+    // WICHTIG: Nach Bandit-Platzierung sollte der Spielzug beendet sein
+    // Setze Button auf Spielerwechsel-Modus
+    if (typeof window.setDiceButtonToPlayerSwitch === 'function') {
+        window.setDiceButtonToPlayerSwitch();
+    }
+    
+    // Update button UI to reflect that bandit placement is finished
+    if (typeof window.updateDiceButtonForPhaseChange === 'function') {
+        window.updateDiceButtonForPhaseChange();
+    }
 });
 
 // Handle dice rolls
@@ -1133,6 +1192,11 @@ window.addEventListener('diceRolled', (e) => {
         
         // Block dice rolls until guardian is placed
         blockDiceRolls("Platziere zuerst den Wächter");
+        
+        // Update button UI to show it's blocked
+        if (typeof window.updateDiceButtonForPhaseChange === 'function') {
+            window.updateDiceButtonForPhaseChange();
+        }
     }
 });
 
