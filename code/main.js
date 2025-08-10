@@ -886,11 +886,6 @@ async function startGame() {
             <li>Der Guardian blockiert Felder, wenn eine 7 geworfen wird.</li>
             <li>Entwicklungskarten bringen Vorteile wie Soldaten, Fortschritt oder Punkte.</li>
             <li>Wer zuerst 10 Punkte erreicht, gewinnt das Spiel!</li>
-          </ul>
-          <div style="margin-top:1em;font-size:0.95em;color:#444;">
-            Weitere Details findest du im 
-            <a href="https://www.resourcerealms.de/resource-realms-verstehen/spielregeln" target="_blank" style="color:#2196F3;text-decoration:underline;">offiziellen Resource Realms-Regelwerk</a>.
-          </div>
         </div>
         <button id="close-rules-modal" style="margin-top:1.5em;width:100%;background:linear-gradient(90deg,#b6c6e3 60%,#e0eafc 100%);color:#222;border:none;padding:10px 0;border-radius:8px;font-size:1.1em;font-weight:600;cursor:pointer;">Schließen</button>
       `;
