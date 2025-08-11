@@ -489,6 +489,7 @@ export function handleTileSelection(intersection, tileMeshes, getTilePosition) {
             showBanditMessage();
             
             // Dispatch event that robber was moved
+            console.log('DEBUG: Dispatching robberMoved event:', { q, r, key: selectedTileKey });
             window.dispatchEvent(new CustomEvent('robberMoved', { 
                 detail: { q, r, key: selectedTileKey }
             }));

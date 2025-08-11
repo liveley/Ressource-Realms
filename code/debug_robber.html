@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Robber Debugging</title>
+</head>
+<body>
+    <h1>Robber Event Debugging</h1>
+    <p>Open console to see debug output</p>
+    
+    <script>
+        // Add debug logging to robberMoved events
+        const originalAddEventListener = window.addEventListener;
+        
+        window.addEventListener = function(type, listener, options) {
+            if (type === 'robberMoved') {
+                console.log('DEBUG: robberMoved listener added');
+                const wrappedListener = function(event) {
+                    console.log('DEBUG: robberMoved event triggered:', event.detail);
+                    console.log('DEBUG: Current game state:', {
+                        players: window.players,
+                        activePlayerIdx: window.activePlayerIdx,
+                        robberPosition: event.detail
+                    });
+                    return listener.call(this, event);
+                };
+                return originalAddEventListener.call(this, type, wrappedListener, options);
+            }
+            return originalAddEventListener.call(this, type, listener, options);
+        };
+        
+        // Add debug to dispatchEvent
+        const originalDispatchEvent = window.dispatchEvent;
+        window.dispatchEvent = function(event) {
+            if (event.type === 'robberMoved') {
+                console.log('DEBUG: Dispatching robberMoved event:', event.detail);
+            }
+            return originalDispatchEvent.call(this, event);
+        };
+    </script>
+</body>
+</html>
