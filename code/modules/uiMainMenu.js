@@ -324,7 +324,7 @@ export function createMainMenuSidebar() {
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
     ">
       <p style="margin: 15px 0; font-size: 1.25em;">
-      Dieses Projekt ist als Teil des <strong>Projektmoduls Prozesse 2025</strong> an der <strong>Hochschule München</strong> im Studiengang Informatik & Design entstanden.<strong> Gebaut von Gruppe 4.</strong><br>
+      Dieses Projekt ist als Teil des <strong>Projektmoduls Prozesse 2025</strong> an der <strong>Hochschule München</strong> im Studiengang Informatik & Design entstanden.<strong> Gebaut von <br>Gruppe 4 − Resource Realms.</strong><br>
       
     <p style="margin: 15px 0;">
       Eine 3D-Implementierung des Spiels
