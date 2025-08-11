@@ -888,7 +888,7 @@ async function startGame() {
             <li>Der Guardian blockiert Felder, wenn eine 7 geworfen wird.</li>
             <li>Entwicklungskarten bringen Vorteile wie Soldaten, Fortschritt oder Punkte.</li>
             <li>Wer zuerst 10 Punkte erreicht, gewinnt das Spiel!</li>
-            <li><a href="./modules/rules.html" target="_blank">vollständige Resource Realms Anleitung</a></li>
+            <li><a href="./modules/rules.html" target="_blank">vollständige Ressource Realms Anleitung</a></li>
         </div>
         <button id="close-rules-modal" style="margin-top:1.5em;width:100%;background:linear-gradient(90deg,#b6c6e3 60%,#e0eafc 100%);color:#222;border:none;padding:10px 0;border-radius:8px;font-size:1.1em;font-weight:600;cursor:pointer;">Schließen</button>
       `;
@@ -960,7 +960,7 @@ async function startGame() {
   // Note: gameReady event is now dispatched by the initializeGame event handler
 }
 
-// === Resource Realms-Bank: Ressourcenlimitierung ===
+// === Ressource Realms-Bank: Ressourcenlimitierung ===
 window.bank = {
   wood: 19,
   clay: 19,
