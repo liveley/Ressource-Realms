@@ -590,42 +590,26 @@ export function updateNumberTokensForRobber(robberTileKey) {
 
 // === Funktion: Nach Wächterplatzierung einen Rohstoff von einem betroffenen Spieler stehlen ===
 function handleRobberSteal(q, r) {
-  console.log(`DEBUG: handleRobberSteal called with q=${q}, r=${r}`);
-  
-  if (!window.players || typeof window.activePlayerIdx !== 'number') {
-    console.log('DEBUG: Early return - missing players or activePlayerIdx');
-    return;
-  }
-  
+  if (!window.players || typeof window.activePlayerIdx !== 'number') return;
   const activePlayer = window.players[window.activePlayerIdx];
-  console.log('DEBUG: Active player:', activePlayer?.name);
-  
   // Prüfe alle 6 Ecken des Hexfelds und sammle alle Opfer
   let allVictims = [];
   let victimSet = new Set();
-  
   for (let corner = 0; corner < 6; corner++) {
     const equivalents = typeof getEquivalentCorners === 'function' ? getEquivalentCorners(q, r, corner) : [{q, r, corner}];
-    
     window.players.forEach((p, idx) => {
-      if (idx === window.activePlayerIdx) return; // Skip active player
-      
+      if (idx === window.activePlayerIdx) return;
       const isVictim = equivalents.some(eq =>
         (p.settlements && p.settlements.some(s => s.q === eq.q && s.r === eq.r && s.corner === eq.corner)) ||
         (p.cities && p.cities.some(c => c.q === eq.q && c.r === eq.r && c.corner === eq.corner))
       );
-      
       if (isVictim && !victimSet.has(idx)) {
         allVictims.push(p);
         victimSet.add(idx);
       }
     });
   }
-  
-  console.log('DEBUG: All victims found:', allVictims.map(v => v.name));
-  
   if (allVictims.length === 0) {
-    console.log('DEBUG: No victims found, showing message');
     showRobberFeedback('Kein Spieler zum Stehlen an diesem Feld.', '#888');
     return;
   }
@@ -758,12 +742,8 @@ function showRobberFeedback(msg, color = '#2a8c2a', duration = 2500) {
 
 // Event-Listener für Wächterbewegung: Stehlen nach Platzierung
 window.addEventListener('robberMoved', (e) => {
-    console.log('DEBUG: robberMoved event received in game_board.js:', e.detail);
-    console.log('DEBUG: About to call handleRobberSteal with q=', e.detail.q, ', r=', e.detail.r);
-    
     // Use setTimeout to ensure stealing happens AFTER other event handlers complete
     setTimeout(() => {
-        console.log('DEBUG: Executing handleRobberSteal after timeout');
         handleRobberSteal(e.detail.q, e.detail.r);
     }, 150); // Execute after main.js event handler (which has 100ms timeout)
 });
