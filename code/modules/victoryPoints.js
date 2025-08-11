@@ -1,8 +1,8 @@
 // modules/victoryPoints.js
-// Comprehensive Victory Points System for Catan 3D
+// Comprehensive Victory Points System for Resource Realms
 
 /**
- // Helper: This module manages all logic for calculating, updating, and displaying victory points in the Catan 3D game. See exported functions for integration points with the main game loop and UI.
+ // Helper: This module manages all logic for calculating, updating, and displaying victory points in Resource Realms. See exported functions for integration points with the main game loop and UI.
  * Victory Points System - Handles all aspects of victory point calculation and tracking:
  * - Base VP sources (settlements, cities, VP cards)
  * - Special VP sources (Longest Road, Largest Army)
@@ -146,7 +146,7 @@ export function addVictoryPointCard(player) {
 }
 
 /**
- * Calculate longest road for a player using correct Catan rules
+ * Calculate longest road for a player using correct Resource Realms ruling
  * Finds the longest single path without repeating any road segment
  * @param {Object} player - The player object
  * @returns {number} Length of longest road
@@ -237,7 +237,7 @@ function getVertexKey(vertex) {
 }
 
 /**
- * DFS to find longest path using edge-based backtracking (correct Catan algorithm)
+ * DFS to find longest path using edge-based backtracking (correct Euler algorithm)
  * @param {Object} roadNetwork - Road network with vertices and edges
  * @param {string} currentVertex - Current vertex key
  * @param {Set} visitedEdges - Set of visited edge keys

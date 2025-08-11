@@ -5,23 +5,37 @@
 import * as THREE from 'three';
 import { loadTile } from '../loader.js'; // Import the function to load a single tile
 import { initializeHighlighting, animateHalos, testBorderHighlighting } from './tileHighlight.js';
-import { getEquivalentCorners } from './buildLogic.js';
+import { getEquivalentCorners } from './geometryUtils.js';
+import { PORTS } from './portSystem.js'; // Import harbor positions
 
 const HEX_RADIUS = 3;
 const hexGroup = new THREE.Group();
 
+// Create set of harbor positions for quick lookup
+const harborPositions = new Set(PORTS.map(port => `${port.position.q},${port.position.r}`));
+
+// Debug: Log harbor positions
+console.log('Harbor positions:', Array.from(harborPositions));
+
 // Axial coordinates for all tile types. Resource tiles will be randomized, water tiles are fixed.
+const originalWaterTiles = [
+  [3, -1], [3, -2], [3, -3], [2, -3], [1, -3], [0, -3], [-1, -2], [-2, -1], [-3, 1], [-3, 2], [-3, 0], [-3, 3], [-2, 3], [-1, 3], [0, 3], [1, 2], [2, 1], [3, 0], // 1st harbor ring
+  [4, -1], [4, -2], [4, -3], [3, -4], [2, -4], [1, -4], [0, -4], [-1, -3], [-2, -2], [-3, -1], [-4, 0], [-4, 1], [-4, 2], [-4, 3], [-3, 4], [-2, 4], [-1, 4], [0, 4], [1, 3], [2, 2], [3, 1], [4, 0], [4, -4], [-4 , 4], // 1st water ring
+  [5, -1], [5, -2], [5, -3], [5, -4], [4, -5], [3, -5], [2, -5], [1, -5], [0, -5], [-1, -4], [-2, -3], [-3, -2], [-4, -1], [-5, 0], [-5, 1], [-5, 2], [-5, 3], [-5, 4], [-4, 5], [-3, 5], [-2, 5], [-1, 5], [0, 5], [1, 4], [2, 3], [3, 2], [4, 1], [5, 0], [-5, 5], [5, -5] // 2nd water ring
+];
+
+const filteredWaterTiles = originalWaterTiles.filter(([q, r]) => !harborPositions.has(`${q},${r}`));
+
+// Debug: Log filtering results
+console.log(`Water tiles: ${originalWaterTiles.length} → ${filteredWaterTiles.length} (removed ${originalWaterTiles.length - filteredWaterTiles.length} harbor positions)`);
+
 const tilePositions = {
   'clay': [[-1, -1], [-2, 0], [1, -1]], // 3/3 clay tiles placed
   'ore': [[-1, 2], [1, 0], [2, -2]], // 3/3 ore tiles placed
   'sheep': [[2, 0], [0, 2], [-2, 2], [-1, 0]], // 4/4 sheep tiles placed
   'wheat': [[2, -1], [1, -2], [0, -1], [-2, 1]], // 4/4 wheat tiles placed
   'wood': [[-1, 1], [0, 1], [0, -2], [1, 1]], // 4/4 wood tiles placed
-  'water': [
-    [3, -1], [3, -2], [3, -3], [2, -3], [1, -3], [0, -3], [-1, -2], [-2, -1], [-3, 1], [-3, 2], [-3, 0], [-3, 3], [-2, 3], [-1, 3], [0, 3], [1, 2], [2, 1], [3, 0], // 1st harbor ring
-    [4, -1], [4, -2], [4, -3], [3, -4], [2, -4], [1, -4], [0, -4], [-1, -3], [-2, -2], [-3, -1], [-4, 0], [-4, 1], [-4, 2], [-4, 3], [-3, 4], [-2, 4], [-1, 4], [0, 4], [1, 3], [2, 2], [3, 1], [4, 0], [4, -4], [-4 , 4], // 1st water ring
-    [5, -1], [5, -2], [5, -3], [5, -4], [4, -5], [3, -5], [2, -5], [1, -5], [0, -5], [-1, -4], [-2, -3], [-3, -2], [-4, -1], [-5, 0], [-5, 1], [-5, 2], [-5, 3], [-5, 4], [-4, 5], [-3, 5], [-2, 5], [-1, 5], [0, 5], [1, 4], [2, 3], [3, 2], [4, 1], [5, 0], [-5, 5], [5, -5] // 2nd water ring
-  ]
+  'water': filteredWaterTiles
 };
 
 // Converts axial coordinates (q, r) to world coordinates (x, y, z) for tile placement
@@ -30,6 +44,43 @@ export function axialToWorld(q, r) {
   const y = HEX_RADIUS * Math.sqrt(3) * (r + q/2);
   const z = 0; // All tiles are on the same plane
   return [x, y, z];
+}
+
+// Helper function: Check if a position is a harbor position
+export function isHarborPosition(q, r) {
+  return harborPositions.has(`${q},${r}`);
+}
+
+// Helper function: Get all valid land tile coordinates
+export function getValidLandTiles() {
+  return [
+    // Desert/Center
+    [0, 0],
+    // Resource tiles
+    ...tilePositions.clay,
+    ...tilePositions.ore,
+    ...tilePositions.sheep,
+    ...tilePositions.wheat,
+    ...tilePositions.wood
+  ];
+}
+
+// Helper function: Check if a position is a valid land tile
+export function isValidLandTile(q, r) {
+  const validLandTiles = getValidLandTiles();
+  return validLandTiles.some(([landQ, landR]) => landQ === q && landR === r);
+}
+
+// Helper function: Check if a position allows building (not water, not harbor, must be valid land)
+export function allowsBuilding(q, r) {
+  // Must be a valid land tile
+  if (!isValidLandTile(q, r)) return false;
+  
+  // Harbor positions don't allow building
+  if (isHarborPosition(q, r)) return false;
+  
+  // Valid land tiles that are not harbors allow building
+  return true;
 }
 
 // === Helper function for main.js: World coordinates of a tile (axial) ===
@@ -144,10 +195,13 @@ function drawRoadMeshes(scene) {
   });
 }
 
-// Helper: Simulate tile numbers for demo purposes (real assignment according to Catan rules possible)
+// Helper: Simulate tile numbers for demo purposes (real assignment according to Resource Realms rules possible)
 const tileNumbers = {};
+const numberToTilesIndex = {}; // number -> array of tileKeys (filled after assignment)
+// predeclare directions (reused in multiple places)
+const AXIAL_DIRECTIONS = [ [+1,0],[0,+1],[-1,+1],[-1,0],[0,-1],[+1,-1] ];
 (function assignTileNumbers() {
-  // Catan standard: 18 number tokens (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
+  // Resource Realms standard: 18 number tokens (2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12), desert gets none
   const numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]; // 18 chips, no 7
   // Get all land tiles except center (desert)
   const landTypes = ['clay', 'ore', 'sheep', 'wheat', 'wood'];
@@ -162,7 +216,12 @@ const tileNumbers = {};
   }
   // Assign numbers to shuffled land tiles
   coords.forEach(([q, r], i) => {
-    tileNumbers[`${q},${r}`] = numbers[i] || null;
+    const num = numbers[i] || null;
+    tileNumbers[`${q},${r}`] = num;
+    if(num != null){
+      if(!numberToTilesIndex[num]) numberToTilesIndex[num] = [];
+      numberToTilesIndex[num].push(`${q},${r}`);
+    }
   });
   // Center (desert) gets no number
   tileNumbers['0,0'] = null;
@@ -262,7 +321,7 @@ function createNumberTokenSprite(number) {
     };
     
     // Default position - will be overridden when added to tile
-    sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden (moderat über dem Räuber)
+    sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden (moderat über dem Wächter)
     
     return sprite;
 }
@@ -273,7 +332,7 @@ export function addNumberTokensToTiles(scene, tileMeshes, tileNumbers) {
         const number = tileNumbers[key];
         if (number) {
             const sprite = createNumberTokenSprite(number);            // Position the sprite at a moderate height above the tile so it's visible when the robber is present
-            sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden - etwas höher als der Räuber (3.2)
+            sprite.position.set(0, 2.5, 0); // Y-Achse für die Höhe verwenden - etwas höher als der Wächter (3.2)
             
             // Store useful data for robber placement
             sprite.userData.number = number;
@@ -320,7 +379,7 @@ function drawLandTileOutline(scene) {
 
 // Returns a shuffled array of resource tile types (excluding desert)
 function getShuffledResourceTiles() {
-    // Standard Catan: 4 sheep, 4 wheat, 4 wood, 3 clay, 3 ore, 1 desert (center)
+    // Standard Resource Realms: 4 sheep, 4 wheat, 4 wood, 3 clay, 3 ore, 1 desert (center)
     const resourceTiles = [
         ...Array(4).fill('sheep'),
         ...Array(4).fill('wheat'),
@@ -383,7 +442,7 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
             if (number) {
                 const sprite = createNumberTokenSprite(number);
                 // Position the number token at a moderate height above the tile
-                sprite.position.set(0, 1.6, 0); // Reduzierte Höhe, aber immer noch über dem Räuber (3.2)
+                sprite.position.set(0, 1.6, 0); // Reduzierte Höhe, aber immer noch über dem Wächter (3.2)
                 tile.add(sprite);
             }
         });
@@ -418,110 +477,80 @@ export function createGameBoard(scene) {    // --- Place the center desert tile 
     // Initialize the tile highlighting system
     initializeHighlighting(hexGroup, tileNumbers, roadMeshes, tileMeshes);
     
+    // Make helper functions globally available for buildLogic.js
+    window.isHarborPosition = isHarborPosition;
+    window.allowsBuilding = allowsBuilding;
+    window.isValidLandTile = isValidLandTile;
+    window.getValidLandTiles = getValidLandTiles;
+    
     // Return for main.js
     return { tileMeshes, tileNumbers };
 }
 
 // Änderungen für game_board.js - ersetze den diceRolled Event Listener mit dieser Version:
 
-// Highlight logic for tiles (e.g. after dice roll)
+// --- Performance Optimierung: diceRolled Handler (reduziert Iterationen & Objekte) ---
+const cornerAdjacencyCache = new Map(); // tileKey -> Array[6] of arrays (3 adjacent vertex positions)
+function getCornerAdjacency(tileQ, tileR){
+  const key = `${tileQ},${tileR}`;
+  if(cornerAdjacencyCache.has(key)) return cornerAdjacencyCache.get(key);
+  const perCorner = new Array(6);
+  for(let corner=0; corner<6; corner++){
+    const prev = (corner + 5) % 6;
+    const [dqPrev, drPrev] = AXIAL_DIRECTIONS[prev];
+    const [dqMain, drMain] = AXIAL_DIRECTIONS[corner];
+    perCorner[corner] = [
+      { q: tileQ, r: tileR, corner },
+      { q: tileQ + dqPrev, r: tileR + drPrev, corner: (corner + 2) % 6 },
+      { q: tileQ + dqMain, r: tileR + drMain, corner: (corner + 4) % 6 }
+    ];
+  }
+  cornerAdjacencyCache.set(key, perCorner);
+  return perCorner;
+}
+
 window.addEventListener('diceRolled', (e) => {
-    // --- Entferne asynchrone window.players/updateResourceUI-Initialisierung (Fehlerquelle) ---
   const number = e.detail;
-  
-  // Reset gain trackers am Anfang des Events in uiResources.js
-  
-  Object.entries(tileMeshes).forEach(([key, mesh]) => {
-    // Blockiere Ressourcenverteilung, wenn Räuber auf diesem Feld steht
-    if (typeof window.blockedTileKey !== 'undefined' && key === window.blockedTileKey) {
-      // Optional: Debug-Log
-      console.log(`[Räuber] Ressourcenverteilung auf Feld ${key} blockiert.`);
-      return;
-    }
-    if (tileNumbers[key] === number) {
-      // === Ressourcenverteilung (fix: alle angrenzenden Hexes/Corners prüfen) ===
-      // Ermittle Rohstofftyp aus userData.type (sicher und eindeutig)
-      let resourceType = mesh.userData && mesh.userData.type ? mesh.userData.type : null;
-      // Debug: Log resourceType und userData
-      // console.log('DEBUG resourceType:', resourceType, mesh.userData);
-      if (resourceType && resourceType !== 'center' && resourceType !== 'water' && resourceType !== 'desert') {
-        for (let corner = 0; corner < 6; corner++) {
-          const adjacent = [
-            { q: mesh.userData.tileQ ?? mesh.userData.q, r: mesh.userData.tileR ?? mesh.userData.r, corner },
-            (() => {
-              const directions = [
-                [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-              ];
-              const prev = (corner + 5) % 6;
-              const [dq, dr] = directions[prev];
-              return { q: (mesh.userData.tileQ ?? mesh.userData.q) + dq, r: (mesh.userData.tileR ?? mesh.userData.r) + dr, corner: (corner + 2) % 6 };
-            })(),
-            (() => {
-              const directions = [
-                [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
-              ];
-              const [dq, dr] = directions[corner];
-              return { q: (mesh.userData.tileQ ?? mesh.userData.q) + dq, r: (mesh.userData.tileR ?? mesh.userData.r) + dr, corner: (corner + 4) % 6 };
-            })()
-          ];
-          
-          // Iteriere über alle Spieler mit Index für Gain Tracking
-          for (let playerIdx = 0; playerIdx < (window.players || []).length; playerIdx++) {
-            const player = window.players[playerIdx];
-            for (const pos of adjacent) {
-              // Siedlung: 1 Karte, Stadt: 2 Karten
-              if (player.settlements && player.settlements.some(s => s.q === pos.q && s.r === pos.r && s.corner === pos.corner)) {
-                if (window.bank && window.bank[resourceType] > 0) {
-                  player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
-                  window.bank[resourceType]--;
-                  // Track gain for this player
-                  if (window.trackResourceGain) {
-                    window.trackResourceGain(playerIdx, resourceType, 1);
-                  // } else {
-                  // Optional: Hinweis, dass Bank leer ist
-                  // console.log(`Bank leer: ${resourceType}`);
-               
-                  }
-                }
-              }
-              // Stadt: 2 Karten
-              if (player.cities && player.cities.some(c => c.q === pos.q && c.r === pos.r && c.corner === pos.corner)) {
-                let given = 0;
-                for (let i = 0; i < 2; i++) {
-                  if (window.bank && window.bank[resourceType] > 0) {
-                    player.resources[resourceType] = (player.resources[resourceType] || 0) + 1;
-                    window.bank[resourceType]--;
-                    given++;
-                  }
-                }
-                                // if (given < 2) console.log(`Bank leer: ${resourceType} (nur ${given} von 2 Karten für Stadt)`);
-                // Track gain for cities
-                if (given > 0 && window.trackResourceGain) {
-                  window.trackResourceGain(playerIdx, resourceType, given);
-                }
-              }
+  const tiles = numberToTilesIndex[number];
+  if(!tiles || tiles.length===0) return; // kein Treffer -> fertig
+  const players = window.players || [];
+  if(players.length===0) return;
+  for(const tileKey of tiles){
+    if (typeof window.blockedTileKey !== 'undefined' && tileKey === window.blockedTileKey) continue;
+    const mesh = tileMeshes[tileKey];
+    if(!mesh) continue; // noch nicht geladen
+    const resourceType = mesh.userData && mesh.userData.type;
+    if(!resourceType || resourceType==='center' || resourceType==='water' || resourceType==='desert') continue;
+    const [tileQ, tileR] = tileKey.split(',').map(Number);
+    const adjPerCorner = getCornerAdjacency(tileQ, tileR);
+    for(let corner=0; corner<6; corner++){
+      const triplet = adjPerCorner[corner];
+      for(let pIdx=0; pIdx<players.length; pIdx++){
+        const pl = players[pIdx];
+        if(pl.settlements){
+          if(triplet.some(pos => pl.settlements.some(s=> s.q===pos.q && s.r===pos.r && s.corner===pos.corner))){
+            if(window.bank && window.bank[resourceType]>0){
+              pl.resources[resourceType] = (pl.resources[resourceType]||0)+1;
+              window.bank[resourceType]--;
+              if(window.trackResourceGain) window.trackResourceGain(pIdx, resourceType, 1);
             }
+          }
+        }
+        if(pl.cities){
+          if(triplet.some(pos => pl.cities.some(c=> c.q===pos.q && c.r===pos.r && c.corner===pos.corner))){
+            let granted=0;
+            for(let k=0;k<2;k++) if(window.bank && window.bank[resourceType]>0){
+              pl.resources[resourceType] = (pl.resources[resourceType]||0)+1;
+              window.bank[resourceType]--; granted++; }
+            if(granted>0 && window.trackResourceGain) window.trackResourceGain(pIdx, resourceType, granted);
           }
         }
       }
     }
-  });
-  
-  // UI-Update für alle Spieler
-  if (window.updateResourceUI && window.players) {
-    // Debug: Log Ressourcen nach Verteilung
-    window.players.forEach(p => console.log(`[Ressourcen nach Verteilung] ${p.name}:`, p.resources));
-
-    // UI-Update für aktiven Spieler mit globalem Index
-    if (typeof window.activePlayerIdx === 'number') {
-      window.updateResourceUI(window.players[window.activePlayerIdx], window.activePlayerIdx);
-    } else {
-      window.updateResourceUI(window.players[0], 0);
-    }
   }
-  // Debug: Log Bank-Bestand
-  if (window.bank) {
-    console.log('[Bank nach Verteilung]', JSON.stringify(window.bank));
+  if(window.updateResourceUI && players.length){
+    const idx = (typeof window.activePlayerIdx==='number') ? window.activePlayerIdx : 0;
+    window.updateResourceUI(players[idx], idx);
   }
 });
 
@@ -559,7 +588,7 @@ export function updateNumberTokensForRobber(robberTileKey) {
     }
 }
 
-// === Funktion: Nach Räuberplatzierung einen Rohstoff von einem betroffenen Spieler stehlen ===
+// === Funktion: Nach Wächterplatzierung einen Rohstoff von einem betroffenen Spieler stehlen ===
 function handleRobberSteal(q, r) {
   if (!window.players || typeof window.activePlayerIdx !== 'number') return;
   const activePlayer = window.players[window.activePlayerIdx];
@@ -711,10 +740,10 @@ function showRobberFeedback(msg, color = '#2a8c2a', duration = 2500) {
   el._hideTimeout = setTimeout(() => { el.style.display = 'none'; }, duration);
 }
 
-// Event-Listener für Räuberbewegung: Stehlen nach Platzierung
+// Event-Listener für Wächterbewegung: Stehlen nach Platzierung
 window.addEventListener('robberMoved', (e) => {
-    // ...existing code...
-    // Stehlen-Logik aufrufen
-    // Nur q, r übergeben, alle 6 Ecken werden geprüft
-    handleRobberSteal(e.detail.q, e.detail.r);
+    // Use setTimeout to ensure stealing happens AFTER other event handlers complete
+    setTimeout(() => {
+        handleRobberSteal(e.detail.q, e.detail.r);
+    }, 150); // Execute after main.js event handler (which has 100ms timeout)
 });

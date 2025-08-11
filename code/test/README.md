@@ -1,6 +1,6 @@
-# Test Suite for Catan-style Board Game
+# Test Suite for Resource Realms Board Game
 
-This folder contains test scripts for verifying functionality of the Catan-style board game.
+This folder contains test scripts for verifying functionality of the Resource Realms board game.
 
 ## Available Tests
 

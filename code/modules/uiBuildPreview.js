@@ -11,7 +11,7 @@ let previewMesh = null;
 
 export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, getBuildMode, getActivePlayerIdx) {
   renderer.domElement.addEventListener('mousemove', (event) => {
-    console.log('BuildPreview: mousemove event');
+  // verbose preview mousemove suppressed (enable if needed)
     const menu = document.getElementById('main-menu');
     if (menu && menu.style.display !== 'none') {
       removePreviewMesh(scene, renderer, camera);
@@ -75,7 +75,7 @@ export function setupBuildPreview(renderer, scene, camera, tileMeshes, players, 
     let shouldShowPreview = true; // New flag to control preview visibility
     
     if (buildMode === 'settlement') {
-      // Use proper Catan rules for settlement placement
+      // Use proper Resource Realms rules for settlement placement
       const res = canPlaceSettlement(player, q, r, nearest, players);
       canBuild = res.success;
       

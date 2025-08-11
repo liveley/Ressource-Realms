@@ -8,23 +8,57 @@ import {
   updateAllVictoryPoints
 } from './victoryPoints.js';
 
-// Beispiel-Spielerstruktur (kann später erweitert werden)
-export const players = [
-  {
-    name: 'Spieler 1',
-    color: 0xd7263d,
-    settlements: [], // {q, r, corner}
-    cities: [],      // {q, r, corner}
-    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
-  },
-  {
-    name: 'Spieler 2',
-    color: 0x277da1,
-    settlements: [],
-    cities: [],
-    resources: { wood: 0, clay: 0, wheat: 0, sheep: 0, ore: 0 }
+// === Canonical corner utilities to avoid duplicate physical corner entries ===
+function getNeighborCornerRaw(q, r, corner) {
+  const directions = [
+    [+1, 0], [0, +1], [-1, +1], [-1, 0], [0, -1], [+1, -1]
+  ];
+  const dir = directions[corner];
+  return { q: q + dir[0], r: r + dir[1], corner: (corner + 4) % 6 };
+}
+function getEquivalentCornersRaw(q, r, corner) {
+  const res = [{ q, r, corner }];
+  const n1 = getNeighborCornerRaw(q, r, corner);
+  res.push(n1);
+  const n2 = getNeighborCornerRaw(n1.q, n1.r, n1.corner);
+  res.push(n2);
+  return res;
+}
+function getCanonicalCorner(q, r, corner) {
+  const eq = getEquivalentCornersRaw(q, r, corner).sort((a,b)=> a.q-b.q || a.r-b.r || a.corner-b.corner);
+  return { q: eq[0].q, r: eq[0].r, corner: eq[0].corner };
+}
+function areSamePhysicalCorner(a,b){
+  if(!a||!b) return false;
+  const ca = getCanonicalCorner(a.q,a.r,a.corner);
+  const cb = getCanonicalCorner(b.q,b.r,b.corner);
+  return ca.q===cb.q && ca.r===cb.r && ca.corner===cb.corner;
+}
+function sanitizePlayerSettlements(player){
+  if(!player.settlements) return;
+  const unique=[];
+  for(const s of player.settlements){
+    const c = getCanonicalCorner(s.q,s.r,s.corner);
+    if(!unique.some(u=>areSamePhysicalCorner(u,c))){ unique.push(c); }
   }
-];
+  player.settlements = unique;
+}
+function sanitizeAllSettlements(playersArr){ (playersArr||[]).forEach(p=>sanitizePlayerSettlements(p)); }
+
+// Vollständige Entfernung einer physischen Ecke aus allen Spielerlisten (inkl. kanonisch & äquivalent)
+function fullRemovePhysicalCorner(q, r, corner, playersArr){
+  const equivalents = getEquivalentCornersRaw(q, r, corner);
+  const canonical = getCanonicalCorner(q, r, corner);
+  (playersArr||[]).forEach(p=>{
+    if(!p.settlements) return;
+    p.settlements = p.settlements.filter(s => {
+      if (areSamePhysicalCorner(s, canonical)) return false;
+      return !equivalents.some(eq => eq.q===s.q && eq.r===s.r && eq.corner===s.corner);
+    });
+  });
+}
+
+// Hinweis: Spielerarray nicht mehr hier exportieren – zentrale Quelle ist window.players (main.js)
 
 // Ressourcenprüfung für Siedlung
 export function canBuildSettlement(player) {
@@ -50,9 +84,11 @@ export function buildSettlement(player, q, r, corner) {
   initializeVictoryPoints([player]);
   // Defensive programming: ensure settlements array exists
   if (!player.settlements) player.settlements = [];
-  
-  // Nur Spielfeld-Update, KEIN Ressourcenabzug mehr!
-  player.settlements.push({ q, r, corner });
+  // Sanitize & add canonical entry (prevent duplicates of same physical corner)
+  sanitizePlayerSettlements(player);
+  const canonical = getCanonicalCorner(q, r, corner);
+  player.settlements = player.settlements.filter(s => !areSamePhysicalCorner(s, canonical));
+  player.settlements.push(canonical);
   
   // Update victory points - use global players array with proper checks
   if (window.players && Array.isArray(window.players)) {
@@ -71,10 +107,12 @@ export function buildCity(player, q, r, corner) {
   if (!player.cities) player.cities = [];
   
   // Nur Spielfeld-Update, KEIN Ressourcenabzug mehr!
-  const idx = player.settlements.findIndex(s => s.q === q && s.r === r && s.corner === corner);
+  sanitizePlayerSettlements(player);
+  const canonical = getCanonicalCorner(q, r, corner);
+  const idx = player.settlements.findIndex(s => areSamePhysicalCorner(s, canonical));
   if (idx === -1) return false;
   player.settlements.splice(idx, 1);
-  player.cities.push({ q, r, corner });
+  player.cities.push(canonical);
   
   // Update victory points - use global players array with proper checks
   if (window.players && Array.isArray(window.players)) {
@@ -132,10 +170,16 @@ export function isSettlementPlacementValid(q, r, corner, allPlayers) {
         for (const existingEq of existingEquivalents) {
           // Exakt gleiche Ecke ist verboten
           if (newEq.q === existingEq.q && newEq.r === existingEq.r && newEq.corner === existingEq.corner) {
+            if (window.__debugSettlementBlock) {
+              console.warn('[DistanceRule] SAME corner block', {attempt:{q,r,corner}, blocker:{q:s.q,r:s.r,corner:s.corner}, player:player.name});
+            }
             return false;
           }
           // Benachbarte Ecken sind verboten
           if (areCornersAdjacent(newEq.q, newEq.r, newEq.corner, existingEq.q, existingEq.r, existingEq.corner)) {
+            if (window.__debugSettlementBlock) {
+              console.warn('[DistanceRule] ADJACENT block', {attempt:{q,r,corner}, attemptEq:newEq, blockerEq:existingEq, blockerOriginal:{q:s.q,r:s.r,corner:s.corner}, player:player.name});
+            }
             return false;
           }
         }
@@ -143,6 +187,56 @@ export function isSettlementPlacementValid(q, r, corner, allPlayers) {
     }
   }
   return true;
+}
+
+// Debug-Hilfsfunktion: Liefert detaillierte Blocker für eine Siedlungsposition
+export function debugCheckSettlementBlock(q, r, corner, allPlayers) {
+  const blockers = [];
+  const newEquivalents = getEquivalentCorners(q, r, corner);
+  for (const player of allPlayers) {
+    for (const s of [...(player.settlements||[]), ...(player.cities||[])]) {
+      const existingEquivalents = getEquivalentCorners(s.q, s.r, s.corner);
+      for (const newEq of newEquivalents) {
+        for (const existingEq of existingEquivalents) {
+          const same = newEq.q === existingEq.q && newEq.r === existingEq.r && newEq.corner === existingEq.corner;
+          const adjacent = !same && areCornersAdjacent(newEq.q, newEq.r, newEq.corner, existingEq.q, existingEq.r, existingEq.corner);
+          if (same || adjacent) {
+            blockers.push({
+              type: same ? 'same' : 'adjacent',
+              attempt: { q, r, corner },
+              attemptEquivalent: newEq,
+              blockerOriginal: { q: s.q, r: s.r, corner: s.corner },
+              blockerEquivalent: existingEq,
+              player: player.name
+            });
+          }
+        }
+      }
+    }
+  }
+  return blockers;
+}
+window.debugCheckSettlementBlock = (q,r,corner) => debugCheckSettlementBlock(q,r,corner, window.players || []);
+
+// Entfernt ein physisches Eck-Objekt bei allen Spielern (alle äquivalenten Ecken)
+export function purgePhysicalCorner(q, r, corner, allPlayers) {
+  const equivalents = getEquivalentCorners(q, r, corner);
+  for (const p of allPlayers) {
+    if (p.settlements) {
+      const before = p.settlements.length;
+      p.settlements = p.settlements.filter(s => !equivalents.some(eq => eq.q === s.q && eq.r === s.r && eq.corner === s.corner));
+      if (window.__debugSettlementBlock && before !== p.settlements.length) {
+        console.log('[purgePhysicalCorner] removed settlements from', p.name);
+      }
+    }
+    if (p.cities) {
+      const beforeC = p.cities.length;
+      p.cities = p.cities.filter(c => !equivalents.some(eq => eq.q === c.q && eq.r === c.r && eq.corner === c.corner));
+      if (window.__debugSettlementBlock && beforeC !== p.cities.length) {
+        console.log('[purgePhysicalCorner] removed cities from', p.name);
+      }
+    }
+  }
 }
 
 // Hilfsfunktion: Sind zwei Ecken benachbart? (gleiche Ecke oder Nachbarfeld, angrenzende Ecke)
@@ -228,27 +322,84 @@ function isRoadAdjacentToCorner(road, q, r, corner) {
   return false;
 }
 
-// Helper: Prüft, ob ein Tile ein Landfeld ist (kein Wasser, keine Wüste)
+// Helper: Prüft, ob ein Tile ein Landfeld ist (kein Wasser, keine Wüste, kein Hafen)
 export function isLandTile(q, r) {
-  // Prüfe, ob das Tile laut tileMeshes ein Wasserfeld ist
+  const noisy = false; // set true for verbose land tile diagnostics
+  // ERSTE PRÜFUNG: Ist das Tile überhaupt auf dem Spielbrett?
+  // Prüfe, ob das Tile laut tileMeshes existiert
   if (typeof window.tileMeshes === 'object') {
     const mesh = window.tileMeshes[`${q},${r}`];
-    if (!mesh) return false;
+    if (!mesh) {
+  if (noisy) console.log(`isLandTile(${q},${r}): FALSE - Tile nicht auf Brett vorhanden`);
+      return false; // Tile existiert nicht auf dem Brett
+    }
+    
     // Wasser-Tiles haben name === 'water.glb'
-    if (mesh.name && mesh.name.startsWith('water')) return false;
-    // Wüste (center) ist jetzt erlaubt!
+    if (mesh.name && mesh.name.startsWith('water')) {
+  if (noisy) console.log(`isLandTile(${q},${r}): FALSE - Ist Wassertile`);
+      return false;
+    }
+    // Harbor-Tiles haben name === 'harbor.glb' 
+    if (mesh.name && mesh.name.startsWith('harbor')) {
+  if (noisy) console.log(`isLandTile(${q},${r}): FALSE - Ist Hafentile`);
+      return false;
+    }
+    
+    // Wenn das Tile existiert und kein Wasser/Hafen ist, dann ist es ein Landfeld
+  if (noisy) console.log(`isLandTile(${q},${r}): TRUE - Gültiges Landfeld (${mesh.name})`);
     return true;
   }
-  // Fallback: explizite Liste der Wasserkoordinaten (aus game_board.js)
-  const waterCoords = [
-    [3,-1],[3,-2],[3,-3],[2,-3],[1,-3],[0,-3],[-1,-2],[-2,-1],[-3,1],[-3,2],[-3,0],[-3,3],[-2,3],[-1,3],[0,3],[1,2],[2,1],[3,0],
-    [4,-1],[4,-2],[4,-3],[3,-4],[2,-4],[1,-4],[0,-4],[-1,-3],[-2,-2],[-3,-1],[-4,0],[-4,1],[-4,2],[-4,3],[-3,4],[-2,4],[-1,4],[0,4],[1,3],[2,2],[3,1],[4,0],[4,-4],[-4,4],
-    [5,-1],[5,-2],[5,-3],[5,-4],[4,-5],[3,-5],[2,-5],[1,-5],[0,-5],[-1,-4],[-2,-3],[-3,-2],[-4,-1],[-5,0],[-5,1],[-5,2],[-5,3],[-5,4],[-4,5],[-3,5],[-2,5],[-1,5],[0,5],[1,4],[2,3],[3,2],[4,1],[5,0],[-5,5],[5,-5]
-  ];
-  for (const [wq, wr] of waterCoords) {
-    if (q === wq && r === wr) return false;
+  
+  // FALLBACK: Verwende globale Funktionen aus game_board.js falls verfügbar
+  if (typeof window.isValidLandTile === 'function') {
+    const isValid = window.isValidLandTile(q, r);
+    if (!isValid) {
+  if (noisy) console.log(`isLandTile(${q},${r}): FALSE - Nicht in gültigen Landfeldern`);
+      return false;
+    }
+    
+    // Prüfe auf Hafen-Position
+    if (typeof window.isHarborPosition === 'function' && window.isHarborPosition(q, r)) {
+  if (noisy) console.log(`isLandTile(${q},${r}): FALSE - Ist Hafenposition`);
+      return false;
+    }
+    
+  if (noisy) console.log(`isLandTile(${q},${r}): TRUE - Gültiges Landfeld (fallback)`);
+    return true;
   }
-  // Wüste (0,0) ist jetzt erlaubt!
+  
+  // LETZTER FALLBACK: Explizite Prüfung gegen bekannte Landfeld-Koordinaten
+  const validLandTiles = [
+    // Desert/Center
+    [0, 0],
+    // Clay tiles
+    [-1, -1], [-2, 0], [1, -1],
+    // Ore tiles  
+    [-1, 2], [1, 0], [2, -2],
+    // Sheep tiles
+    [2, 0], [0, 2], [-2, 2], [-1, 0],
+    // Wheat tiles
+    [2, -1], [1, -2], [0, -1], [-2, 1],
+    // Wood tiles
+    [-1, 1], [0, 1], [0, -2], [1, 1]
+  ];
+  
+  // Prüfe, ob die gegebenen Koordinaten in der Liste der gültigen Landfelder sind
+  const isValidLand = validLandTiles.some(([landQ, landR]) => landQ === q && landR === r);
+  
+  if (!isValidLand) {
+  if (noisy) console.log(`isLandTile(${q},${r}): FALSE - Nicht in statischer Landfeld-Liste`);
+    return false;
+  }
+  
+  // Prüfe explizit auf Hafen-Position
+  if (typeof window.isHarborPosition === 'function' && window.isHarborPosition(q, r)) {
+  if (noisy) console.log(`isLandTile(${q},${r}): FALSE - Ist Hafenposition (statisch)`);
+    return false;
+  }
+  
+  // Wenn es ein gültiges Landfeld ist und kein Hafen, dann ist es bebaubar
+  if (noisy) console.log(`isLandTile(${q},${r}): TRUE - Gültiges Landfeld (statisch)`);
   return true;
 }
 
@@ -307,7 +458,8 @@ export function getEquivalentCorners(q, r, corner) {
 
 // Siedlung bauen (mit Platzierungslogik)
 export function tryBuildSettlement(player, q, r, corner, allPlayers, {requireRoad = true, ignoreDistanceRule = false, ignoreResourceRule = false} = {}) {
-  // Get player ID (index in allPlayers array)
+  // Vor jeder Prüfung einmal sanitisieren (reicht)
+  sanitizeAllSettlements(allPlayers);
   const playerId = allPlayers.findIndex(p => p === player);
   
   // Check if in initial placement phase
@@ -610,7 +762,7 @@ export function startRegularPlay() {
   gameState.phase = GAME_PHASES.REGULAR_PLAY;
   console.log('Switched to regular play phase');
   
-  // According to Catan rules, the first player starts the first regular turn after initial placement
+  // According to Resource Realms rules, the first player starts the first regular turn after initial placement
   // Set active player to first player (index 0)
   if (typeof window.setActivePlayerToFirstPlayer === 'function') {
     window.setActivePlayerToFirstPlayer();
@@ -674,6 +826,8 @@ export function validateInitialPlacement(player, playerId, type, q, r, corner, e
 }
 
 function validateInitialSettlement(player, q, r, corner, allPlayers) {
+  // Sanitize before validation to eliminate ghost duplicates
+  try { sanitizeAllSettlements(allPlayers); } catch(e) {}
   // 1. Land tile adjacency
   if (!hasAtLeastOneLandTileAdjacent(q, r, corner)) {
     return { success: false, reason: 'Hier kann nicht gebaut werden (kein angrenzendes Landfeld)' };
@@ -681,6 +835,13 @@ function validateInitialSettlement(player, q, r, corner, allPlayers) {
   
   // 2. Distance rule - keine Siedlung/Stadt in der Nähe (egal von welchem Spieler)
   if (!isSettlementPlacementValid(q, r, corner, allPlayers)) {
+    if (typeof debugCheckSettlementBlock === 'function') {
+      const blocks = debugCheckSettlementBlock(q, r, corner, allPlayers);
+      if (blocks.length) console.warn('[DistanceRule][ValidateInitialSettlement]', blocks);
+      else if (window.__debugSettlementBlock) {
+        console.warn('[DistanceRule][ValidateInitialSettlement] blocked but no detailed blockers returned');
+      }
+    }
     return { success: false, reason: 'Zu nah an anderer Siedlung/Stadt' };
   }
   
@@ -831,12 +992,44 @@ export function undoLastInitialPlacement(playerId, allPlayers) {
   
   // Remove the building from the game
   if (lastAction.type === 'settlements') {
-    const settlementIndex = player.settlements.findIndex(s => 
-      s.q === lastAction.q && s.r === lastAction.r && s.corner === lastAction.corner
-    );
-    if (settlementIndex !== -1) {
-      player.settlements.splice(settlementIndex, 1);
+    // Entferne ALLE Repräsentationen der physischen Ecke (äquivalente Ecken), falls versehentlich mehrere gespeichert wurden
+    if (!player.settlements) player.settlements = [];
+    const equivalents = getEquivalentCorners(lastAction.q, lastAction.r, lastAction.corner);
+    const beforeCount = player.settlements.length;
+    player.settlements = player.settlements.filter(s => !equivalents.some(eq => eq.q === s.q && eq.r === s.r && eq.corner === s.corner));
+    const removed = beforeCount - player.settlements.length;
+    if (removed === 0) {
+      // Fallback: versuche exakte Entfernung (sollte eigentlich durch Filter abgedeckt sein)
+      const idx = player.settlements.findIndex(s => s.q === lastAction.q && s.r === lastAction.r && s.corner === lastAction.corner);
+      if (idx !== -1) player.settlements.splice(idx, 1);
     }
+    // Kanonische Entfernung sicherstellen
+    try {
+      sanitizePlayerSettlements(player);
+      const canonicalTarget = getCanonicalCorner(lastAction.q, lastAction.r, lastAction.corner);
+      const beforeCanonical = player.settlements.length;
+      player.settlements = player.settlements.filter(s => !areSamePhysicalCorner(s, canonicalTarget));
+      if (window.__debugSettlementBlock) {
+        const afterCanonical = player.settlements.length;
+        console.log('[Undo][CanonicalRemoval]', { target: canonicalTarget, beforeCanonical, afterCanonical });
+      }
+    } catch(e) { /* ignore */ }
+    // Sicherheits-Purge falls beim Bauen Duplikate bei anderen Spielern entstanden sind
+    purgePhysicalCorner(lastAction.q, lastAction.r, lastAction.corner, allPlayers);
+  // Vollständig noch einmal alles entfernen (kanonisch + äquivalente) für absolute Sicherheit
+  fullRemovePhysicalCorner(lastAction.q, lastAction.r, lastAction.corner, allPlayers);
+    // Verifikation & Fallback
+    try {
+      const still = hasAnySettlementAtPhysicalCorner(lastAction.q, lastAction.r, lastAction.corner, allPlayers);
+      if (still) {
+        if (window.__debugSettlementBlock) console.warn('[Undo][Verify] Settlement still detected after removal, forcing second purge');
+        fullRemovePhysicalCorner(lastAction.q, lastAction.r, lastAction.corner, allPlayers);
+        if (window.__debugSettlementBlock) {
+          const still2 = hasAnySettlementAtPhysicalCorner(lastAction.q, lastAction.r, lastAction.corner, allPlayers);
+          console.log('[Undo][Verify] After forced purge present=', still2);
+        }
+      }
+    } catch(e) { /* ignore */ }
   } else if (lastAction.type === 'roads') {
     if (!player.roads) player.roads = [];
     const roadIndex = player.roads.findIndex(r => 
@@ -862,11 +1055,51 @@ export function undoLastInitialPlacement(playerId, allPlayers) {
     gameState.phase = GAME_PHASES.INITIAL_PLACEMENT;
   }
   
+  // Victory Points neu berechnen nach Entfernen
+  if (typeof window.updateAllVictoryPoints === 'function') {
+    try { window.updateAllVictoryPoints(player, allPlayers, true); } catch(e) { /* ignore */ }
+  }
+  if (window.__debugSettlementBlock) {
+    console.log('[Undo][StateDump] settlements & cities after undo:');
+    allPlayers.forEach((p,i)=>{
+      console.log(` P${i} ${p.name} settlements:`, (p.settlements||[]).map(s=>`${s.q},${s.r},${s.corner}`));
+      console.log(` P${i} ${p.name} cities:`, (p.cities||[]).map(c=>`${c.q},${c.r},${c.corner}`));
+    });
+  }
+  
   return { 
     success: true, 
     message: `${lastAction.type === 'settlements' ? 'Siedlung' : 'Straße'} rückgängig gemacht` 
   };
 }
+
+// Debug-Helfer: Prüfen ob eine Siedlung (oder äquivalente Ecke) existiert
+export function hasAnySettlementAtPhysicalCorner(q, r, corner, allPlayers) {
+  const equivalents = getEquivalentCorners(q, r, corner);
+  for (const p of allPlayers) {
+    for (const s of p.settlements || []) {
+      if (equivalents.some(eq => eq.q === s.q && eq.r === s.r && eq.corner === s.corner)) return true;
+    }
+    for (const c of p.cities || []) {
+      if (equivalents.some(eq => eq.q === c.q && eq.r === c.r && eq.corner === c.corner)) return true;
+    }
+  }
+  return false;
+}
+
+// Manuelle harte Bereinigung einer physischen Ecke (Debug-Einsatz)
+export function forceClearPhysicalCorner(q, r, corner) {
+  if (!window.players) return;
+  purgePhysicalCorner(q, r, corner, window.players);
+  if (window.__debugSettlementBlock) {
+    console.log('[forceClearPhysicalCorner] executed for', q,r,corner);
+    window.players.forEach((p,i)=>console.log('  -> P'+i, p.name, 'settlements:', (p.settlements||[]).map(s=>`${s.q},${s.r},${s.corner}`)));
+  }
+  if (typeof window.updateAllVictoryPoints === 'function') {
+    try { window.players.forEach(p=>window.updateAllVictoryPoints(p, window.players, true)); } catch(e) {}
+  }
+}
+window.forceClearPhysicalCorner = forceClearPhysicalCorner;
 
 // Check if a player can undo their last action
 export function canUndoInitialPlacement(playerId) {
@@ -924,7 +1157,7 @@ export function getGamePhaseInfo() {
   } else {
     return {
       phase: 'Normales Spiel',
-      description: 'Alle Catan-Regeln aktiv',
+      description: 'Alle Resource Realms-Regeln aktiv',
       remaining: null
     };
   }

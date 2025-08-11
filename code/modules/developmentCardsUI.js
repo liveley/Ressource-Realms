@@ -149,26 +149,26 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
   function getCardImage(card) {
     switch(card.type) {
       case 'knight':
-        return 'assets/development_ritter_card.jpg';
+        return 'assets/development_guardian_card.png';
       case 'road_building':
-        return 'assets/development_strassenbau_card.jpg';
+        return 'assets/development_pathfinder_card.png';
       case 'monopoly':
-        return 'assets/development_monopol_card.jpg';
+        return 'assets/development_trade_master_card.png';
       case 'year_of_plenty':
-        return 'assets/development_erfindung_card.jpg';
+        return 'assets/development_inventor_card.png';
       case 'victory_point':
         // Zufällig eine der Siegpunktkarten (Bibliothek, Kathedrale, Universität, Parlament, Marktplatz)
         const vpImgs = [
-          'assets/development_bibliothek_card.jpg',
-          'assets/development_kathedrale_card.jpg',
-          'assets/development_universitaet_card.jpg',
-          'assets/development_parlament_card.jpg',
-          'assets/development_marktplatz_card.jpg'
+          'assets/development_library_card.png',
+          'assets/development_cathedral_card.png',
+          'assets/development_university_card.png',
+          'assets/development_council_card.png',
+          'assets/development_market_card.png'
         ];
         // Optional: Karte merken, damit sie nicht wechselt (hier: zufällig pro Anzeige)
         return vpImgs[Math.floor(Math.random() * vpImgs.length)];
       default:
-        return 'assets/item_card_back.jpeg';
+        return 'assets/item_card_back.png';
     }
   }
 
@@ -202,12 +202,12 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
     }
     switch(card.type) {
       case 'knight':
-        // Ritter: Räuber verschieben + Largest Army tracking
+        // Wächter: Wächter verschieben + Largest Army tracking
         if (typeof getScene === 'function' && typeof getTileMeshes === 'function') {
           const scene = getScene();
           const tileMeshes = getTileMeshes();
-          // Starte Räuberplatzierung (UI/UX: Info anzeigen)
-          showGlobalFeedback('Ritter gespielt! Wähle ein Feld für den Räuber.', '#2a8c2a', 3000);
+          // Starte Wächterplatzierung (UI/UX: Info anzeigen)
+          showGlobalFeedback('Wächter gespielt! Wähle ein Feld für den Wächter.', '#2a8c2a', 3000);
           // Korrekt: tileNumbers als zweites Argument übergeben
           if (typeof window.startRobberPlacement === 'function') {
             window.startRobberPlacement(tileMeshes, window.tileNumbers);
@@ -223,7 +223,7 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
             }
           }
         } else {
-          showGlobalFeedback('Räuberplatzierung nicht möglich (Szene oder Tiles fehlen)', '#c00', 3000);
+          showGlobalFeedback('Wächterplatzierung nicht möglich (Szene oder Tiles fehlen)', '#c00', 3000);
         }
         break;
       case 'road_building': {
@@ -480,7 +480,7 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
     if (statsSubheader) {
       statsSubheader.innerHTML = `
         🎴 Karten gesamt: <strong>${totalCards}</strong> | 
-        ⚔️ Ritter gespielt: <strong>${playedKnights}</strong>${hasLargestArmy ? ' (Größte Rittermacht)' : ''}
+        ⚔️ Wächter gespielt: <strong>${playedKnights}</strong>${hasLargestArmy ? ' (Macht der Wächter)' : ''}
       `;
     }
     
@@ -500,7 +500,7 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
         let isNew = idx >= (player.developmentCards?.length || 0);
         if (window.ALLOW_ALL_DEV_CARDS_PLAY) isNew = false;
         switch(card.type) {
-          case 'knight': label = 'Ritter'; break;
+          case 'knight': label = 'Wächter'; break;
           case 'road_building': label = 'Straßenbau'; break;
           case 'monopoly': label = 'Monopol'; break;
           case 'year_of_plenty': label = 'Erfindung'; break;
@@ -537,7 +537,7 @@ export function createDevelopmentCardsUI({ getPlayer, getBank, getDeck, onBuy, g
         labelDiv.style.fontSize = '1em';
         labelDiv.style.color = isNew ? '#c00' : '#222';
         cardDiv.appendChild(labelDiv);
-        // Play-Button (immer anzeigen außer Siegpunkte)
+        // Play-Button (immer anzeigen außer Punkte)
         if (card.type !== 'victory_point') {
           const playBtn = document.createElement('button');
           playBtn.textContent = 'Spielen';

@@ -1,7 +1,7 @@
 // === UI: Spieler-Übersicht (oben links) ===
 // ui_player_overview.js
 // Zeigt zwei kompakte Spieler-Overviews mit Avatar-Kreis in Spielerfarbe, Name und einer kompakten Wertezeile
-// Wertezeile enthält: Siegpunkte, Straßen, Siedlungen, Städte, Ressourcenkarten, Entwicklungskarten
+// Wertezeile enthält: Punkte, Straßen, Siedlungen, Städte, Ressourcenkarten, Entwicklungskarten
 // Hebt den aktiven Spieler visuell hervor (goldener Rahmen und Leuchteffekt)
 
 import { getVictoryPointsForDisplay, initializeVictoryPoints, calculateVictoryPoints } from './victoryPoints.js';
@@ -36,7 +36,7 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     if (!player.victoryPoints) {
       initializeVictoryPoints([player]);
     }
-    // Siegpunkte-Anzeige vorbereiten (vor Avatar-Kreis!)
+    // Punkte-Anzeige vorbereiten (vor Avatar-Kreis!)
     let vpDisplay;
     if (!player) {
       vpDisplay = { display: '0', hidden: 0 };
@@ -68,7 +68,7 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     header.style.gap = '0.4em'; // enger
     header.style.width = '100%';
 
-    // Avatar-Kreis in Spielerfarbe mit Siegpunkte-Anzeige, halb über dem Info-Rechteck
+    // Avatar-Kreis in Spielerfarbe mit Punkte-Anzeige, halb über dem Info-Rechteck
     const avatar = document.createElement('div');
     avatar.style.width = '54px';
     avatar.style.height = '54px';
@@ -86,10 +86,10 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     avatar.style.top = 'unset';
     avatar.style.transform = 'none';
     avatar.style.pointerEvents = 'auto';
-    // Siegpunkte-Zahl in die Mitte
+    // Punkte-Zahl in die Mitte
     const vpNum = document.createElement('span');
     vpNum.textContent = vpDisplay.display;
-    vpNum.title = `Siegpunkte${vpDisplay.hidden > 0 ? ' (inklusive versteckter Punkte)' : ''}`;
+    vpNum.title = `Punkte${vpDisplay.hidden > 0 ? ' (inklusive versteckter Punkte)' : ''}`;
     vpNum.style.fontWeight = 'bold';
     vpNum.style.fontSize = '1.45em';
     vpNum.style.color = isActive ? '#222' : '#333';
@@ -113,7 +113,7 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
     nameDiv.style.marginBottom = '0.05em'; // weniger Abstand
     infoBlock.appendChild(nameDiv);
 
-    // Kompakte Wertezeile mit Symbolen (ohne Siegpunkte)
+    // Kompakte Wertezeile mit Symbolen (ohne Punkte)
     const stats = document.createElement('div');
     stats.style.display = 'flex';
     stats.style.flexWrap = 'wrap';
@@ -130,7 +130,7 @@ export function createPlayerOverviews(players, getActivePlayerIdx) {
       <span title="Siedlungen">🏠 ${player.settlements?.length ?? 0}</span>
       <span title="Städte">🏛️ ${player.cities?.length ?? 0}</span>
       <span title="Ressourcenkarten">📦 ${player.resources ? Object.values(player.resources).reduce((a,b)=>a+b,0) : 0}</span>
-      <span title="Entwicklungskarten (Ritter gespielt: ${knightsPlayed})">🎴 ${totalDevCards}</span>
+      <span title="Entwicklungskarten (Wächter gespielt: ${knightsPlayed})">🎴 ${totalDevCards}</span>
     `;
     infoBlock.appendChild(stats);
     header.appendChild(infoBlock);
@@ -190,18 +190,18 @@ function createOrUpdateAchievementDisplay(players, getActivePlayerIdx) {
       <span style="font-size: 0.9em;">Noch niemand (min. 5 Straßen)</span>
     </div>`;
   }
-  
-  // Größte Rittermacht
+
+  // Macht der Wächter
   const largestArmyPlayer = players.find(p => p.victoryPoints?.largestArmy > 0);
   if (largestArmyPlayer) {
     content += `<div style="margin-bottom: 0.5em; padding: 0.5em; background: linear-gradient(90deg, #d4edda, #c3e6cb); border-radius: 6px; border-left: 4px solid #28a745;">
-      <strong>⚔️ Größte Rittermacht</strong><br>
-      <span style="color: #155724;">${largestArmyPlayer.name}</span> (${largestArmyPlayer.knightsPlayed || 0} Ritter)
+      <strong>⚔️ Macht der Wächter</strong><br>
+      <span style="color: #155724;">${largestArmyPlayer.name}</span> (${largestArmyPlayer.knightsPlayed || 0} Wächter)
     </div>`;
   } else {
     content += `<div style="margin-bottom: 0.5em; padding: 0.5em; background: #f8f9fa; border-radius: 6px; color: #666;">
-      <strong>⚔️ Größte Rittermacht</strong><br>
-      <span style="font-size: 0.9em;">Noch niemand (min. 3 Ritter)</span>
+      <strong>⚔️ Macht der Wächter</strong><br>
+      <span style="font-size: 0.9em;">Noch niemand (min. 3 Wächter)</span>
     </div>`;
   }
   

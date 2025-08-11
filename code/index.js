@@ -28,7 +28,7 @@ function showGameLoadingOverlay() {
     { text: 'Terrain wird geladen...', details: 'Hexagon-Felder werden generiert...' },
     { text: 'Ressourcen werden platziert...', details: 'Holz, Lehm, Weizen, Wolle und Erz werden verteilt...' },
     { text: 'Nummern-Token werden hinzugefügt...', details: 'Würfelzahlen werden auf die Felder gesetzt...' },
-    { text: 'Räuber wird initialisiert...', details: 'Der Räuber wird auf dem Wüstenfeld platziert...' },
+    { text: 'Wächter wird initialisiert...', details: 'Der Wächter wird auf dem Wüstenfeld platziert...' },
     { text: 'Benutzeroberfläche wird vorbereitet...', details: 'Buttons und Menüs werden erstellt...' },
     { text: 'Spiel wird finalisiert...', details: 'Letzte Vorbereitungen werden getroffen...' }
   ];

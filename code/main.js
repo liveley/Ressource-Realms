@@ -14,7 +14,8 @@ import { createResourceUI, updateResourceUI, handleResourceKeydown } from './mod
 import { createDiceUI, setDiceResult, blockDiceRolls, unblockDiceRolls } from './modules/uiDice.js';
 import { initTileInfoOverlay } from './modules/uiTileInfo.js';
 import { initializeRobber, showBanditOnTile, hideBandit, startRobberPlacement, handleTileSelection, isInRobberPlacementMode, getTileCenter } from './modules/bandit.js';
-import { players, tryBuildSettlement, tryBuildCity, tryBuildRoad, initializeInitialPlacement, getGamePhaseInfo, getCurrentPlayerPlacementInfo, undoLastInitialPlacement, getInitialPlacementUIState, getPlacementWarning } from './modules/buildLogic.js';
+// Wichtig: 'players' NICHT importieren, um Verwechslung zweier Spieler-Arrays zu vermeiden
+import { tryBuildSettlement, tryBuildCity, tryBuildRoad, initializeInitialPlacement, getGamePhaseInfo, getCurrentPlayerPlacementInfo, undoLastInitialPlacement, getInitialPlacementUIState, getPlacementWarning } from './modules/buildLogic.js';
 import { getCornerWorldPosition } from './modules/tileHighlight.js';
 import { setupBuildPreview } from './modules/uiBuildPreview.js';
 // import CardManager from './modules/cards.js';
@@ -38,6 +39,7 @@ import { initRoadTestingUtils } from './modules/debugging/roadTestingUtils.js';
 import { initDebugKeyHandlers } from './modules/debugging/debugKeyHandlers.js';
 import { initDebugControls } from './modules/debugging/debugControls.js';
 import { initVictoryPointsTestingUtils } from './modules/debugging/victoryPointsTestingUtils.js';
+import { debug } from './modules/debugging/logging.js';
 
 
 window.players = window.players || [
@@ -252,7 +254,7 @@ function updateAllUI() {
 
 // === Preload Game Board ===
 async function preloadGameBoard() {
-  console.log('Preloading game board...');
+  debug('performance', 'Preloading game board');
   
   return new Promise((resolve) => {
     // Set up scene components that don't require UI
@@ -270,28 +272,28 @@ async function preloadGameBoard() {
 
     // Initialize ports after game board is created
     renderPorts(scene).then(() => {
-      console.log('Ports initialized successfully');
+      debug('ports', 'Ports initialized');
     }).catch(error => {
       console.error('Error initializing ports:', error);
     });
 
-    // Initialize robber on desert tile
+    // Initialize guardian on desert tile
     const initialRobberTileKey = '0,0';
     function waitForDesertTileAndInitRobber(retries = 30) {
       if (tileMeshes[initialRobberTileKey]) {
         setTimeout(() => {
-          console.log("Setting initial token colors for robber on desert");
+          debug('performance', 'Initial token colors for guardian desert');
           updateNumberTokensForRobber(initialRobberTileKey);
         }, 200);
-        console.log("Initializing robber on the desert tile");
+  debug('performance', 'Initializing guardian on desert');
         initializeRobber(scene, null, tileMeshes);
         
-        // Robber initialized, continue with cards
+        // Guardian initialized, continue with cards
         setTimeout(() => {
           // createPlaceholderCards(scene);
           // const cardManager = new CardManager();
           // cardManager.loadAllCards().then(() => {
-            console.log('Game board preloaded successfully');
+            debug('performance', 'Game board preloaded successfully');
             resolve(true);
           // }).catch(error => {
           //   console.error("Fehler beim Laden der Karten:", error);
@@ -302,7 +304,7 @@ async function preloadGameBoard() {
       } else if (retries > 0) {
         setTimeout(() => waitForDesertTileAndInitRobber(retries - 1), 100);
       } else {
-        console.warn("Desert tile mesh (0,0) not found after waiting. Robber not initialized.");
+        console.warn("Desert tile mesh (0,0) not found after waiting. Guardian not initialized.");
         resolve(true); // Continue anyway
       }
     }
@@ -312,16 +314,16 @@ async function preloadGameBoard() {
 
 // === Event Listeners for Game Initialization ===
 window.addEventListener('initializeGame', async () => {
-  console.log('Game initialization requested...');
+  debug('performance', 'Game initialization requested');
   try {
     // First preload the game board
-    console.log('Starting preload...');    
-    await preloadGameBoard();
-    console.log('Game board preloaded, now starting UI...');
+  debug('performance', 'Starting preload');    
+  await preloadGameBoard();
+  debug('performance', 'Game board preloaded, start UI');
     
     // Then start the game UI
     await startGame();
-    console.log('Game UI started, dispatching gameReady event...');
+  debug('performance', 'Game UI started -> dispatch gameReady');
     window.dispatchEvent(new CustomEvent('gameReady'));
   } catch (error) {
     console.error('Error during game initialization:', error);
@@ -350,7 +352,7 @@ async function startGame() {
     return;
   }
   
-  console.log('startGame() wurde aufgerufen!');
+  // startGame invoked (verbose log removed)
   let actionBar = document.getElementById('main-action-bar');
   console.log('actionBar:', actionBar);
 
@@ -626,14 +628,28 @@ async function startGame() {
         // During initial placement: always show player switch
         emoji.textContent = '🔄';
         btn.title = 'Spieler wechseln';
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
       } else {
         // During regular play: switch between dice and player change
         if (state === 0) {
           emoji.textContent = '🎲';
-          btn.title = 'Würfeln';
+          
+          // Check if bandit placement is active
+          if (isInRobberPlacementMode()) {
+            btn.title = 'Wächter muss platziert werden';
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+          } else {
+            btn.title = 'Würfeln';
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+          }
         } else {
           emoji.textContent = '🔄';
           btn.title = 'Spieler wechseln';
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
         }
       }
     }
@@ -653,7 +669,35 @@ async function startGame() {
         setActivePlayerAndUpdateUI(nextIdx);
         
       } else if (state === 0) {
-        // Regular play: Würfeln
+        // PRÜFUNG: Ist Bandit-Platzierung aktiv?
+        if (isInRobberPlacementMode()) {
+          console.log('Würfeln blockiert: Wächter muss platziert werden');
+          
+          // Zeige Warnung
+          const msg = document.createElement('div');
+          msg.textContent = 'Platziere zuerst den Wächter!';
+          msg.style.position = 'fixed';
+          msg.style.left = '50%';
+          msg.style.top = '20%';
+          msg.style.transform = 'translateX(-50%)';
+          msg.style.background = 'rgba(255,100,100,0.9)';
+          msg.style.color = 'white';
+          msg.style.padding = '10px 20px';
+          msg.style.borderRadius = '5px';
+          msg.style.fontFamily = "'Montserrat', Arial, sans-serif";
+          msg.style.zIndex = '1000';
+          document.body.appendChild(msg);
+          
+          setTimeout(() => {
+            if (msg.parentNode) {
+              document.body.removeChild(msg);
+            }
+          }, 2000);
+          
+          return; // Würfeln blockieren
+        }
+        
+        // Regular play: Würfeln (nur wenn Bandit nicht aktiv)
         if (typeof throwPhysicsDice === 'function' && typeof scene !== 'undefined') {
           throwPhysicsDice(scene);
           window.setDiceResultFromPhysics = (result) => {
@@ -662,12 +706,12 @@ async function startGame() {
             if (resultDiv) resultDiv.textContent = result.sum;
             // Event feuern wie gehabt
             window.dispatchEvent(new CustomEvent('diceRolled', { detail: result.sum }));
-            // Wenn KEIN Räuber (7), Button auf Spielerwechsel
+            // Wenn KEIN Wächter (7), Button auf Spielerwechsel
             if (result.sum !== 7) {
               state = 1;
               updateButtonUI();
             }
-            // Bei 7 bleibt der Button auf Würfeln (Räuber muss platziert werden)
+            // Bei 7 bleibt der Button auf Würfeln (Wächter muss platziert werden)
           };
         } else {
           // Fallback: Dummy-Logik
@@ -692,6 +736,12 @@ async function startGame() {
     
     // Make button update function globally available for phase changes
     window.updateDiceButtonForPhaseChange = function() {
+      updateButtonUI();
+    };
+
+    // Make function to switch to player change mode after bandit placement
+    window.setDiceButtonToPlayerSwitch = function() {
+      state = 1; // Set to player switch mode
       updateButtonUI();
     };
 
@@ -832,17 +882,13 @@ async function startGame() {
         <div style="max-height:340px;overflow-y:auto;padding-right:8px;">
           <ul style="padding-left:1.2em;">
           <li>Jeder Spieler beginnt mit 2 Siedlungen und 2 Straßen.</li>  
-          <li>Baue Siedlungen, Städte und Straßen, um Siegpunkte zu sammeln.</li>
+          <li>Baue Siedlungen, Städte und Straßen, um Punkte zu sammeln.</li>
             <li>Würfle zu Beginn deines Zuges und sammle Rohstoffe entsprechend der gewürfelten Zahl.</li>
             <li>Handel mit der Bank, anderen Spielern oder an Häfen.</li>
-            <li>Der Räuber blockiert Felder, wenn eine 7 gewürfelt wird.</li>
-            <li>Entwicklungskarten bringen Vorteile wie Ritter, Fortschritt oder Siegpunkte.</li>
-            <li>Wer zuerst 10 Siegpunkte erreicht, gewinnt das Spiel!</li>
-          </ul>
-          <div style="margin-top:1em;font-size:0.95em;color:#444;">
-            Weitere Details findest du im 
-            <a href="https://www.catan.de/catan-verstehen/spielregeln" target="_blank" style="color:#2196F3;text-decoration:underline;">offiziellen Catan-Regelwerk</a>.
-          </div>
+            <li>Der Guardian blockiert Felder, wenn eine 7 geworfen wird.</li>
+            <li>Entwicklungskarten bringen Vorteile wie Soldaten, Fortschritt oder Punkte.</li>
+            <li>Wer zuerst 10 Punkte erreicht, gewinnt das Spiel!</li>
+            <li><a href="./modules/rules.html" target="_blank">vollständige Ressource Realms Anleitung</a></li>
         </div>
         <button id="close-rules-modal" style="margin-top:1.5em;width:100%;background:linear-gradient(90deg,#b6c6e3 60%,#e0eafc 100%);color:#222;border:none;padding:10px 0;border-radius:8px;font-size:1.1em;font-weight:600;cursor:pointer;">Schließen</button>
       `;
@@ -914,7 +960,7 @@ async function startGame() {
   // Note: gameReady event is now dispatched by the initializeGame event handler
 }
 
-// === Catan-Bank: Ressourcenlimitierung ===
+// === Ressource Realms-Bank: Ressourcenlimitierung ===
 window.bank = {
   wood: 19,
   clay: 19,
@@ -980,20 +1026,37 @@ controls.maxPolarAngle = Math.PI * 0.44; // ca. 79°, verhindert "unter das Feld
 controls.minDistance = 10;  // Näher ranzoomen von oben möglich
 controls.maxDistance = 55; // Maximaler Zoom (z. B. 100 Einheiten vom Zentrum)
 
+// --- Performance Optimierung: Kamera-change getriebene Billboard-Updates ---
+// Statt jede Frame die Number-Tokens & Port-Labels neu zur Kamera auszurichten,
+// machen wir das nur wenn sich die Kameraorientierung ändert (OrbitControls 'change').
+// Fallback: In der animate-Schleife wird nur noch ein Quaternion-Vergleich gemacht (minimaler Overhead).
+let _lastCamQuat = new THREE.Quaternion();
+function updateFacing(force = false) {
+  if (force || !_lastCamQuat.equals(camera.quaternion)) {
+    updateNumberTokensFacingCamera(scene, camera);
+    updatePortLabels(camera);
+    _lastCamQuat.copy(camera.quaternion);
+  }
+}
+// Initial einmal ausführen wenn Szene startklar ist
+updateFacing(true);
+// Reagiere auf Benutzerinteraktion (OrbitControls feuert 'change' bei Rotation/Zoom/Pan)
+controls.addEventListener('change', () => updateFacing(true));
 
-// Create a raycaster for robber tile selection
+
+// Create a raycaster for guardian tile selection
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-// Handle click events for robber placement
+// Handle click events for guardian placement
 window.addEventListener('click', (event) => {
-    // Only process click if we're in robber placement mode
+    // Only process click if we're in guardian placement mode
     if (!isInRobberPlacementMode()) {
-        console.log("Not in robber placement mode, ignoring click");
+        console.log("Not in guardian placement mode, ignoring click");
         return;
     }
     
-    console.log("Click detected in robber placement mode");
+    console.log("Click detected in guardian placement mode");
 
     // Calculate mouse position in normalized device coordinates
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -1025,18 +1088,18 @@ window.addEventListener('click', (event) => {
         for (let i = 0; i < Math.min(3, intersects.length) && !success; i++) {
             success = handleTileSelection(intersects[i], tileMeshes, getTileWorldPosition);
             if (success) {
-                console.log(`Successfully placed robber using intersection ${i}`);
+                console.log(`Successfully placed guardian using intersection ${i}`);
                 break;
             }
         }
         
         if (success) {
-            console.log("Successfully placed robber");
+            console.log("Successfully placed guardian");
         } else {
-            console.log("Failed to place robber at the selected location");
+            console.log("Failed to place guardian at the selected location");
             // === UI: Fehler-/Feedback-Popup ===
             const errorMsg = document.createElement('div');
-            errorMsg.textContent = "Konnte den Räuber nicht auf diesem Feld platzieren. Versuche ein anderes Feld.";
+            errorMsg.textContent = "Konnte den Wächter nicht auf diesem Feld platzieren. Versuche ein anderes Feld.";
             errorMsg.style.position = 'fixed';
             errorMsg.style.left = '50%';
             errorMsg.style.top = '10%';
@@ -1070,20 +1133,14 @@ window.addEventListener('click', (event) => {
 
 // Animation
 function animate() {
-    // Update number tokens to face camera
-    updateNumberTokensFacingCamera(scene, camera);
-    
-    // Update port labels to face camera
-    updatePortLabels(camera);
-    
-    // Update physics for dice
-    updateDicePhysics();
-    
-    // Animate the sunbeam effects - ensure this runs on every frame
-    animateHalos();
-    
-    // Render the scene
-    renderer.render(scene, camera);
+  // Kamera-Facing nur wenn nötig (Quaternion Vergleich)
+  updateFacing(false);
+  // Update physics for dice
+  updateDicePhysics();
+  // Effekte
+  animateHalos();
+  // Render
+  renderer.render(scene, camera);
 }
 
 // Resize
@@ -1095,30 +1152,41 @@ window.addEventListener('resize', () => {
 
 window.addEventListener('keydown', (e) => handleResourceKeydown(e)); // handleResourceKeydown uses current player
 
-// === Bandit-Logik: Verwalte Räuberplatzierung und -bewegung ===
+// === Bandit-Logik: Verwalte Wächterplatzierung und -bewegung ===
 
-// Track which tile is currently blocked by the robber
+// Track which tile is currently blocked by the guardian
 let blockedTileKey = "0,0"; // Initially desert tile
 
-// Handle robber movement events
+// Handle guardian movement events
 window.addEventListener('robberMoved', (e) => {
-    console.log(`Robber moved to tile ${e.detail.key} at coordinates (${e.detail.q},${e.detail.r})`);
+    console.log(`Guardian moved to tile ${e.detail.key} at coordinates (${e.detail.q},${e.detail.r})`);
     // Update which tile is blocked for resource production
     blockedTileKey = e.detail.key;
     
-    // Use the accurate position function to ensure the robber is perfectly centered
+    // Use the accurate position function to ensure the guardian is perfectly centered
     // This is a fallback to ensure proper placement even after the event
     const accuratePosition = getTileCenter(e.detail.q, e.detail.r, tileMeshes);
-    console.log("Ensuring robber is at accurate position:", accuratePosition);
+    console.log("Ensuring guardian is at accurate position:", accuratePosition);
       // Update the number token colors to show which one is blocked
     // Use setTimeout to ensure any tile updates complete first
     setTimeout(() => {
-        console.log("Updating token colors for robber moved to", blockedTileKey);
+        console.log("Updating token colors for guardian moved to", blockedTileKey);
         updateNumberTokensForRobber(blockedTileKey);
     }, 100);
     
-    // Unblock dice rolls once the robber has been placed
+    // Unblock dice rolls once the guardian has been placed
     unblockDiceRolls();
+    
+    // WICHTIG: Nach Bandit-Platzierung sollte der Spielzug beendet sein
+    // Setze Button auf Spielerwechsel-Modus
+    if (typeof window.setDiceButtonToPlayerSwitch === 'function') {
+        window.setDiceButtonToPlayerSwitch();
+    }
+    
+    // Update button UI to reflect that bandit placement is finished
+    if (typeof window.updateDiceButtonForPhaseChange === 'function') {
+        window.updateDiceButtonForPhaseChange();
+    }
 });
 
 // Handle dice rolls
@@ -1128,11 +1196,16 @@ window.addEventListener('diceRolled', (e) => {
     
     // Special handling for rolling a 7
     if (e.detail === 7) {
-        // Start robber placement mode
+        // Start guardian placement mode
         startRobberPlacement(tileMeshes, tileNumbers);
         
-        // Block dice rolls until robber is placed
-        blockDiceRolls("Platziere zuerst den Räuber");
+        // Block dice rolls until guardian is placed
+        blockDiceRolls("Platziere zuerst den Wächter");
+        
+        // Update button UI to show it's blocked
+        if (typeof window.updateDiceButtonForPhaseChange === 'function') {
+            window.updateDiceButtonForPhaseChange();
+        }
     }
 });
 
@@ -1148,7 +1221,12 @@ window.startRobberPlacement = startRobberPlacement;
 // === Undo Functionality ===
 function performUndo() {
   if (typeof undoLastInitialPlacement === 'function') {
-    const result = undoLastInitialPlacement(activePlayerIdx, players);
+    // Anstehende verzögerte Builds (Warnungs-Timeouts) abbrechen, damit sie nicht nachträglich erneut platzieren
+    if (window._pendingBuildTimeouts && Array.isArray(window._pendingBuildTimeouts)) {
+      window._pendingBuildTimeouts.forEach(id => clearTimeout(id));
+      window._pendingBuildTimeouts.length = 0;
+    }
+    const result = undoLastInitialPlacement(activePlayerIdx, window.players);
     
     if (result.success) {
       console.log('Undo successful:', result.message);
@@ -1161,6 +1239,20 @@ function performUndo() {
       if (typeof window.refreshGameBoard === 'function') {
         window.refreshGameBoard();
       }
+
+      // --- Neu: Szene mit Spielzustand synchronisieren (entferne verwaiste Meshes) ---
+      // Falls beim Undo die Logik-Objekte entfernt wurden, aber das 3D-Mesh bestehen blieb,
+      // wird es hier bereinigt. Dadurch werden Abstands-/Belegtheitsregeln nicht mehr durch
+      // alte Meshes visuell verwechselt.
+      try {
+        syncMeshesWithState();
+      } catch (e) {
+        console.warn('Konnte Mesh-Sync nach Undo nicht durchführen:', e);
+      }
+      // Nach Abbruch evtl. Preview resetten
+      if (typeof window._resetBuildPreview === 'function') {
+        try { window._resetBuildPreview(); } catch(e) {}
+      }
     } else {
       console.log('Undo failed:', result.reason);
       showBuildPopupFeedback(result.reason, 'error');
@@ -1172,3 +1264,44 @@ function performUndo() {
 
 // Make undo function globally available
 window.performUndo = performUndo;
+
+// Hilfsfunktion: Entfernt alle Gebäude-/Straßen-Meshes, die nicht (mehr) in den Spielerlisten vorkommen
+function syncMeshesWithState() {
+  if (!scene) return;
+  const settlementKeys = new Set();
+  const cityKeys = new Set();
+  const roadKeys = new Set();
+  // Erzeuge Soll-Mengen aus Spielzustand
+  for (const p of window.players) {
+    (p.settlements || []).forEach(s => settlementKeys.add(`${s.q},${s.r},${s.corner}`));
+    (p.cities || []).forEach(c => cityKeys.add(`${c.q},${c.r},${c.corner}`));
+    (p.roads || []).forEach(r => {
+      // Primäre Repräsentation: q,r,edge (älteres Format) oder fallback q,r,edge falls vorhanden
+      if (r.q !== undefined && r.r !== undefined && r.edge !== undefined) {
+        roadKeys.add(`${r.q},${r.r},${r.edge}`);
+      } else if (r.q1 !== undefined && r.r1 !== undefined && r.edge !== undefined) {
+        roadKeys.add(`${r.q1},${r.r1},${r.edge}`);
+      }
+    });
+  }
+  const toRemove = [];
+  scene.traverse(obj => {
+    if (!obj.userData) return;
+    const { type, q, r, corner, edge } = obj.userData;
+    if (type === 'settlement') {
+      if (!settlementKeys.has(`${q},${r},${corner}`)) toRemove.push(obj);
+    } else if (type === 'city') {
+      if (!cityKeys.has(`${q},${r},${corner}`)) toRemove.push(obj);
+    } else if (type === 'road') {
+      if (!roadKeys.has(`${q},${r},${edge}`)) toRemove.push(obj);
+    }
+  });
+  toRemove.forEach(o => {
+    if (o.parent) o.parent.remove(o);
+  });
+  if (toRemove.length) {
+    console.log(`Mesh-Sync: ${toRemove.length} verwaiste Objekte entfernt.`);
+  }
+}
+// Global verfügbar machen für Debug
+window.syncMeshesWithState = syncMeshesWithState;

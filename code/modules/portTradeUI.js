@@ -1,5 +1,5 @@
 // modules/portTradeUI.js
-// Port-Handels-UI für Catan 3D - separates Pop-up-Fenster für Hafen-Handel
+// Port-Handels-UI für Resource Realms 3D - separates Pop-up-Fenster für Hafen-Handel
 
 import { resources } from './uiResources.js';
 import { doPortTrade, getAvailablePortTrades, getBestTradeRates, formatTradeRatesDisplay } from './portTrade.js';
