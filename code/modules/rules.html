@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Realms - Spielanleitung</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            position: relative;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .header-hexagons {
+          position: absolute;
+          top: 0px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 100%;
+          height: 312px;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .header-hex {
+          position: absolute;
+          width: 132px; /* vorher 120px */
+          height: 151.8px; /* vorher 138px */
+          clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+          border-radius: 10px;
+          box-shadow: 0 2px 12px #0002;
+        }
+
+        /* Row 1 */
+        .header-hex:nth-child(1) { top: -48px; left: -134px; background: #B2E1F6; }
+        .header-hex:nth-child(2) { top: -48px; left: 15px; background: #D0B763; }
+        .header-hex:nth-child(3) { top: -48px; left: 164px; background: #888888; }
+        .header-hex:nth-child(4) { top: -48px; left: 313px; background: #C48B68; }
+        .header-hex:nth-child(5) { top: -48px; left: 462px; background: #6B8E6E; }
+        .header-hex:nth-child(6) { top: -48px; left: 611px; background: #A6C48A; }
+        .header-hex:nth-child(7) { top: -48px; left: 760px; background: #B2E1F6; }
+        .header-hex:nth-child(8) { top: -48px; left: 909px; background: #91CBE8; }
+
+        /* Row 2 (versetzt) */
+        .header-hex:nth-child(9) { top: 77px; left: -206px; background: #387FAC; }
+        .header-hex:nth-child(10) { top: 77px; left: -57px; background: #91CBE8; }
+        .header-hex:nth-child(11) { top: 77px; left: 92px; background: #C6B198; }
+        .header-hex:nth-child(12) { top: 77px; left: 241px; background: #888888; }
+        .header-hex:nth-child(13) { top: 77px; left: 390px; background: #D0B763; }
+        .header-hex:nth-child(14) { top: 77px; left: 539px; background: #C48B68; }
+        .header-hex:nth-child(15) { top: 77px; left: 688px; background: #6B8E6E; }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        .header p {
+            position: relative;
+            z-index: 2;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 10px;
+            border-left: 5px solid;
+        }
+
+        .section.goal {
+            border-left-color: #28a745;
+        }
+
+        .section.gameplay {
+            border-left-color: #007bff;
+        }
+
+        .section.robber {
+            border-left-color: #dc3545;
+        }
+
+        .section.points {
+            border-left-color: #ffc107;
+        }
+
+        .section.endgame {
+            border-left-color: #6f42c1;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title .emoji {
+            font-size: 1.2em;
+        }
+
+        .phase {
+            background: white;
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .phase-title {
+            font-weight: 600;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .cost-item {
+            background: #e9ecef;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+
+        .points-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .points-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .points-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #ffc107;
+            display: block;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            font-family: 'Montserrat', Arial, sans-serif;
+            font-weight: 600;
+            color: #2c3e50;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-button:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .highlight {
+            background: linear-gradient(45deg, #fff3cd, #ffeaa7);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #f39c12;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ddd, transparent);
+            margin: 30px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .points-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="javascript:history.back()" class="back-button">
+        <span>←</span> Zurück zum Spiel
+    </a>
+
+    <div class="container">
+        <div class="header" style="position:relative;">
+            <div class="header-hexagons">
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+                <div class="header-hex"></div>
+            </div>
+            <div style="position:absolute; left:50%; top:40px; transform:translateX(-50%); width: max-content; min-width: 420px; padding: 23px 48px; background: rgba(0,0,0,0.25); border-radius: 22px; z-index:1;"></div>
+            <h1 style="position:relative; z-index:2;">Resource Realms</h1>
+            <div style="position:absolute; left:50%; top:105px; transform:translateX(-50%); width: max-content; min-width: 240px; padding: 12px 38px; background: rgba(0,0,0,0.25); border-radius: 18px; z-index:1;"></div>
+            <p style="position:relative; z-index:2;">Vollständige Spielanleitung</p>
+        </div>
+
+        <div class="content">
+            <!-- Ziel des Spiels -->
+            <div class="section goal">
+                <h2 class="section-title">
+                    <span class="emoji">🎯</span>
+                    Ziel des Spiels
+                </h2>
+                <p>In Resource Realms errichten die Spieler Siedlungen, Städte und Wege, um Ressourcen zu sammeln und ihre Präsenz auf der Insel auszubauen. <strong>Wer zuerst 10 Punkte erreicht, gewinnt das Spiel.</strong></p>
+            </div>
+
+            <!-- Spielablauf -->
+            <div class="section gameplay">
+                <h2 class="section-title">
+                    <span class="emoji">🔄</span>
+                    Spielablauf
+                </h2>
+                <p>Jeder Spielzug besteht aus drei Phasen:</p>
+
+                <div class="phase">
+                    <div class="phase-title">1. Ressourcenertrag</div>
+                    <ul>
+                        <li>Der aktive Spieler würfelt.</li>
+                        <li>Alle Spieler erhalten Ressourcen von Feldern mit der gewürfelten Zahl, sofern sie angrenzende Siedlungen oder Städte besitzen.</li>
+                        <li><strong>Siedlung</strong> = 1 Ressource</li>
+                        <li><strong>Stadt</strong> = 2 Ressourcen</li>
+                    </ul>
+                </div>
+
+                <div class="phase">
+                    <div class="phase-title">2. Handel</div>
+                    <ul>
+                        <li>Der aktive Spieler kann mit anderen Spielern Ressourcen tauschen.</li>
+                        <li>Alternativ kann er mit dem Vorrat tauschen (4:1 oder über Häfen 3:1 bzw. 2:1).</li>
+                    </ul>
+                </div>
+
+                <div class="phase">
+                    <div class="phase-title">3. Bauen und Karten kaufen</div>
+                    <p>Wenn genügend Ressourcen vorhanden sind, kann der Spieler:</p>
+                    <div class="cost-item"><strong>Weg bauen:</strong> Holz🪵 + Lehm🧱 </div>
+                    <div class="cost-item"><strong>Siedlung bauen:</strong> Holz🪵 + Lehm🧱  + Getreide🌾 + Wolle🐑</div>
+                    <div class="cost-item"><strong>Stadt bauen:</strong> 2 Getreide🌾 + 3 Erz🪨 (ersetzt eine Siedlung)</div>
+                    <div class="cost-item"><strong>Entwicklungskarte kaufen:</strong> Getreide🌾 + Erz🪨 + Wolle🐑</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Der Wächter -->
+            <div class="section robber">
+                <h2 class="section-title">
+                    <span class="emoji">🛡️</span>
+                    Der Wächter
+                </h2>
+                <div class="highlight">
+                    <strong>Wird bei einer 7 gewürfelt:</strong>
+                </div>
+                <ul>
+                    <li>Der aktive Spieler versetzt den Wächter auf ein beliebiges Landschaftsfeld.</li>
+                    <li>Das Feld liefert keine Ressourcen, solange der Wächter dort steht.</li>
+                    <li>Der Spieler darf eine Ressourcenkarte von einem Spieler mit angrenzender Siedlung/Stadt ziehen.</li>
+                </ul>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Punkte -->
+            <div class="section points">
+                <h2 class="section-title">
+                    <span class="emoji">🏆</span>
+                    Punkte
+                </h2>
+                <div class="points-grid">
+                    <div class="points-item">
+                        <span class="points-value">1</span>
+                        <strong>Siedlung</strong>
+                    </div>
+                    <div class="points-item">
+                        <span class="points-value">2</span>
+                        <strong>Stadt</strong>
+                    </div>
+                    <div class="points-item">
+                        <span class="points-value">?</span>
+                        <strong>Sonderkarten</strong><br>
+                        <small>Manche Entwicklungskarten bringen Punkte</small>
+                    </div>
+                    <div class="points-item">
+                        <span class="points-value">2</span>
+                        <strong>Größte Wächtermacht</strong><br>
+                        <small>Mind. 3 ausgespielte Wächterkarten</small>
+                    </div>
+                    <div class="points-item">
+                        <span class="points-value">2</span>
+                        <strong>Längste Handelsroute</strong><br>
+                        <small>Mind. 5 zusammenhängende Wege</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Spielende -->
+            <div class="section endgame">
+                <h2 class="section-title">
+                    <span class="emoji">🛑</span>
+                    Spielende
+                </h2>
+                <div class="highlight">
+                    <strong>Sobald ein Spieler 10 Punkte erreicht, endet das Spiel sofort – dieser Spieler gewinnt.</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
